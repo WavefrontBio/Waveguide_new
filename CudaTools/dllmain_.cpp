@@ -47,6 +47,7 @@ bool    m_maskSet;
 CudaUtil *mp_cuda;
 
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Forward Declarations
 
@@ -279,7 +280,7 @@ extern "C" DllExport void CudaInit(IDirect3DDevice9Ex* pDeviceEx)
 extern "C" DllExport void Init()
 {
 	mp_cuda = new CudaUtil();
-
+	
 	mp_d_grayImage = 0;
 	mp_d_colorImage = 0;
 	mp_d_maskImage = 0;
@@ -361,6 +362,8 @@ extern "C" DllExport void Shutdown()
 
 	cudaDeviceReset();
 }
+
+
 extern "C" DllExport void PushContext()
 {
 	// gives the cuda context (for this instance of CudaUtil) to the thread that called PushContext()
@@ -391,8 +394,6 @@ extern "C" DllExport void CopyGPUImageToD3DSurface(int surfaceIndex, uint8_t* pD
 {
 	mp_cuda->CopyImageToSurface(surfaceIndex, (CUdeviceptr)pData);
 }
-
-
 
 extern "C" DllExport bool RemoveD3DSurface(int surfaceIndex)
 {

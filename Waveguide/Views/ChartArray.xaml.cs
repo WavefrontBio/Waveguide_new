@@ -521,7 +521,7 @@ namespace Waveguide
                 m_imager.m_ImagingDictionary.Add(indicator.ExperimentIndicatorID,ips);
 
                 // this call sets d3dImage and pSurface
-                m_imager.ConfigImageD3DSurface(indicator.ExperimentIndicatorID,
+                m_imager.ConfigImageDisplaySurface(indicator.ExperimentIndicatorID,
                                                 m_imager.m_camera.m_acqParams.BinnedFullImageWidth,
                                                 m_imager.m_camera.m_acqParams.BinnedFullImageHeight,false);
 

@@ -864,7 +864,7 @@ namespace Waveguide
             {
                 ImagingParamsStruct ips = entry.Value;
                 int key = entry.Key;
-                m_imager.ConfigImageD3DSurface(key, m_imager.m_camera.m_acqParams.BinnedFullImageWidth, m_imager.m_camera.m_acqParams.BinnedFullImageHeight, false);
+                m_imager.ConfigImageDisplaySurface(key, m_imager.m_camera.m_acqParams.BinnedFullImageWidth, m_imager.m_camera.m_acqParams.BinnedFullImageHeight, false);
             }
 
 

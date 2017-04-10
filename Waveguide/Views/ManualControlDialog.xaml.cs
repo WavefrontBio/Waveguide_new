@@ -59,6 +59,8 @@ namespace Waveguide
 
         private void QuitPB_Click(object sender, RoutedEventArgs e)
         {
+            CameraSetupControl.Shutdown();
+
             Close();
         }
     }

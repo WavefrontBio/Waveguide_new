@@ -30,6 +30,7 @@ namespace Waveguide
     {
         public Image            ImageControl;
         public D3DImage         d3dImage;
+        public WriteableBitmap  bmapImage;
         public IntPtr           pSurface;        
         public WriteableBitmap  histBitmap;
 
@@ -44,12 +45,13 @@ namespace Waveguide
 
                                            
 
-        public ImagingParamsStruct(Image imageControl, D3DImage dImage, IntPtr pSurf, WriteableBitmap _histBitmap,
+        public ImagingParamsStruct(Image imageControl, D3DImage dImage, WriteableBitmap _bmapImage, IntPtr pSurf, WriteableBitmap _histBitmap,
             float _exposure, byte _excitationFilterPos, byte _emissionFilterPos, string _indicatorName, 
             int _cycleTime, int _gain, FLATFIELD_SELECT _flatfieldType, int _expIndicatorID)
         {
             ImageControl = imageControl;
             d3dImage = dImage;
+            bmapImage = _bmapImage;
             pSurface = pSurf; 
             histBitmap = _histBitmap;
             exposure = _exposure;
@@ -421,12 +423,13 @@ namespace Waveguide
 
                
                 ips.d3dImage = null;
+                ips.bmapImage = null;
                 ips.pSurface = IntPtr.Zero;              
 
                 m_ImagingDictionary.Add(ind.ExperimentIndicatorID,ips);
 
                 // this is done AFTER adding it to the m_ImagingDictionary
-                ConfigImageD3DSurface(ind.ExperimentIndicatorID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+                ConfigImageDisplaySurface(ind.ExperimentIndicatorID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
               
             }
 
@@ -458,11 +461,11 @@ namespace Waveguide
             {
                 dps = m_ImagingDictionary[ID];
 
+                // convert the grayscale image to color using the colormap that is already on the GPU
+                IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
+
                 if (dps.pSurface != IntPtr.Zero)
                 {
-                    // convert the grayscale image to color using the colormap that is already on the GPU
-                    IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
-
                     try
                     {
                         dps.d3dImage.Lock();
@@ -478,6 +481,17 @@ namespace Waveguide
                     {
                         OnImagerEvent(new ImagerEventArgs("Imager Error: " + e.Message, ImagerState.Error));
                     }
+                }
+                else if(dps.bmapImage != null)
+                {
+                    byte[] colorImage;
+                    m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+
+                    // display the image
+                    Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                    dps.bmapImage.Lock();
+                    dps.bmapImage.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
+                    dps.bmapImage.Unlock();
                 }
             }
             else
@@ -515,12 +529,11 @@ namespace Waveguide
                     UInt32[] sums;
                     m_cudaToolBox.GetMaskApertureSums(out sums, m_mask.Rows, m_mask.Cols);
 
+                    // convert the grayscale image to color using the colormap that is already on the GPU
+                    IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
 
                     if (dps.pSurface != IntPtr.Zero)
                     {
-                        // convert the grayscale image to color using the colormap that is already on the GPU
-                        IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
-
                         try
                         {
                             dps.d3dImage.Lock();
@@ -536,6 +549,17 @@ namespace Waveguide
                         {
                             OnImagerEvent(new ImagerEventArgs("Imager Error: " + e.Message, ImagerState.Error)); 
                         }
+                    }
+                    else if (dps.bmapImage != null)
+                    {
+                        byte[] colorImage;
+                        m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+
+                        // display the image
+                        Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                        dps.bmapImage.Lock();
+                        dps.bmapImage.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);                       
+                        dps.bmapImage.Unlock();
                     }
                 
 
@@ -685,6 +709,17 @@ namespace Waveguide
                                 string msg = e.Message;
                             }
                         }
+                        else if (dps.bmapImage != null)
+                        {
+                            byte[] colorImage;
+                            m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+
+                            // display the image
+                            Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                            dps.bmapImage.Lock();
+                            dps.bmapImage.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
+                            dps.bmapImage.Unlock();
+                        }
 
                     }
                     t1 = sw.ElapsedMilliseconds;
@@ -764,39 +799,61 @@ namespace Waveguide
 
 
 
-        public void ConfigImageD3DSurface(int ID, uint pixelWidth, uint pixelHeight, bool useAlphaChannel)
+        public void ConfigImageDisplaySurface(int ID, uint pixelWidth, uint pixelHeight, bool useAlphaChannel)
         {
             // ID = unique id for this display panel in the surface array.  It might be an ID for the camera, or an ID for an experiment indicator
             // pixelWidth, pixelHeight = the size of the display panel in pixels.  This should match the size of the image to be displaye on it.
             // panelHeader = string that is displayed above the panel
             // useAlphaChannel = sets whether to use the alpha channel or not (usually false)
 
-            bool success;
+            bool success = true;
 
             if (m_ImagingDictionary.ContainsKey(ID))
             {
                 ImagingParamsStruct dps = m_ImagingDictionary[ID];
 
-                // if there's a surface already at this position, remove it, since we're about to create a new one
-                success = m_cudaToolBox.Remove_D3dSurface(ID);
+                ////////////////////////////////////////
+                // START - DirectX Approach
 
-                // create new surface, and use the Invoke command to make sure it runs on UI thread since there's some UI-dependent code in here
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    m_SurfCollection.AddSurface((uint)ID, pixelWidth, pixelWidth, useAlphaChannel, dps.ImageControl);
-                });
+                    //// if there's a surface already at this position, remove it, since we're about to create a new one
+                    //success = m_cudaToolBox.Remove_D3dSurface(ID);
+
+                    //// create new surface, and use the Invoke command to make sure it runs on UI thread since there's some UI-dependent code in here
+                    //Application.Current.Dispatcher.Invoke(() =>
+                    //{
+                    //    m_SurfCollection.AddSurface((uint)ID, pixelWidth, pixelWidth, useAlphaChannel, dps.ImageControl);
+                    //});
 
 
-                // get 
-                IntPtr pSurface = IntPtr.Zero;
-                uint uWidth;
-                uint uHeight;
-                bool useAlpha;
-                D3DImage d3dImage;
+                    //// get 
+                    //IntPtr pSurface = IntPtr.Zero;
+                    //uint uWidth;
+                    //uint uHeight;
+                    //bool useAlpha;
+                    //D3DImage d3dImage;
 
-                m_SurfCollection.GetSurface_Params((uint)ID, out d3dImage, out pSurface, out uWidth, out uHeight, out useAlpha);
+                    //m_SurfCollection.GetSurface_Params((uint)ID, out d3dImage, out pSurface, out uWidth, out uHeight, out useAlpha);
 
-                success = m_cudaToolBox.Add_D3dSurface(ID, pSurface, (int)uWidth, (int)uHeight);
+                    //success = m_cudaToolBox.Add_D3dSurface(ID, pSurface, (int)uWidth, (int)uHeight);
+
+                    //dps.d3dImage = d3dImage;
+                    //dps.pSurface = pSurface;
+
+                    dps.pSurface = IntPtr.Zero; // REMOVE THIS TO USE DirectX
+
+                // END - DirectX Approach
+                ///////////////////////////////////////////////////////////////////////////
+
+                ////////////////////////////////////////
+                // START - WriteableBitmap Approach
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        dps.bmapImage = BitmapFactory.New((int)pixelWidth,(int)pixelHeight);                   
+                        dps.ImageControl.Source = dps.bmapImage;
+                    });
+
+                // END - WriteableBitmap Approach
+                ///////////////////////////////////////////////////////////////////////////
 
                 // rebuild mask
                 m_mask.BuildPixelList(m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, m_camera.m_acqParams.HBin, m_camera.m_acqParams.HBin);
@@ -805,10 +862,6 @@ namespace Waveguide
 
                 m_cudaToolBox.Set_MaskImage(m_mask.PixelMaskImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                             m_camera.m_acqParams.BinnedFullImageHeight, (UInt16)m_mask.Rows, (UInt16)m_mask.Cols);
-
-
-                dps.d3dImage = d3dImage;
-                dps.pSurface = pSurface;
 
                 m_ImagingDictionary[ID] = dps;
 
@@ -1601,7 +1654,7 @@ namespace Waveguide
             uint pixelWidth = (uint)(m_camera.XPixels / m_camera.m_acqParams.HBin);
             uint pixelHeight = (uint)(m_camera.YPixels / m_camera.m_acqParams.VBin);
 
-            ConfigImageD3DSurface((int)ID, pixelWidth, pixelHeight, false);
+            ConfigImageDisplaySurface((int)ID, pixelWidth, pixelHeight, false);
 
             ImagingParamsStruct dps = m_ImagingDictionary[(int)ID];
 
@@ -1678,8 +1731,8 @@ namespace Waveguide
                             m_camera.m_acqParams.VBin = vbin;
                             // successfully decreased binning, so make adjustments due to binning change                          
                             success = m_camera.PrepareAcquisition(m_camera.m_acqParams);
-                            // reset DirectX display panel for new size of image                           
-                            ConfigImageD3DSurface((int)ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+                            // reset display panel for new size of image                           
+                            ConfigImageDisplaySurface((int)ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
                                 
                             if (!success)
                             {  // failed to prepare acquisition
@@ -1723,8 +1776,8 @@ namespace Waveguide
                             m_camera.m_acqParams.VBin = vbin;
                             // successfully increased binning, so make adjustments due to binning change
                             success = m_camera.PrepareAcquisition(m_camera.m_acqParams);
-                            // reset DirectX display panel for new size of image
-                            ConfigImageD3DSurface((int)ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+                            // reset display panel for new size of image
+                            ConfigImageDisplaySurface((int)ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
 
                             if (!success)
                             {  // failed to prepare acquisition

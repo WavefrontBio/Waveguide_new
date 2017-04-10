@@ -39,8 +39,15 @@ namespace Waveguide
 		}
 
         ~CameraSetup()
+        {           
+        }
+
+        public void Shutdown()
         {
-            
+            if (vm.IsManualMode)
+            {
+                m_imager.m_ImagingDictionary.Remove(m_ID);
+            }
         }
 
         public void Configure(Imager _imager, int indicatorID, bool AllowCameraConfiguration, bool IsManualMode)
@@ -78,7 +85,11 @@ namespace Waveguide
                 ips.indicatorName = "Setup";
                 ips.pSurface = IntPtr.Zero;
 
-                m_imager.ConfigImageD3DSurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+                m_imager.m_ImagingDictionary.Add(m_ID, ips); // Not sure if this is right
+
+                m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+
+
             }
             else
             {
@@ -120,7 +131,7 @@ namespace Waveguide
                     vm.ExFilter = null;
 
                 m_imager.m_ImagingDictionary.Add(m_ID, ips);
-                m_imager.ConfigImageD3DSurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+                m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
                 
             }
 
@@ -402,7 +413,7 @@ namespace Waveguide
             m_camera.m_acqParams.HBin = vm.Binning;
             m_camera.m_acqParams.VBin = vm.Binning;
 
-            m_imager.ConfigImageD3DSurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+            m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
 
             CalculateTimings();
         }

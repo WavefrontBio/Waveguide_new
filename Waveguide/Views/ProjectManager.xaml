@@ -1,0 +1,105 @@
+﻿<UserControl x:Class="Waveguide.ProjectManager"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:igDP="http://infragistics.com/DataPresenter"
+             xmlns:igEditors="http://infragistics.com/Editors"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:local="clr-namespace:Waveguide" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="600">
+    <Grid>
+
+
+
+        <Grid.Resources>
+            <Style x:Key="ParentStyle" TargetType="{x:Type igDP:DataRecordCellArea}">
+                <Setter Property="Foreground" Value="Black"/>                
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Record.Cells[2].Value}" Value="False">
+                        <Setter Property="Background" Value="White" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Record.Cells[2].Value}" Value="True">
+                        <Setter Property="Background" Value="Red" />
+                    </DataTrigger>
+                </Style.Triggers>                
+                
+                <!--<Setter Property="FontFamily" Value="Helvetica"/>-->
+            </Style>
+            <Style x:Key="ChildStyle" TargetType="{x:Type igDP:DataRecordCellArea}">
+                <Setter Property="Foreground" Value="Black"/>
+                <Setter Property="Background" Value="LightGray"/>
+                <!--<Setter Property="FontFamily" Value="Comic Sans MS"/>-->
+            </Style>
+        </Grid.Resources>
+
+        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+
+
+
+        <igDP:XamDataGrid Grid.Row="0" x:Name="projectXamDataGrid" DataSource="{Binding Path=Projects}" Margin="0" Theme="IGTheme" MouseDoubleClick="projectXamDataGrid_MouseDoubleClick">
+
+
+            
+
+            <igDP:XamDataGrid.FieldLayoutSettings>
+                <igDP:FieldLayoutSettings AllowAddNew="False" AllowDelete="False" SelectionTypeRecord="Single"/>
+            </igDP:XamDataGrid.FieldLayoutSettings>
+
+
+            <igDP:XamDataGrid.FieldLayouts>
+                
+                <igDP:FieldLayout Key="Project" IsDefault="True">
+                    <igDP:FieldLayout.Settings>
+                        <igDP:FieldLayoutSettings LabelLocation="SeparateHeader" ExpansionIndicatorDisplayMode="CheckOnDisplay"
+                                                  DataRecordCellAreaStyle="{StaticResource ParentStyle}"/>                        
+                    </igDP:FieldLayout.Settings>                   
+                    
+                    <igDP:FieldLayout.Fields>
+                        <igDP:Field Name="Description" Label="Project Name" />                        
+                        <igDP:Field Name="ProjectID" Visibility="Collapsed" />   
+                        <igDP:Field Name="Archived" Visibility="Collapsed" />
+                        <igDP:Field Name="TimeStamp" Label="Creation Date" />
+                        <igDP:Field Name="Users"/>
+                    </igDP:FieldLayout.Fields>                    
+                </igDP:FieldLayout>
+                
+                <igDP:FieldLayout>
+                    <igDP:FieldLayout.Settings>
+                        <igDP:FieldLayoutSettings LabelLocation="Hidden" DataRecordCellAreaStyle="{StaticResource ChildStyle}"/>
+                    </igDP:FieldLayout.Settings>
+                    <igDP:FieldLayout.Fields>
+                        <igDP:Field Name="Fullname" Label="Project Users"/>                    
+                    </igDP:FieldLayout.Fields>
+                </igDP:FieldLayout>
+                
+            </igDP:XamDataGrid.FieldLayouts>
+
+            <igDP:XamDataGrid.FieldSettings>
+                <igDP:FieldSettings DataItemUpdateTrigger="OnCellValueChange" AllowEdit="False"  />
+            </igDP:XamDataGrid.FieldSettings>
+
+        </igDP:XamDataGrid>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" x:Name="StackPanel1">
+            <CheckBox x:Name="ShowArchiveCheckBox" Content="Show Archived Projects" VerticalAlignment="Center" 
+                      IsChecked="{Binding Path=ShowArchivedProjects}" Click="ShowArchiveCheckBox_Click"/>            
+        </StackPanel>
+        
+
+        <UniformGrid Grid.Row="2" Rows="1" Columns="3">
+            <Button Width="160" Margin="5" Content="Edit Project" x:Name="EditProjectPB" Click="EditProjectPB_Click"/>
+            <Button Width="160" Margin="5" Content="Add Project" x:Name="AddProjectPB" Click="AddProjectPB_Click"/>
+            <Button Width="160" Margin="5" Content="Delete Project" x:Name="DeleteProjectPB" Click="DeleteProjectPB_Click"/>
+        </UniformGrid>
+
+
+
+    </Grid>
+</UserControl>

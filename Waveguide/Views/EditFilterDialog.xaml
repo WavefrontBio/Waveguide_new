@@ -1,0 +1,55 @@
+﻿<Window x:Class="Waveguide.EditFilterDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:igDP="http://infragistics.com/DataPresenter"
+        xmlns:igEditors="http://infragistics.com/Editors"
+        Title="Edit Filter" Height="300" Width="300" 
+        Icon="/Images/WG_icon1.ico">
+    <Grid x:Name="MainGrid" DataContext="{Binding}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Filter Changer" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Filter Position" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Description" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Manufacturer" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Part Number" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+        
+        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="FilterChangerCombo" Margin="10,5,10,5"                   
+                  DataContext="{Binding}"
+                  SelectedItem="{Binding SelectedFilterChanger}"
+                  ItemsSource="{Binding FilterChangerEnumTypeValues}"/>
+
+        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="FilterPositionCombo" Margin="10,5,10,5"                   
+                  DataContext="{Binding}"
+                  SelectedItem="{Binding SelectedFilterPosition}"
+                  ItemsSource="{Binding FilterPositionEnumTypeValues}"/>
+
+
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="DescriptionText" Margin="10,5,10,5" VerticalAlignment="Center"
+                 Text="{Binding Path=Filter.Description}"></TextBox>
+
+        <TextBox Grid.Row="3" Grid.Column="1" x:Name="ManufacturerText" Margin="10,5,10,5" VerticalAlignment="Center"
+                 Text="{Binding Path=Filter.Manufacturer}"></TextBox>
+
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="PartNumberText" Margin="10,5,10,5" VerticalAlignment="Center" 
+                 Text="{Binding Path=Filter.PartNumber}"></TextBox>
+
+        <UniformGrid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2" VerticalAlignment="Bottom" Margin="10">
+            <Button Width="80" Height="30" x:Name="SavePB" Content="Save" Click="SavePB_Click"/>
+            <Button Width="80" Height="30" x:Name="CancelPB" Content="Cancel" Click="CancelPB_Click"/>
+        </UniformGrid>
+
+    </Grid>
+</Window>

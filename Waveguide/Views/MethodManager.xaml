@@ -1,0 +1,502 @@
+﻿<UserControl x:Class="Waveguide.MethodManager"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:igDP="http://infragistics.com/DataPresenter"
+             xmlns:igEditors="http://infragistics.com/Editors"
+             xmlns:igWindows="http://infragistics.com/Windows"
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:local ="clr-namespace:Waveguide"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+
+   
+
+    <Grid>
+ 
+        <Grid.Resources>
+            <Style x:Key="ParentStyle" TargetType="{x:Type igDP:DataRecordCellArea}">
+                <Setter Property="Foreground" Value="Black"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Record.Cells[4].Value}" Value="False">
+                        <Setter Property="Background" Value="White" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Record.Cells[4].Value}" Value="True">
+                        <Setter Property="Background" Value="White" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Record.Tag}" Value="AddRecord">
+                        <Setter Property="Foreground" Value="Red" />                       
+                    </DataTrigger>
+                </Style.Triggers>               
+            </Style>
+            <Style x:Key="ChildStyle" TargetType="{x:Type igDP:DataRecordCellArea}">
+                <Setter Property="Foreground" Value="Black"/>
+                <Setter Property="Background" Value="White"/> 
+                
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Record.Tag}" Value="AddRecord">
+                        <Setter Property="Foreground" Value="Red" />                       
+                        <Setter Property="BorderBrush" Value="DarkGray"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,4"/>
+                    </DataTrigger>
+                </Style.Triggers>
+                
+            </Style>
+
+
+            <Style x:Key="IsPublicCheckBoxCellStyle"
+                       TargetType="{x:Type igDP:CellValuePresenter}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type igDP:CellValuePresenter}">                            
+                            <CheckBox   x:Name="IsPublicCheckBox"
+                                        Command="local:MethodManager.IsPublicCheckBoxCommand"
+                                        CommandParameter="{Binding Path=DataItem}"
+                                        IsChecked="{Binding Path=DataItem.IsPublic}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+
+            <Style x:Key="BrowseButtonTemplate" TargetType="{x:Type igDP:CellValuePresenter}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type igDP:CellValuePresenter}">
+                            <Button x:Name="BrowseButton" Content="..." FontSize="8"
+                                    Command="local:MethodManager.BrowseButtonCommand"
+                                    CommandParameter="{Binding Path=DataItem}"
+                                    Width="20" Margin="0,2,0,2" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+        </Grid.Resources>
+
+
+        <igDP:XamDataGrid x:Name="xamDataGrid" DataSource="{Binding Path=Methods}" Theme="IGTheme"
+                          EditModeEnded="xamDataGrid_EditModeEnded"                          
+                          RecordUpdated="xamDataGrid_RecordUpdated"
+                          RecordsDeleting="xamDataGrid_RecordsDeleting"  FontSize="10"                        
+                          Loaded="xamDataGrid_Loaded">
+
+           
+            
+            
+            <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+            <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+            <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+
+            <igDP:XamDataGrid.LayoutTransform>
+                <ScaleTransform ScaleX="2" ScaleY="2"/>
+            </igDP:XamDataGrid.LayoutTransform>
+
+
+
+            <igDP:XamDataGrid.Resources>
+                <LinearGradientBrush x:Key="LabelHighlight"
+                                     StartPoint="0,1"
+                                     EndPoint="0,.5">
+                    <GradientStop Offset="0"
+                                  Color="#FF262525" />                    
+                    <GradientStop Offset="1"
+                                  Color="#FF585656" />
+                </LinearGradientBrush>
+                <!--<SolidColorBrush  x:Key="LabelForeground" Color="#FFFFFFFF" />
+                <SolidColorBrush  x:Key="LabelForegroundGlow" Color="#FFFFFFFF" />-->
+                <SolidColorBrush x:Key="LabelInnerBorder"
+                                 Color="#44FFFFFF" />
+                <SolidColorBrush x:Key="LabelOuterBorder"
+                                 Color="#44000000" />
+                <!--<CornerRadius  x:Key="LabelCornerRadius" TopLeft="2" TopRight="2" BottomRight="2" BottomLeft="2" />-->
+                <!-- ************************ -->
+                <!-- Nested Content Brushes   -->
+                <LinearGradientBrush x:Key="NestedContentBackground"
+                                     StartPoint="0,0"
+                                     EndPoint="0,1">
+                    <GradientStop Color="#FFFFFFFF"
+                                  Offset="0.25" />
+                    <GradientStop Color="#FFEEEEEE"
+                                  Offset="1.2" />
+                </LinearGradientBrush>
+                <SolidColorBrush x:Key="NestedContentBackgroundBorder"
+                                 Color="#44102975" />
+                <!-- ********************************* -->
+                <!-- Expandable Field Record Presenter -->
+                <LinearGradientBrush x:Key="ExpandableFieldLabelBackgroundVertical"
+                                     StartPoint="0,0"
+                                     EndPoint="1,0">
+                    <GradientStop Offset="0"
+                                  Color="#FF262525" />         
+                    <GradientStop Offset="1"
+                                  Color="#FF585656" />
+                </LinearGradientBrush>
+                <LinearGradientBrush x:Key="ExpandableFieldLabelBackgroundHighlightVertical"
+                                     StartPoint="1,0"
+                                     EndPoint="0.5, 0">
+                    <GradientStop Offset="0"
+                                  Color="#FF3C3B3B" />
+                    <GradientStop Offset="0.25"
+                                  Color="#FF3C3B3B" />
+                    <GradientStop Offset="1"
+                                  Color="#00515253" />
+                </LinearGradientBrush>
+                <!-- _________________________ ExpandableFieldRecordPresenter ______________________________________ -->
+                <Style TargetType="{x:Type igDP:ExpandableFieldRecordPresenter}">
+                    <Setter Property="Foreground"
+                            Value="#FFFFFF" />
+                    <Setter Property="Margin"
+                            Value="0,0,0,5" />
+                    <Setter Property="Padding"
+                            Value="0,0,0,5" />
+                    <Setter Property="Background"
+                            Value="#00FFFFFF" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type igDP:ExpandableFieldRecordPresenter}">
+                                <Grid Name="outerGrid"
+                                      Margin="{TemplateBinding Margin}"
+                                      Background="{TemplateBinding Background}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <!-- Row for nested content -->
+                                    <!-- Expansion Checkbox -->
+                                    <igWindows:ExpansionIndicator x:Name="ExpansionIndicator"
+                                                                  Visibility="{TemplateBinding ExpansionIndicatorVisibility}"
+                                                                  Grid.Column="0"
+                                                                  Grid.Row="0"
+                                                                  VerticalAlignment="Center"
+                                                                  HorizontalAlignment="Center"
+                                                                  IsChecked="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsExpanded, Mode=TwoWay}">                                        
+                                    </igWindows:ExpansionIndicator>
+                                    <!-- Expandable Field Title -->
+                                    <Grid x:Name="TitleArea"
+                                          Margin="0"
+                                          Grid.Row="0"
+                                          Grid.Column="1"
+                                          Visibility="{TemplateBinding HeaderVisibility}">
+                                        <!-- Background Bar -->
+                                        <Border HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Stretch"
+                                                RenderTransformOrigin="0.5,0.5"
+                                                CornerRadius="2,2,2,2"
+                                                SnapsToDevicePixels="True"
+                                                Background="#FF0000"
+                                                Name="borderBackground">
+                                            <Grid Margin="0,0,0,0"
+                                                  Width="Auto"
+                                                  Height="Auto">
+                                                <Rectangle Stroke="{StaticResource LabelOuterBorder}"
+                                                           StrokeThickness="1"
+                                                           RadiusX="1.55015910897703"
+                                                           RadiusY="1.55015910897703"
+                                                           Fill="Transparent" />
+                                                <Rectangle Margin="1"
+                                                           Stroke="{StaticResource LabelInnerBorder}"
+                                                           StrokeThickness="1"
+                                                           RadiusX="0.550159108977027"
+                                                           RadiusY="0.550159108977027"
+                                                           Fill="Transparent" />
+                                            </Grid>
+                                        </Border>
+                                        <Border HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Stretch"
+                                                Width="Auto"
+                                                Height="Auto"
+                                                CornerRadius="2,2,2,2"
+                                                Background="{StaticResource LabelHighlight}"
+                                                Name="borderBackgroundHighlight">
+                                            <Grid Margin="0,0,0,0"
+                                                  Width="Auto"
+                                                  Height="Auto">
+                                                <Rectangle Stroke="{StaticResource LabelOuterBorder}"
+                                                           StrokeThickness="1"
+                                                           RadiusX="1.55015910897703"
+                                                           RadiusY="1.55015910897703"
+                                                           Fill="Transparent" />
+                                                <Rectangle Margin="1"
+                                                           Stroke="{StaticResource LabelInnerBorder}"
+                                                           StrokeThickness="1"
+                                                           RadiusX="0.550159108977027"
+                                                           RadiusY="0.550159108977027"
+                                                           Fill="Transparent" />
+                                            </Grid>
+                                        </Border>
+                                        <ContentPresenter Content="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=(igDP:RecordPresenter.Record).Description}"
+                                                          TextBlock.TextAlignment="Left"
+                                                          HorizontalAlignment="Left"
+                                                          VerticalAlignment="Top"
+                                                          RenderTransformOrigin="0,0"
+                                                          Name="cpDescription"
+                                                          Margin="3,3,3,3">
+                                            <ContentPresenter.LayoutTransform>
+                                                <TransformGroup>
+                                                    <RotateTransform CenterX="0"
+                                                                     CenterY="0"
+                                                                     Angle="0" />
+                                                </TransformGroup>
+                                            </ContentPresenter.LayoutTransform>
+                                        </ContentPresenter>
+                                    </Grid>
+                                    <!-- Nested Content -->
+                                    <Grid Name="NestedContentSite"
+                                          Grid.Row="0"
+                                          Grid.Column="2"
+                                          Visibility="Collapsed">
+                                        <Border CornerRadius="0,0,3,3"
+                                                BorderBrush="{StaticResource NestedContentBackgroundBorder}"
+                                                BorderThickness="1"
+                                                Background="{StaticResource NestedContentBackground}" />
+                                        <Grid Margin="{TemplateBinding Padding}">
+                                            <ContentPresenter Content="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=NestedContent}"
+                                                              TextBlock.TextAlignment="Left"
+                                                              Margin="2,3,3,3"
+                                                              Name="ncpVisual"
+                                                              Opacity="0" />
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                                <ControlTemplate.Resources>
+                                    <Storyboard x:Key="sbDisplayNested">
+                                        <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
+                                                                       Storyboard.TargetName="ncpVisual"
+                                                                       Storyboard.TargetProperty="Opacity"
+                                                                       FillBehavior="HoldEnd">
+                                            <DiscreteDoubleKeyFrame Value="0"
+                                                                    KeyTime="00:00:00" />
+                                            <DiscreteDoubleKeyFrame Value="0"
+                                                                    KeyTime="00:00:00.25" />
+                                            <SplineDoubleKeyFrame KeySpline="0.5,0.5,0.5,0.5"
+                                                                  Value="1"
+                                                                  KeyTime="00:00:0.75" />
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                    <Storyboard x:Key="sbHideNested">
+                                        <DoubleAnimationUsingKeyFrames BeginTime="00:00:00"
+                                                                       Storyboard.TargetName="ncpVisual"
+                                                                       Storyboard.TargetProperty="Opacity"
+                                                                       FillBehavior="HoldEnd">
+                                            <!--<DiscreteDoubleKeyFrame Value="0" KeyTime="00:00:00" />-->
+                                            <SplineDoubleKeyFrame KeySpline="0.5,0.5,0.5,0.5"
+                                                                  Value="0"
+                                                                  KeyTime="00:00:00.15" />
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </ControlTemplate.Resources>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="HasNestedContent"
+                                             Value="True">
+                                        <Setter TargetName="NestedContentSite"
+                                                Property="Visibility"
+                                                Value="Visible" />
+                                        <Setter TargetName="borderBackground"
+                                                Property="Background"
+                                                Value="{StaticResource ExpandableFieldLabelBackgroundVertical}" />
+                                        <Setter TargetName="borderBackgroundHighlight"
+                                                Property="Background"
+                                                Value="{StaticResource ExpandableFieldLabelBackgroundHighlightVertical}" />
+                                        <Setter TargetName="ExpansionIndicator"
+                                                Property="VerticalAlignment"
+                                                Value="Top" />
+                                        <Setter TargetName="cpDescription"
+                                                Property="Margin"
+                                                Value="6,6,6,6" />
+                                        <Setter TargetName="cpDescription"
+                                                Property="LayoutTransform">
+                                            <Setter.Value>
+                                                <TransformGroup>
+                                                    <RotateTransform Angle="-90" />
+                                                </TransformGroup>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Trigger.EnterActions>
+                                            <BeginStoryboard Storyboard="{StaticResource sbDisplayNested}"
+                                                             x:Name="NestedOn" />
+                                            <StopStoryboard BeginStoryboardName="NestedOff" />
+                                        </Trigger.EnterActions>
+                                        <Trigger.ExitActions>
+                                            <BeginStoryboard Storyboard="{StaticResource sbHideNested}"
+                                                             x:Name="NestedOff" />
+                                            <StopStoryboard BeginStoryboardName="NestedOn" />
+                                        </Trigger.ExitActions>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+
+
+            </igDP:XamDataGrid.Resources>
+
+            <igDP:XamDataGrid.ViewSettings>
+                <igDP:GridViewSettings UseNestedPanels="True" />
+            </igDP:XamDataGrid.ViewSettings>
+            <igDP:XamDataGrid.FieldSettings>
+                <igDP:FieldSettings ExpandableFieldRecordHeaderDisplayMode="AlwaysDisplayHeader" />
+            </igDP:XamDataGrid.FieldSettings>
+
+
+            <igDP:XamDataGrid.CommandBindings>
+                
+                <CommandBinding Command="local:MethodManager.IsPublicCheckBoxCommand"
+                                CanExecute="IsPublicCheckBoxCommand_CanExecute"
+                                Executed="IsPublicCheckBoxCommand_Executed" />            
+                
+                <CommandBinding Command="local:MethodManager.BrowseButtonCommand"
+                                CanExecute="BrowseButtonCommand_CanExecute"
+                                Executed="BrowseButtonCommand_Executed" />
+                
+            </igDP:XamDataGrid.CommandBindings>
+
+
+
+
+
+            <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+            <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+            <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+            <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+            
+
+
+            <igDP:XamDataGrid.FieldLayoutSettings>
+                <igDP:FieldLayoutSettings AllowDelete="True" AutoGenerateFields="False" AddNewRecordLocation="OnTopFixed"/>
+            </igDP:XamDataGrid.FieldLayoutSettings>
+
+
+            <igDP:XamDataGrid.FieldLayouts>
+
+                <igDP:FieldLayout >                    
+                    <igDP:FieldLayout.Settings>
+                        <igDP:FieldLayoutSettings LabelLocation="SeparateHeader" 
+                                                  ExpansionIndicatorDisplayMode="CheckOnDisplay"
+                                                  DataRecordCellAreaStyle="{StaticResource ParentStyle}"/>                        
+                    </igDP:FieldLayout.Settings>
+                    
+                    <igDP:FieldLayout.Fields>
+                        <igDP:Field Name="MethodID" Visibility="Collapsed" />
+                        <igDP:Field Name="Description" Label="Description" Width="*"/>
+                        <igDP:Field Name="BravoMethodFile" Label="Bravo Method File" Width="3*"/>
+                 
+                        <igDP:UnboundField Name="BrowseButton" Label="" Width="20">
+                            <igDP:UnboundField.Settings>
+                                <igDP:FieldSettings CellValuePresenterStyle="{StaticResource BrowseButtonTemplate}" CellHeight="12" CellWidth="20">
+                                </igDP:FieldSettings>
+                            </igDP:UnboundField.Settings>
+                        </igDP:UnboundField>
+
+                        <igDP:Field Name="OwnerID" Visibility="Collapsed"/>
+                        <igDP:Field Name="IsPublic" Label="Is Public" Width="100">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings CellMaxWidth="80"
+                                                    CellValuePresenterStyle="{StaticResource IsPublicCheckBoxCellStyle}" />
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+                        
+                        <igDP:Field Name="Indicators" Label="Indicators"/>
+                        
+                        <igDP:Field Name="CompoundPlates" Label="Compound Plates"/>
+                        
+                    </igDP:FieldLayout.Fields>
+                </igDP:FieldLayout>
+
+
+                <igDP:FieldLayout x:Name="Indicators">
+                    <igDP:FieldLayout.Settings>
+                        <igDP:FieldLayoutSettings LabelLocation="SeparateHeader" 
+                                                  DataRecordCellAreaStyle="{StaticResource ChildStyle}"/>
+                    </igDP:FieldLayout.Settings>
+                    <igDP:FieldLayout.Fields>
+                        <igDP:Field Name="IndicatorID" Visibility="Collapsed" />
+                        <igDP:Field Name="MethodID" Visibility="Collapsed" />
+                        <igDP:Field Name="Description" Label="Description"/>
+                        
+                        <igDP:Field Name="ExcitationFilterPosition" Label="Excitation Filter">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditorType="{x:Type igEditors:XamComboEditor}" AllowEdit="True">
+                                    <igDP:FieldSettings.EditorStyle>
+                                        <Style TargetType="{x:Type igEditors:XamComboEditor}">                                                
+                                            <Setter Property="ItemsSource" Value="{Binding DataItem.ExcitationFilterList}" />
+                                            <Setter Property="DisplayMemberPath" Value="Description" />                                            
+                                            <Setter Property="ValuePath" Value="PositionNumber"/>  
+                                            <EventSetter Event="SelectedItemChanged" Handler="ExcitationFilter_SelectedItemChanged"/>
+                                        </Style>                                        
+                                    </igDP:FieldSettings.EditorStyle>                                   
+                                </igDP:FieldSettings>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+                        
+                        <igDP:Field Name="EmissionsFilterPosition" Label="Emission Filter">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditorType="{x:Type igEditors:XamComboEditor}" AllowEdit="True">
+                                    <igDP:FieldSettings.EditorStyle>
+                                        <Style TargetType="{x:Type igEditors:XamComboEditor}">
+                                            <Setter Property="ItemsSource" Value="{Binding DataItem.EmissionsFilterList}" />
+                                            <Setter Property="DisplayMemberPath" Value="Description" />
+                                            <Setter Property="ValuePath" Value="PositionNumber"/>
+                                            <EventSetter Event="SelectedItemChanged" Handler="EmissionFilter_SelectedItemChanged"/>
+                                        </Style>
+                                    </igDP:FieldSettings.EditorStyle>
+                                </igDP:FieldSettings>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+
+                        <igDP:Field Name="SignalType" Label="Signal Type">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditorType="{x:Type igEditors:XamComboEditor}" AllowEdit="True">
+                                    <igDP:FieldSettings.EditorStyle>
+                                        <Style TargetType="{x:Type igEditors:XamComboEditor}">
+                                            <Setter Property="ItemsSource" Value="{Binding DataItem.SignalTypeList}" />
+                                            <Setter Property="DisplayMemberPath" Value="Description" />
+                                            <Setter Property="ValuePath" Value="Value"/>
+                                            <EventSetter Event="SelectedItemChanged" Handler="SignalType_SelectedItemChanged"/>
+                                        </Style>
+                                    </igDP:FieldSettings.EditorStyle>
+                                </igDP:FieldSettings>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+
+
+                    </igDP:FieldLayout.Fields>
+                </igDP:FieldLayout>
+
+                <igDP:FieldLayout x:Name="CompoundPlates">
+                    <igDP:FieldLayout.Settings>
+                        <igDP:FieldLayoutSettings LabelLocation="SeparateHeader" 
+                                                      DataRecordCellAreaStyle="{StaticResource ChildStyle}"/>
+                    </igDP:FieldLayout.Settings>
+                    <igDP:FieldLayout.Fields>
+                        <igDP:Field Name="CompoundPlateID" Visibility="Collapsed" />
+                        <igDP:Field Name="MethodID" Visibility="Collapsed" />
+                        <igDP:Field Name="Description" Label="Description"/>                                       
+                    </igDP:FieldLayout.Fields>
+                </igDP:FieldLayout>
+                
+
+
+            </igDP:XamDataGrid.FieldLayouts>
+            
+            
+
+
+        </igDP:XamDataGrid>
+     
+            
+    </Grid>
+</UserControl>

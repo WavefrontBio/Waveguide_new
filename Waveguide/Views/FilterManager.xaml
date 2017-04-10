@@ -1,0 +1,81 @@
+﻿<UserControl
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Waveguide" 
+             xmlns:igDP="http://infragistics.com/DataPresenter"
+             xmlns:igEditors="http://infragistics.com/Editors"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             x:Class="Waveguide.FilterManager" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="831.2">
+    
+   
+    
+    
+    <Grid >
+        
+        <Grid.Resources>
+            <local:FilterChangerIntToStringConverter x:Key="filterChangerIntToStringConverter" />
+            <local:FilterPositionIntToStringConverter x:Key="filterPositionIntToStringConverter" />
+        </Grid.Resources>
+        
+        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+
+        <igDP:XamDataGrid x:Name="filterXamDataGrid" DataSource="{Binding Path=Filters}" Margin="0" Theme="IGTheme" Grid.Row="0" MouseDoubleClick="filterXamDataGrid_MouseDoubleClick">
+
+         
+            <igDP:XamDataGrid.FieldLayoutSettings>
+                <igDP:FieldLayoutSettings  
+                    AllowAddNew="False" 
+                    AllowDelete="False"
+                    SelectionTypeRecord="Single"/>
+            </igDP:XamDataGrid.FieldLayoutSettings>
+
+            <igDP:XamDataGrid.FieldSettings>
+                <igDP:FieldSettings DataItemUpdateTrigger="OnCellValueChange" AllowEdit="False"  />
+            </igDP:XamDataGrid.FieldSettings>
+
+
+
+            <igDP:XamDataGrid.FieldLayouts>
+                <igDP:FieldLayout IsDefault="True">
+                    <igDP:FieldLayout.Fields>
+                        <igDP:Field Name="FilterID" Visibility="Collapsed"/>
+                        <igDP:Field Name="FilterChanger" Width="150" Label="Filter Changer" Converter="{StaticResource filterChangerIntToStringConverter}">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditAsType="sys:String"/>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+                        <igDP:Field Name="PositionNumber" Width="150" Label="Position" Converter="{StaticResource filterPositionIntToStringConverter}">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditAsType="sys:String"/>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+                        <igDP:Field Name="Description" Width="250" Label="Description"/>
+                        <igDP:Field Name="Manufacturer" Width="150" Label="Manufacturer"/>
+                        <igDP:Field Name="PartNumber" Width="150" Label="Part Number"/>
+                    </igDP:FieldLayout.Fields>
+                </igDP:FieldLayout>              
+            </igDP:XamDataGrid.FieldLayouts>
+
+
+
+        </igDP:XamDataGrid>
+        
+        
+        <UniformGrid Grid.Row="1" Rows="1" Columns="3">
+            <Button Width="160" Height="40" Content="Edit" x:Name="EditPB" Click="EditPB_Click"/>
+            <Button Width="160" Height="40" Content="Add" x:Name="AddPB" Click="AddPB_Click"/>
+            <Button Width="160" Height="40" Content="Delete" x:Name="DeletePB" Click="DeletePB_Click"/>
+        </UniformGrid>
+        
+        
+
+    </Grid>
+</UserControl>

@@ -1,0 +1,47 @@
+﻿<Window x:Class="Waveguide.WellSelectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WellSelectionDialog" Height="600" Width="900"
+        Icon="/Images/WG_icon1.ico">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="45"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="35"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <Button Grid.Row="0" Grid.Column="0" x:Name="SelectAllButton" Click="SelectAllButton_Click"/>
+        
+        <Grid Grid.Row="0" Grid.Column="1" x:Name="ColumnButtonGrid"/>
+        
+        <Grid Grid.Row="1" Grid.Column="0" x:Name="RowButtonGrid"/>
+        
+        <Image x:Name="PlateImage" Stretch="Fill" Source="{Binding}"
+               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               Grid.Row="1" Grid.Column="1"               
+               />
+
+        <Image x:Name="SelectImage" Stretch="Fill" Source="{Binding}"
+               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               Grid.Row="1" Grid.Column="1"
+               MouseDown="SelectImage_MouseDown"
+               MouseUp="SelectImage_MouseUp"
+               MouseLeave="SelectImage_MouseLeave"
+               MouseMove="SelectImage_MouseMove"
+               />
+
+        <Grid Grid.Row="2" Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="80"/>
+            </Grid.ColumnDefinitions>
+            
+            <Button Grid.Column="1" x:Name="OkPB" Margin="10" Click="OkPB_Click" Content="OK"/>
+        </Grid>
+        
+    </Grid>
+</Window>

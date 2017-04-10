@@ -1,0 +1,115 @@
+﻿<UserControl xmlns:Waveguide="clr-namespace:Waveguide" 
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:ig="http://schemas.infragistics.com/xaml" 
+             x:Class="Waveguide.ColorModelEditor" 
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             mc:Ignorable="d" 
+             d:DesignHeight="350" d:DesignWidth="450">
+
+    <DockPanel>
+
+   
+        <ig:XamMenu DockPanel.Dock="Top">
+            <ig:XamMenuItem Header="Color Model">
+                <ig:XamMenuItem Header="New" x:Name="ColorModel_New" Click="ColorModel_New_Click"/>
+                <ig:XamMenuItem Header="Load" x:Name="ColorModel_Load" Click="ColorModel_Load_Click"/>
+                <ig:XamMenuItem Header="Save" x:Name="ColorModel_Save" Click="ColorModel_Save_Click"/>
+                <ig:XamMenuItem Header="Save As" x:Name="ColorModel_SaveAs" Click="ColorModel_SaveAs_Click"/>
+                <ig:XamMenuSeparator/>
+                <ig:XamMenuItem Header="Delete" x:Name="ColorModel_Delete" Click="ColorModel_Delete_Click"/>
+            </ig:XamMenuItem>
+            <ig:XamMenuItem Header="Image">
+                <ig:XamMenuItem Header="Load" x:Name="Image_Load" Click="Image_Load_Click"/>
+                <ig:XamMenuItem Header="Use Current" x:Name="Image_UseCurrent" Click="Image_UseCurrent_Click"/>
+                <ig:XamMenuItem Header="Clear" x:Name="Image_Clear" Click="Image_Clear_Click"/>
+            </ig:XamMenuItem>            
+        </ig:XamMenu>
+
+        <DockPanel DockPanel.Dock="Top" LastChildFill="True">
+            <TextBlock Text="Description:" Margin="5" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+            <TextBox Height="Auto" Width="Auto" Margin="5"/>
+        </DockPanel >
+
+        <!-- /////////////////////////////////////////////////////////////////////////////////////// -->
+     
+
+
+        <!-- /////////////////////////////////////////////////////////////////////////////////////// -->
+        <!--  START ColorModelEditor Grid-->
+        
+        <Grid DockPanel.Dock="Bottom" x:Name="MainGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="50"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="60"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <ig:XamDataChart x:Name="ControlChart" Grid.Row="0" Grid.Column="0" 
+                             HorizontalAlignment="Stretch" Margin="0" VerticalAlignment="Stretch"
+                             CrosshairVisibility="Collapsed">
+
+                <ig:XamDataChart.CrosshairLineStyle>
+                    <Style TargetType="Line">
+                        <Setter Property="Stroke" Value="Red" />
+                        <Setter Property="StrokeThickness" Value="1" />
+                    </Style>
+                </ig:XamDataChart.CrosshairLineStyle>
+            
+                <ig:XamDataChart.Axes>
+                    <ig:NumericXAxis x:Name="ControlChart_Xaxis"  MinimumValue="0" MaximumValue="{Binding m_xmax}" Title="% Max Pixel Value">                   
+                    </ig:NumericXAxis>
+                    <ig:NumericYAxis x:Name="ControlChart_Yaxis"  MinimumValue="0" MaximumValue="{Binding m_ymax}">
+                        <ig:NumericYAxis.LabelSettings>
+                            <ig:AxisLabelSettings Visibility="Collapsed" />
+                        </ig:NumericYAxis.LabelSettings>
+                    </ig:NumericYAxis>                                 
+                </ig:XamDataChart.Axes>
+                
+                <ig:XamDataChart.Series>
+                    <ig:ScatterLineSeries x:Name="ControlChart_LineSeries" Margin="0"
+                                   ItemsSource="{Binding}"
+                                   Brush="Black"      
+                                   Thickness="2" 
+                                   XMemberPath="m_value"
+                                   YMemberPath="m_colorIndex"
+                                   MarkerType="Circle"
+                                   MarkerBrush="Red"
+                                    XAxis="{Binding ElementName=ControlChart_Xaxis}" 
+                                    YAxis="{Binding ElementName=ControlChart_Yaxis}"
+                                   >
+                    </ig:ScatterLineSeries>
+                </ig:XamDataChart.Series>
+            </ig:XamDataChart>
+
+            <Image x:Name="GradientImage" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+			    Stretch="Fill" Margin="5"/>
+        
+            <Image x:Name="ColorMapImage" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                   Stretch="Fill" Margin="5"/>
+
+
+            <Image x:Name="HistogramImage" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                   Stretch="Fill"  Margin="5"/>
+           
+            
+            <Expander x:Name="ImageDisplayExpander" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Header="Display Image"
+                      Expanded="ImageDisplayExpander_Expanded" Collapsed="ImageDisplayExpander_Collapsed">               
+                
+                <Waveguide:ImageDisplay x:Name="ImageDisplay" HorizontalAlignment="Center" VerticalAlignment="Center" Height="400" Width="400" Margin="5"/>
+                
+            </Expander>
+
+        </Grid>
+        <!--  END  ColorModelEditor Grid-->
+        <!--///////////////////////////////////////////////////////////////////////////////////////// -->
+
+    </DockPanel>
+</UserControl>

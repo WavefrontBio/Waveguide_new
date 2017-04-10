@@ -1,0 +1,19 @@
+﻿<Window x:Class="Waveguide.EnclosureCameraViewer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="EnclosureCameraViewer" Height="300" Width="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+
+        <Image x:Name="DisplayImage" Stretch="Uniform" Source="{Binding}" />
+
+        <Button Grid.Row="1" x:Name="ClosePB" Content="Close" 
+                HorizontalAlignment="Right" Width="60"
+                Margin="10" Click="ClosePB_Click"/>
+
+
+    </Grid>
+</Window>

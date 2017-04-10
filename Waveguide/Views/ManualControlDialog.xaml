@@ -1,0 +1,18 @@
+﻿<Window x:Class="Waveguide.ManualControlDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Waveguide"
+        Title="ManualControlDialog" Height="600" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <local:CameraSetup x:Name ="CameraSetupControl" Grid.Row="0"/>
+        
+        <Button x:Name="QuitPB" Content="Quit" Grid.Row="1" 
+                Width="60" Height="25" Click="QuitPB_Click"
+                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+    </Grid>
+</Window>

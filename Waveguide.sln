@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waveguide", "Waveguide\Waveguide.csproj", "{E2EA6DC0-5831-4B1E-8585-B70EF2C43D3C}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -97,8 +97,8 @@ Global
 		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|Any CPU.ActiveCfg = Debug|Win32
 		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|ARM.ActiveCfg = Debug|ARM
 		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|ARM.Build.0 = Debug|ARM
-		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|Mixed Platforms.Build.0 = Debug|x64
 		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|Win32.ActiveCfg = Debug|Win32
 		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|Win32.Build.0 = Debug|Win32
 		{2C9EA780-CD89-4C89-BED7-D76BAA1C8075}.Debug|x64.ActiveCfg = Debug|x64
@@ -119,8 +119,8 @@ Global
 		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|Mixed Platforms.Build.0 = Debug|x64
 		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|Win32.ActiveCfg = Debug|Any CPU
 		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|x64.ActiveCfg = Debug|x64
 		{0D5D0E50-3946-48DB-B652-D809D9CDC54B}.Debug|x64.Build.0 = Debug|x64

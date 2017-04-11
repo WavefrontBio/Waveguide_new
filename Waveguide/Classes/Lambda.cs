@@ -158,7 +158,7 @@ namespace Waveguide
 
                 // Set up device data parameters
                 // Set Baud rate to 9600
-                ftStatus = myFtdiDevice.SetBaudRate(9600);
+                ftStatus = myFtdiDevice.SetBaudRate(128000);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                 {
                     PostError("Failed to set Lambda Filter Controller baud rate");

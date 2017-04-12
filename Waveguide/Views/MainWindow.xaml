@@ -73,6 +73,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="120"/>
                         <RowDefinition Height="120"/>
+                        <RowDefinition Height="120"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
@@ -95,6 +96,11 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
+
+                    <Button Grid.Row="2" Grid.Column="0" Width="140" Height="60" FontSize="16"
+                            x:Name="ImagingModes" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20"
+                            Content="Imaging&#10;Modes"
+                            Click="ImagingModes_Click"/>
 
                 </Grid>
             </TabItem>

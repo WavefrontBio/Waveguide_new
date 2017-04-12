@@ -815,29 +815,29 @@ namespace Waveguide
                 ////////////////////////////////////////
                 // START - DirectX Approach
 
-                    //// if there's a surface already at this position, remove it, since we're about to create a new one
-                    //success = m_cudaToolBox.Remove_D3dSurface(ID);
+                //// if there's a surface already at this position, remove it, since we're about to create a new one
+                //success = m_cudaToolBox.Remove_D3dSurface(ID);
 
-                    //// create new surface, and use the Invoke command to make sure it runs on UI thread since there's some UI-dependent code in here
-                    //Application.Current.Dispatcher.Invoke(() =>
-                    //{
-                    //    m_SurfCollection.AddSurface((uint)ID, pixelWidth, pixelWidth, useAlphaChannel, dps.ImageControl);
-                    //});
+                //// create new surface, and use the Invoke command to make sure it runs on UI thread since there's some UI-dependent code in here
+                //Application.Current.Dispatcher.Invoke(() =>
+                //{
+                //    m_SurfCollection.AddSurface((uint)ID, pixelWidth, pixelWidth, useAlphaChannel, dps.ImageControl);
+                //});
 
 
-                    //// get 
-                    //IntPtr pSurface = IntPtr.Zero;
-                    //uint uWidth;
-                    //uint uHeight;
-                    //bool useAlpha;
-                    //D3DImage d3dImage;
+                //// get 
+                //IntPtr pSurface = IntPtr.Zero;
+                //uint uWidth;
+                //uint uHeight;
+                //bool useAlpha;
+                //D3DImage d3dImage;
 
-                    //m_SurfCollection.GetSurface_Params((uint)ID, out d3dImage, out pSurface, out uWidth, out uHeight, out useAlpha);
+                //m_SurfCollection.GetSurface_Params((uint)ID, out d3dImage, out pSurface, out uWidth, out uHeight, out useAlpha);
 
-                    //success = m_cudaToolBox.Add_D3dSurface(ID, pSurface, (int)uWidth, (int)uHeight);
+                //success = m_cudaToolBox.Add_D3dSurface(ID, pSurface, (int)uWidth, (int)uHeight);
 
-                    //dps.d3dImage = d3dImage;
-                    //dps.pSurface = pSurface;
+                //dps.d3dImage = d3dImage;
+                //dps.pSurface = pSurface;
 
                     dps.pSurface = IntPtr.Zero; // REMOVE THIS TO USE DirectX
 
@@ -1627,7 +1627,7 @@ namespace Waveguide
 
             //m_exposure = 1;
 
-            int exposureLimit = 1000;  // TODO:  This should no be hard coded
+            int exposureLimit = 1000;  // TODO:  This should not be hard coded
 
             UInt16 highPixelValueThreshold = (UInt16)(0.8 * (float)GlobalVars.MaxPixelValue);
             int minPercentOfPixelsAboveLowLimit = 50;

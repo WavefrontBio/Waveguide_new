@@ -373,6 +373,14 @@ namespace Waveguide
             return isAdmin;
         }
 
+        private void ImagingModes_Click(object sender, RoutedEventArgs e)
+        {
+            
+            CameraSettingsManager csm = new CameraSettingsManager(m_imager, m_wgDB);
+
+            csm.ShowDialog();
+        }
+
       
 
 

@@ -2001,16 +2001,19 @@ namespace Waveguide
         private int _hssIndex;
         private int _vertClockAmpIndex;
         private int _preAmpGainIndex;
-        private int _emGain;
         private bool _useEMAmp;
-        private bool _useFrameTransfer;
-        private int _readMode;
-        private int _acquisitionMode;
-        private int _triggerMode;
-        private int _emGainMode;
-        private int _adChannel;
+        private bool _useFrameTransfer;       
         private string _description;
         private bool _isDefault;
+
+        private int _startingExposure;
+        private int _exposureLimit;
+        private int _highPixelThresholdPercent;
+        private int _lowPixelThresholdPercent;
+        private int _minPercentPixelsAboveLowThreshold;
+        private int _maxPercentPixelsAboveHighThreshold;
+        private bool _increasingSignal;
+
 
         public int CameraSettingID
         {
@@ -2042,12 +2045,6 @@ namespace Waveguide
             set { _preAmpGainIndex = value; NotifyPropertyChanged("PreAmpGainIndex"); }
         }
 
-        public int EMGain
-        {
-            get { return _emGain; }
-            set { _emGain = value; NotifyPropertyChanged("EMGain"); }
-        }
-
         public bool UseEMAmp
         {
             get { return _useEMAmp; }
@@ -2058,36 +2055,6 @@ namespace Waveguide
         {
             get { return _useFrameTransfer; }
             set { _useFrameTransfer = value; NotifyPropertyChanged("UseFrameTransfer"); }
-        }
-
-        public int ReadMode
-        {
-            get { return _readMode; }
-            set { _readMode = value; NotifyPropertyChanged("ReadMode"); }
-        }
-
-        public int AcquisitionMode
-        {
-            get { return _acquisitionMode; }
-            set { _acquisitionMode = value; NotifyPropertyChanged("AcquisitionMode"); }
-        }
-
-        public int TriggerMode
-        {
-            get { return _triggerMode; }
-            set { _triggerMode = value; NotifyPropertyChanged("TriggerMode"); }
-        }
-
-        public int EMGainMode
-        {
-            get { return _emGainMode; }
-            set { _emGainMode = value; NotifyPropertyChanged("EMGainMode"); }
-        }
-        
-        public int ADChannel
-        {
-            get { return _adChannel; }
-            set { _adChannel = value; NotifyPropertyChanged("ADChannel"); }
         }
 
         public string Description
@@ -2101,8 +2068,54 @@ namespace Waveguide
             get { return _isDefault; }
             set { _isDefault = value; NotifyPropertyChanged("IsDefault"); }
         }
-        
-    
+
+
+        public int StartingExposure
+        {
+            get { return _startingExposure; }
+            set { _startingExposure = value; NotifyPropertyChanged("StartingExposure"); }
+        }
+
+        public int ExposureLimit
+        {
+            get { return _exposureLimit; }
+            set { _exposureLimit = value; NotifyPropertyChanged("ExposureLimit"); }
+        }
+
+        public int HighPixelThresholdPercent
+        {
+            get { return _highPixelThresholdPercent; }
+            set { _highPixelThresholdPercent = value; NotifyPropertyChanged("HighPixelThresholdPercent"); }
+        }
+
+        public int LowPixelThresholdPercent
+        {
+            get { return _lowPixelThresholdPercent; }
+            set { _lowPixelThresholdPercent = value; NotifyPropertyChanged("LowPixelThresholdPercent"); }
+        }
+                         
+        public int MinPercentPixelsAboveLowThreshold
+        {
+            get { return _minPercentPixelsAboveLowThreshold; }
+            set { _minPercentPixelsAboveLowThreshold = value; NotifyPropertyChanged("MinPercentPixelsAboveLowThreshold"); }
+        }
+                 
+        public int MaxPercentPixelsAboveHighThreshold
+        {
+            get { return _maxPercentPixelsAboveHighThreshold; }
+            set { _maxPercentPixelsAboveHighThreshold = value; NotifyPropertyChanged("MaxPercentPixelsAboveHighThreshold"); }
+        }
+                
+        public bool IncreasingSignal
+        {
+            get { return _increasingSignal; }
+            set { _increasingSignal = value; NotifyPropertyChanged("IncreasingSignal"); }
+        }
+
+
+
+
+
         public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged(String info)
         {

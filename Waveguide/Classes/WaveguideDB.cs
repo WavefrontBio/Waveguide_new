@@ -5796,8 +5796,6 @@ namespace Waveguide
         //////////////////////////////////////////////////////////////////////////
         // Camera Settings
 
-
-
         public bool GetAllCameraSettings()
         {
             bool success = true;
@@ -5822,16 +5820,17 @@ namespace Waveguide
                             cameraSettings.HSSIndex = reader.GetInt32(2);
                             cameraSettings.VertClockAmpIndex = reader.GetInt32(3);
                             cameraSettings.PreAmpGainIndex = reader.GetInt32(4);
-                            cameraSettings.EMGain = reader.GetInt32(5);
-                            cameraSettings.UseEMAmp = reader.GetBoolean(6);
-                            cameraSettings.UseFrameTransfer = reader.GetBoolean(7);
-                            cameraSettings.ReadMode = reader.GetInt32(8);
-                            cameraSettings.AcquisitionMode = reader.GetInt32(9);
-                            cameraSettings.TriggerMode = reader.GetInt32(10);
-                            cameraSettings.EMGainMode = reader.GetInt32(11);
-                            cameraSettings.ADChannel = reader.GetInt32(12);
-                            cameraSettings.Description = reader.GetString(13);
-                            cameraSettings.IsDefault = reader.GetBoolean(14);
+                            cameraSettings.UseEMAmp = reader.GetBoolean(5);
+                            cameraSettings.UseFrameTransfer = reader.GetBoolean(6);                           
+                            cameraSettings.Description = reader.GetString(7);
+                            cameraSettings.IsDefault = reader.GetBoolean(8);
+                            cameraSettings.StartingExposure = reader.GetInt32(9);
+                            cameraSettings.ExposureLimit = reader.GetInt32(10);
+                            cameraSettings.HighPixelThresholdPercent = reader.GetInt32(11);
+                            cameraSettings.LowPixelThresholdPercent = reader.GetInt32(12);
+                            cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(13);
+                            cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(14);
+                            cameraSettings.IncreasingSignal = reader.GetBoolean(15);
 
                             m_cameraSettingsList.Add(cameraSettings);
                         }
@@ -5893,22 +5892,23 @@ namespace Waveguide
                         while (reader.Read())
                         {
                             cameraSettings = new CameraSettingsContainer();
-
+                                                  
                             cameraSettings.CameraSettingID = reader.GetInt32(0);
                             cameraSettings.VSSIndex = reader.GetInt32(1);
                             cameraSettings.HSSIndex = reader.GetInt32(2);
                             cameraSettings.VertClockAmpIndex = reader.GetInt32(3);
                             cameraSettings.PreAmpGainIndex = reader.GetInt32(4);
-                            cameraSettings.EMGain = reader.GetInt32(5);
-                            cameraSettings.UseEMAmp = reader.GetBoolean(6);
-                            cameraSettings.UseFrameTransfer = reader.GetBoolean(7);
-                            cameraSettings.ReadMode = reader.GetInt32(8);
-                            cameraSettings.AcquisitionMode = reader.GetInt32(9);
-                            cameraSettings.TriggerMode = reader.GetInt32(10);
-                            cameraSettings.EMGainMode = reader.GetInt32(11);
-                            cameraSettings.ADChannel = reader.GetInt32(12);
-                            cameraSettings.Description = reader.GetString(13);
-                            cameraSettings.IsDefault = reader.GetBoolean(14);
+                            cameraSettings.UseEMAmp = reader.GetBoolean(5);
+                            cameraSettings.UseFrameTransfer = reader.GetBoolean(6);
+                            cameraSettings.Description = reader.GetString(7);
+                            cameraSettings.IsDefault = reader.GetBoolean(8);
+                            cameraSettings.StartingExposure = reader.GetInt32(9);
+                            cameraSettings.ExposureLimit = reader.GetInt32(10);
+                            cameraSettings.HighPixelThresholdPercent = reader.GetInt32(11);
+                            cameraSettings.LowPixelThresholdPercent = reader.GetInt32(12);
+                            cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(13);
+                            cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(14);
+                            cameraSettings.IncreasingSignal = reader.GetBoolean(15);
                         }
                     }
                     catch (Exception e)
@@ -5932,9 +5932,9 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO CameraSettings (VSSIndex,HSSIndex,VertClockAmpIndex,PreAmpGainIndex,EMGain,UseEMAmp,UseFrameTransfer,ReadMode,AcquisitionMode,TriggerMode,EMGainMode,ADChannel,Description,IsDefault) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO CameraSettings (VSSIndex,HSSIndex,VertClockAmpIndex,PreAmpGainIndex,UseEMAmp,UseFrameTransfer,Description,IsDefault,StartingExposure,ExposureLimit,HighPixelThresholdPercent,LowPixelThresholdPercent,MinPercentPixelsAboveLowThreshold,MaxPercentPixelsAboveHighThreshold,IncreasingSignal) "
                                                             + "OUTPUT INSERTED.CameraSettingsID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,@p12,@p13,@p14)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,@p12,@p13,@p14,@p15)"
                                                             , con))
                 {
                     try
@@ -5943,16 +5943,17 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p2", cameraSettings.HSSIndex);
                         command.Parameters.AddWithValue("@p3", cameraSettings.VertClockAmpIndex);
                         command.Parameters.AddWithValue("@p4", cameraSettings.PreAmpGainIndex);
-                        command.Parameters.AddWithValue("@p5", cameraSettings.EMGain);
-                        command.Parameters.AddWithValue("@p6", cameraSettings.UseEMAmp);
-                        command.Parameters.AddWithValue("@p7", cameraSettings.UseFrameTransfer);
-                        command.Parameters.AddWithValue("@p8", cameraSettings.ReadMode);
-                        command.Parameters.AddWithValue("@p9", cameraSettings.AcquisitionMode);
-                        command.Parameters.AddWithValue("@p10", cameraSettings.TriggerMode);
-                        command.Parameters.AddWithValue("@p11", cameraSettings.EMGainMode);
-                        command.Parameters.AddWithValue("@p12", cameraSettings.ADChannel);
-                        command.Parameters.AddWithValue("@p13", cameraSettings.Description);
-                        command.Parameters.AddWithValue("@p14", cameraSettings.IsDefault);
+                        command.Parameters.AddWithValue("@p5", cameraSettings.UseEMAmp);
+                        command.Parameters.AddWithValue("@p6", cameraSettings.UseFrameTransfer);
+                        command.Parameters.AddWithValue("@p7", cameraSettings.Description);
+                        command.Parameters.AddWithValue("@p8", cameraSettings.IsDefault);
+                        command.Parameters.AddWithValue("@p9", cameraSettings.StartingExposure);
+                        command.Parameters.AddWithValue("@p10", cameraSettings.ExposureLimit);
+                        command.Parameters.AddWithValue("@p11", cameraSettings.HighPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p12", cameraSettings.LowPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p13", cameraSettings.MinPercentPixelsAboveLowThreshold);
+                        command.Parameters.AddWithValue("@p14", cameraSettings.MaxPercentPixelsAboveHighThreshold);
+                        command.Parameters.AddWithValue("@p15", cameraSettings.IncreasingSignal);
 
                         cameraSettings.CameraSettingID = (int)command.ExecuteScalar();
                     }
@@ -5978,27 +5979,30 @@ namespace Waveguide
                 con.Open();
 
                 using (SqlCommand command = new SqlCommand("UPDATE CameraSettings SET VSSIndex=@p1,HSSIndex=@p2,VertClockAmpIndex=@p3,PreAmpGainIndex=@p4," +
-                                                           "EMGain=@p5,UseEMAmp=@p6,UseFrameTransfer=@p7,ReadMode=@p8,AcquisitionMode=@p9,TriggerMode=@p10,EMGainMode=@p11," +
-                                                           "ADChannel=@p12,Description=@p13,IsDefault=@p14 " +
-                                                           "WHERE CameraSettingsID=@p15", con))
+                                                           "UseEMAmp=@p5,UseFrameTransfer=@p6,Description=@p7,IsDefault=@p8,StartingExposure=@p9,ExposureLimit=@p10," +
+                                                           "HighPixelThresholdPercent=@p11,LowPixelThresholdPercent=@p12,MinPercentPixelsAboveLowThreshold=@p13," +
+                                                           "MaxPercentPixelsAboveHighThreshold=@p14,IncreasingSignal=@p15 " +
+                                                           "WHERE CameraSettingsID=@p16", con))
                 {
                     try
                     {
-                        command.Parameters.AddWithValue("@p1",  cameraSettings.VSSIndex);
-                        command.Parameters.AddWithValue("@p2",  cameraSettings.HSSIndex);
-                        command.Parameters.AddWithValue("@p3",  cameraSettings.VertClockAmpIndex);
-                        command.Parameters.AddWithValue("@p4",  cameraSettings.PreAmpGainIndex);
-                        command.Parameters.AddWithValue("@p5",  cameraSettings.EMGain);
-                        command.Parameters.AddWithValue("@p6",  cameraSettings.UseEMAmp);
-                        command.Parameters.AddWithValue("@p7",  cameraSettings.UseFrameTransfer);
-                        command.Parameters.AddWithValue("@p8",  cameraSettings.ReadMode);
-                        command.Parameters.AddWithValue("@p9",  cameraSettings.AcquisitionMode);
-                        command.Parameters.AddWithValue("@p10", cameraSettings.TriggerMode);
-                        command.Parameters.AddWithValue("@p11", cameraSettings.EMGainMode);
-                        command.Parameters.AddWithValue("@p12", cameraSettings.ADChannel);
-                        command.Parameters.AddWithValue("@p13", cameraSettings.Description);
-                        command.Parameters.AddWithValue("@p14", cameraSettings.IsDefault);
-                        command.Parameters.AddWithValue("@p15", cameraSettings.CameraSettingID);
+                        command.Parameters.AddWithValue("@p1", cameraSettings.VSSIndex);
+                        command.Parameters.AddWithValue("@p2", cameraSettings.HSSIndex);
+                        command.Parameters.AddWithValue("@p3", cameraSettings.VertClockAmpIndex);
+                        command.Parameters.AddWithValue("@p4", cameraSettings.PreAmpGainIndex);
+                        command.Parameters.AddWithValue("@p5", cameraSettings.UseEMAmp);
+                        command.Parameters.AddWithValue("@p6", cameraSettings.UseFrameTransfer);
+                        command.Parameters.AddWithValue("@p7", cameraSettings.Description);
+                        command.Parameters.AddWithValue("@p8", cameraSettings.IsDefault);
+                        command.Parameters.AddWithValue("@p9", cameraSettings.StartingExposure);
+                        command.Parameters.AddWithValue("@p10", cameraSettings.ExposureLimit);
+                        command.Parameters.AddWithValue("@p11", cameraSettings.HighPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p12", cameraSettings.LowPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p13", cameraSettings.MinPercentPixelsAboveLowThreshold);
+                        command.Parameters.AddWithValue("@p14", cameraSettings.MaxPercentPixelsAboveHighThreshold);
+                        command.Parameters.AddWithValue("@p15", cameraSettings.IncreasingSignal);
+
+                        command.Parameters.AddWithValue("@p16", cameraSettings.CameraSettingID);
 
                         command.ExecuteNonQuery();
                     }

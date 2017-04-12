@@ -91,9 +91,7 @@ namespace Waveguide
 
         public bool Initialize()
         {
-            // TODO: CHANGE
-            return true;
-
+           
             SystemInitialized = false;
 
             myFtdiDevice = new FTDI();
@@ -157,7 +155,7 @@ namespace Waveguide
                 }
 
                 // Set up device data parameters
-                // Set Baud rate to 9600
+                // Set Baud rate to 9600 or 128000, may have to check to see what the speed is set at on the filter controller (this is the speed used by the USB to RS232 converter inside the filter controller)
                 ftStatus = myFtdiDevice.SetBaudRate(128000);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                 {

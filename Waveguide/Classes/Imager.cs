@@ -76,6 +76,9 @@ namespace Waveguide
         TaskScheduler m_uiTask;
         Stopwatch m_imagingSequenceCounter;
 
+        public Lambda m_lambda;
+        public Thor m_thor;
+
         public UInt16 m_histogramImageWidth = 1024;
         public UInt16 m_histogramImageHeight = 256;
 
@@ -90,6 +93,7 @@ namespace Waveguide
         public FilterContainer m_exFilter;
         public ObservableCollection<FilterContainer> m_emFilterList;
         public FilterContainer m_emFilter;
+        public byte m_filterChangeSpeed;
 
         // DirectX pointers
         IntPtr mp_D3D;
@@ -156,7 +160,12 @@ namespace Waveguide
             m_camera.CameraErrorEvent += m_camera_CameraErrorEvent;
             m_camera.m_acqParams.Updated += m_acqParams_Updated;
                    
-            m_cudaToolBox = new CudaToolBox();          
+            m_cudaToolBox = new CudaToolBox();
+
+            m_lambda = new Lambda();
+            m_thor = new Thor();
+
+            m_filterChangeSpeed = (byte)GlobalVars.FilterChangeSpeed;
         
         }
 
@@ -199,6 +208,24 @@ namespace Waveguide
                 ImagerReady = false;
                 OnImagerEvent(new ImagerEventArgs("Camera Failed to Initialize", ImagerState.Error));
                 return;
+            }
+            else
+            {
+                // Initialize Lambda (filter controller)
+                if (!m_lambda.SystemInitialized)
+                {
+                    success = m_lambda.Initialize();
+                    if (!success)
+                    {
+                        ImagerReady = false;
+                        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
+                        return;
+                    }
+                    else
+                    {
+                        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
+                    }
+                }
             }
 
             ImagerReady = true;
@@ -364,6 +391,45 @@ namespace Waveguide
             if (m_cudaToolBox != null)
                 m_cudaToolBox.Set_ColorMap(red, green, blue, (UInt16)arraySize);
         }
+
+
+
+        private void SetExcitationFilter(int position)
+        {
+            m_lambda.MoveFilterA((byte)position, m_filterChangeSpeed);
+        }
+
+        private void SetEmissionFilter(int position)
+        {
+            m_lambda.MoveFilterB((byte)position, m_filterChangeSpeed);
+        }
+
+
+        public void SetEmissionFilter(FilterContainer filter)
+        {
+            foreach (FilterContainer fc in m_emFilterList)
+            {
+                if (filter.FilterID == fc.FilterID)
+                {                   
+                    SetEmissionFilter(fc.PositionNumber);
+                    break;
+                }
+            }
+        }
+
+
+        public void SetExcitationFilter(FilterContainer filter)
+        {
+            foreach (FilterContainer fc in m_exFilterList)
+            {
+                if (filter.FilterID == fc.FilterID)
+                {
+                    SetExcitationFilter(fc.PositionNumber);
+                    break;
+                }
+            }
+        }
+
 
 
 

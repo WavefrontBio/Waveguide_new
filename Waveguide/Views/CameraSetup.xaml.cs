@@ -399,13 +399,29 @@ namespace Waveguide
         private void ExcitationFilterCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Move Excitation Filter
-            // TODO
+            if (sender != null)
+            {
+                if (((ComboBox)sender).SelectedItem != null)
+                {
+                    FilterContainer fc = (FilterContainer)((ComboBox)sender).SelectedItem;
+
+                    m_imager.SetExcitationFilter(fc);
+                }
+            }
         }
 
         private void EmissionFilterCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Move Emission Filter
-            // TODO
+            if (sender != null)
+            {
+                if (((ComboBox)sender).SelectedItem != null)
+                {
+                    FilterContainer fc = (FilterContainer)((ComboBox)sender).SelectedItem;
+
+                    m_imager.SetEmissionFilter(fc);
+                }
+            }
         }
 
         private void BinningCB_SelectionChanged(object sender, SelectionChangedEventArgs e)

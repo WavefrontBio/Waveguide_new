@@ -292,7 +292,7 @@ namespace Waveguide
         {
             UInt16[] grayRoiImage;
             int exposure = Convert.ToInt32(Exposure.Text);
-                                
+                                                 
             bool success = m_imager.AcquireImage(exposure, out grayRoiImage);
             if(success)
             {
@@ -354,7 +354,10 @@ namespace Waveguide
                 SignalTypeGroupBox.IsEnabled = false;
                 OptimizePB.Content = "Abort";
 
-                m_imager.StartOptimization(m_ID, vm.IsIncreasingSignal, vm.Exposure);
+                CameraSettingsContainer cs;
+                m_wgDB.GetCameraSettingsDefault(out cs);
+
+                m_imager.StartOptimization(m_ID, cs); // vm.IsIncreasingSignal, vm.Exposure);
 
                 vm.IsOptimizing = true;
             }

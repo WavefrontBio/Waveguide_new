@@ -1417,6 +1417,21 @@ namespace Waveguide
         }
 
 
+
+        public int GetCycleTime()
+        {
+            // Get the Actual Acquisition timing that will be used by the camera
+            float actualExposureFloat = 0;
+            float actualAccumulateFloat = 0;
+            float actualCycleTimeFloat = 0;
+
+            uint ecode = MyCamera.GetAcquisitionTimings(ref actualExposureFloat, ref actualAccumulateFloat, ref actualCycleTimeFloat);
+            
+            int actualCycleTime = (int)(actualCycleTimeFloat * 1000);
+
+            return actualCycleTime;
+        }
+
     
 
 

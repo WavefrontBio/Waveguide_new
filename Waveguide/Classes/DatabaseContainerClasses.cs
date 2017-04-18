@@ -2013,6 +2013,8 @@ namespace Waveguide
         private int _minPercentPixelsAboveLowThreshold;
         private int _maxPercentPixelsAboveHighThreshold;
         private bool _increasingSignal;
+        private int _startingBinning;
+        private int _emGainLimit;
 
 
         public int CameraSettingID
@@ -2112,7 +2114,17 @@ namespace Waveguide
             set { _increasingSignal = value; NotifyPropertyChanged("IncreasingSignal"); }
         }
 
-
+        public int StartingBinning
+        {
+            get { return _startingBinning; }
+            set { _startingBinning = value; NotifyPropertyChanged("StartingBinning"); }
+        }
+        
+        public int EMGainLimit
+        {
+            get { return _emGainLimit; }
+            set { _emGainLimit = value; NotifyPropertyChanged("EMGainLimit"); }
+        }
 
 
 

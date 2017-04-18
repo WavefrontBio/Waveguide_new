@@ -212,20 +212,20 @@ namespace Waveguide
             else
             {
                 // Initialize Lambda (filter controller)
-                if (!m_lambda.SystemInitialized)
-                {
-                    success = m_lambda.Initialize();
-                    if (!success)
-                    {
-                        ImagerReady = false;
-                        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
-                        return;
-                    }
-                    else
-                    {
-                        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
-                    }
-                }
+                //if (!m_lambda.SystemInitialized)
+                //{
+                //    success = m_lambda.Initialize();
+                //    if (!success)
+                //    {
+                //        ImagerReady = false;
+                //        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
+                //        return;
+                //    }
+                //    else
+                //    {
+                //        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
+                //    }
+                //}
             }
 
             ImagerReady = true;
@@ -1328,6 +1328,8 @@ namespace Waveguide
             }
             else
             {
+
+
                 m_camera.PrepForKineticImaging();
 
                 m_kineticImagingON = true;
@@ -1619,7 +1621,7 @@ namespace Waveguide
 
 
 
-        public async void StartOptimization(int ID, bool increasingSignal, int startingExposure)
+        public async void StartOptimization(int ID, CameraSettingsContainer cameraSettings) // bool increasingSignal, int startingExposure)
         {
             Tuple<bool, int> returnVal = Tuple.Create<bool,int>(false,0);
            
@@ -1642,7 +1644,7 @@ namespace Waveguide
 
                 try
                 {                    
-                    returnVal = await Task.Run(() => OptimizeImaging(ID, increasingSignal, startingExposure), m_cancelTokenSource.Token);
+                    returnVal = await Task.Run(() => OptimizeImaging(ID, cameraSettings), m_cancelTokenSource.Token);
                 }
                 catch (AggregateException aggEx)
                 {
@@ -1687,26 +1689,36 @@ namespace Waveguide
 
 
 
-        public Tuple<bool,int> OptimizeImaging(int ID, bool forIncreasingSignal, int startingExposure)
+        public Tuple<bool,int> OptimizeImaging(int ID, CameraSettingsContainer cameraSettings) // bool forIncreasingSignal, int startingExposure)
         {
             bool success = false;
 
-            //m_exposure = 1;
-
-            int exposureLimit = 1000;  // TODO:  This should not be hard coded
-
-            UInt16 highPixelValueThreshold = (UInt16)(0.8 * (float)GlobalVars.MaxPixelValue);
-            int minPercentOfPixelsAboveLowLimit = 50;
+            int startingExposure;
+            int exposureLimit;
+            UInt16 highPixelValueThreshold;
+            int minPercentOfPixelsAboveLowLimit;
             UInt16 lowPixelValueThreshold;
-            int maxPercentOfPixelsAboveHighLimit = 10;
+            int maxPercentOfPixelsAboveHighLimit;
+            int tempEMGain = 1;  // turn EM Gain all the way down
+            int tempPreAmpIndex = 0; // turn PreAmpGain all the way down
 
-            if (forIncreasingSignal)
+            if (cameraSettings == null)
             {
-                lowPixelValueThreshold = (UInt16)(0.1 * (float)GlobalVars.MaxPixelValue);
+                startingExposure = 1;
+                exposureLimit = 1000;
+                highPixelValueThreshold = (UInt16)(0.8 * (float)GlobalVars.MaxPixelValue);
+                minPercentOfPixelsAboveLowLimit = 50;
+                maxPercentOfPixelsAboveHighLimit = 10;
+                lowPixelValueThreshold = (UInt16)(0.1 * (float)GlobalVars.MaxPixelValue);               
             }
             else
             {
-                lowPixelValueThreshold = (UInt16)(0.6 * (float)GlobalVars.MaxPixelValue);
+                startingExposure = cameraSettings.StartingExposure;
+                exposureLimit = cameraSettings.ExposureLimit;
+                highPixelValueThreshold = (UInt16)( ((float)cameraSettings.HighPixelThresholdPercent)/100.0f * ((float)GlobalVars.MaxPixelValue)  );
+                minPercentOfPixelsAboveLowLimit = cameraSettings.MinPercentPixelsAboveLowThreshold;
+                lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue)); ;
+                maxPercentOfPixelsAboveHighLimit = cameraSettings.MaxPercentPixelsAboveHighThreshold;                
             }
 
             bool Done = false;
@@ -1714,7 +1726,7 @@ namespace Waveguide
             int count = 0;
             bool tooDim = false;
             bool tooBright = false;
-            int tempGain = m_camera.m_cameraParams.UseEMAmp ? m_camera.m_cameraParams.EMGain : m_camera.m_cameraParams.PreAmpGainIndex;
+            
 
             // reset DirectX display panel for new size of image
             uint pixelWidth = (uint)(m_camera.XPixels / m_camera.m_acqParams.HBin);
@@ -1729,6 +1741,15 @@ namespace Waveguide
 
             int exposure = startingExposure;
 
+            // Initialize camera to starting condition
+            m_camera.m_cameraParams.EMGain = 1;
+            m_camera.m_cameraParams.HSSIndex = cameraSettings.HSSIndex;
+            m_camera.m_cameraParams.PreAmpGainIndex = cameraSettings.PreAmpGainIndex;
+            m_camera.m_cameraParams.UseEMAmp = cameraSettings.UseEMAmp;
+            m_camera.m_cameraParams.UseFrameTransfer = cameraSettings.UseFrameTransfer;
+            m_camera.m_cameraParams.VertClockAmpIndex = cameraSettings.VertClockAmpIndex;
+            m_camera.m_cameraParams.VSSIndex = cameraSettings.VSSIndex;
+            
             success = m_camera.ConfigureCamera();
             success = m_camera.PrepareAcquisition();
 
@@ -1791,25 +1812,12 @@ namespace Waveguide
                     {
                         int hbin = m_camera.m_acqParams.HBin;
                         int vbin = m_camera.m_acqParams.VBin;
-                        if (DecreaseBinning(ref hbin, ref vbin))
+                        
+                        if (DecreaseGain(ref tempEMGain, ref tempPreAmpIndex, m_camera.m_cameraParams.UseEMAmp))
                         {
-                            m_camera.m_acqParams.HBin = hbin;
-                            m_camera.m_acqParams.VBin = vbin;
-                            // successfully decreased binning, so make adjustments due to binning change                          
-                            success = m_camera.PrepareAcquisition(m_camera.m_acqParams);
-                            // reset display panel for new size of image                           
-                            ConfigImageDisplaySurface((int)ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
-                                
-                            if (!success)
-                            {  // failed to prepare acquisition
-                                Done = true;
-                            }
-                        }
-                        else if (DecreaseGain(ref tempGain, m_camera.m_cameraParams.UseEMAmp))
-                        {
-                            // successfully decreased EM gain
-                            if (m_camera.m_cameraParams.UseEMAmp) m_camera.m_cameraParams.EMGain = tempGain;
-                            else m_camera.m_cameraParams.PreAmpGainIndex = tempGain;
+                            // successfully decreased gain
+                            if (m_camera.m_cameraParams.UseEMAmp) m_camera.m_cameraParams.EMGain = tempEMGain;
+                            m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
 
                             success = m_camera.ConfigureCamera();
                             if (!success)
@@ -1821,6 +1829,20 @@ namespace Waveguide
                         {
                             // successfully decreased exposure
                             success = m_camera.PrepareAcquisition();
+                            if (!success)
+                            {  // failed to prepare acquisition
+                                Done = true;
+                            }
+                        }
+                        else if (DecreaseBinning(ref hbin, ref vbin))
+                        {
+                            m_camera.m_acqParams.HBin = hbin;
+                            m_camera.m_acqParams.VBin = vbin;
+                            // successfully decreased binning, so make adjustments due to binning change                          
+                            success = m_camera.PrepareAcquisition(m_camera.m_acqParams);
+                            // reset display panel for new size of image                           
+                            ConfigImageDisplaySurface((int)ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+
                             if (!success)
                             {  // failed to prepare acquisition
                                 Done = true;
@@ -1850,18 +1872,6 @@ namespace Waveguide
                                 Done = true;
                             }
                         }
-                        else if (IncreaseGain(ref tempGain, m_camera.m_cameraParams.UseEMAmp))
-                        {
-                            // successfully increased EM gain
-                            if (m_camera.m_cameraParams.UseEMAmp) m_camera.m_cameraParams.EMGain = tempGain;
-                            else m_camera.m_cameraParams.PreAmpGainIndex = tempGain;
-
-                            success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
-                            if (!success)
-                            {  // failed to camera config
-                                Done = true;
-                            }
-                        }
                         else if (IncreaseExposure(ref exposure, exposureLimit))
                         {
                             // successfully decreased exposure
@@ -1871,6 +1881,18 @@ namespace Waveguide
                                 Done = true;
                             }
                         }
+                        else if (IncreaseGain(ref tempEMGain, ref tempPreAmpIndex, cameraSettings.UseEMAmp, cameraSettings.EMGainLimit))
+                        {
+                            // successfully increased gain
+                            if (m_camera.m_cameraParams.UseEMAmp) m_camera.m_cameraParams.EMGain = tempEMGain;
+                            m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
+
+                            success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
+                            if (!success)
+                            {  // failed to camera config
+                                Done = true;
+                            }
+                        }                        
                         else
                         {
                             success = false;
@@ -1883,7 +1905,13 @@ namespace Waveguide
                         success = true;
                         Done = true;
                         OptimizationResult_Success = true;
-                        OptimizationResult_Exposure = exposure;                        
+                        OptimizationResult_Exposure = exposure;  
+                      
+                        // Update Imaging Dictionary
+                        dps.exposure = ((float)exposure)/1000;
+                        if (m_camera.m_cameraParams.UseEMAmp) dps.gain = m_camera.m_cameraParams.EMGain;
+                        else dps.gain = m_camera.m_cameraParams.PreAmpGainIndex;
+                        m_ImagingDictionary[(int)ID] = dps;
                     }
                 }
                 else
@@ -2020,61 +2048,59 @@ namespace Waveguide
             return changed;
         }
 
-        public bool IncreaseGain(ref int gain, bool useEMAmp)
+        public bool IncreaseGain(ref int emGain, ref int preAmpGainIndex, bool useEMAmp, int emGainLimit)
         {
             bool changed = false;
 
-            if (useEMAmp)
+            // first try to increase PreAmpGain
+            if(preAmpGainIndex == 0)
             {
-                if (gain < 300)
+                preAmpGainIndex = 1;
+                changed = true;
+            }
+            else if (useEMAmp)
+            {
+                if (emGain < emGainLimit)
                 {  // EM Amp
                     changed = true;
-                    float step = ((float)gain) * 1.5f;  // increase by 50%
+                    float step = ((float)emGain) * 1.5f;  // increase by 50%
                     int stepInt = (int)step;
                     if (stepInt < 1) stepInt = 1;
 
-                    gain += stepInt;
+                    emGain += stepInt;
 
-                    if (gain > 300) gain = 300;
+                    if (emGain > emGainLimit) emGain = emGainLimit;
                 }
-            }
-            else
-            {   // Conventional Amp
-                if (gain < 1)
-                {
-                    gain = 1;
-                    changed = true;
-                }
-            }
+            }           
 
             return changed;
         }
 
-        public bool DecreaseGain(ref int gain, bool useEMAmp)
+        public bool DecreaseGain(ref int emGain, ref int preAmpGainIndex, bool useEMAmp)
         {
             bool changed = false;
 
+            // try to reduce emGain first
             if (useEMAmp)
             {  // EM Amp
-                if (gain > 2)
+                if (emGain > 1)
                 {
                     changed = true;
-                    float step = ((float)gain) * 1.5f;  // decrease by 50%
+                    float step = ((float)emGain) * 1.5f;  // decrease by 50%
                     int stepInt = (int)step;
                     if (stepInt < 1) stepInt = 1;
 
-                    gain -= stepInt;
+                    emGain -= stepInt;
 
-                    if (gain < 2) gain = 2;
+                    if (emGain < 1) emGain = 1;
                 }
             }
-            else
+           
+            // if the emGain could not be changed, try to reduce the preAmpGain
+            if(!changed && preAmpGainIndex > 0)
             {  // Conventional Amp
-                if (gain > 0)
-                {
-                    gain = 0;
-                    changed = true;
-                }
+                preAmpGainIndex = 0;
+                changed = true;                
             }
 
             return changed;
@@ -2118,12 +2144,6 @@ namespace Waveguide
         }
 
         #endregion
-
-
-
-
-
-
         
 
     }

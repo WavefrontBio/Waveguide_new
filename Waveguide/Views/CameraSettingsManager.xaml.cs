@@ -81,6 +81,8 @@ namespace Waveguide
                 MinPercentPixelsAboveLowThresholdUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
                 MaxPercentPixelsAboveHighThresholdUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
                 IncreasingSignalCkBx.GetBindingExpression(CheckBox.IsCheckedProperty).UpdateTarget();
+                StartingBinningCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
+                EMGainLimitUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
             }
                       
         }
@@ -163,6 +165,11 @@ namespace Waveguide
             dgCameraSettings.SelectedValue = cs;
         }
 
+        private void StartingBinningCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
        
               
     }
@@ -187,6 +194,7 @@ namespace Waveguide
         private ObservableCollection<Camera.FunctionalMode> triggerModes;
         private ObservableCollection<Camera.FunctionalMode> eMGainModes;
         private ObservableCollection<Camera.FunctionalMode> adChannelOptions;
+        private ObservableCollection<Camera.FunctionalMode> binningOptions;
 
         public ObservableCollection<Camera.HSSpeed> hsspeeds; // this is set to either hsspeeds_EM or hsspeeds_Conv, depending whether EM Amp is used
 
@@ -225,6 +233,8 @@ namespace Waveguide
                 CurrentCameraSettings.MinPercentPixelsAboveLowThreshold = 50;
                 CurrentCameraSettings.MaxPercentPixelsAboveHighThreshold = 10;
                 CurrentCameraSettings.IncreasingSignal = true;
+                CurrentCameraSettings.StartingBinning = 1;
+                CurrentCameraSettings.EMGainLimit = 300;
                 
             }
 
@@ -241,6 +251,7 @@ namespace Waveguide
             triggerModes = _camera.TriggerModes;
             eMGainModes = _camera.EMGainModes;
             adChannelOptions = _camera.ADChannelOptions;
+            binningOptions = _camera.BinningOptions;
         }
 
         public CameraSettingsContainer AddNew()
@@ -262,6 +273,8 @@ namespace Waveguide
             cs.UseFrameTransfer = CurrentCameraSettings.UseFrameTransfer;
             cs.VertClockAmpIndex = CurrentCameraSettings.VertClockAmpIndex;
             cs.VSSIndex = CurrentCameraSettings.VSSIndex;
+            cs.EMGainLimit = CurrentCameraSettings.EMGainLimit;
+            cs.StartingBinning = CurrentCameraSettings.StartingBinning;
            
 
             bool success = _wgDB.InsertCameraSettings(ref cs);
@@ -442,6 +455,18 @@ namespace Waveguide
         }
 
 
+        public ObservableCollection<Camera.FunctionalMode> BinningOptions
+        {
+            get { return binningOptions; }
+            set
+            {
+                binningOptions = value;
+                NotifyPropertyChanged("BinningOptions");
+            }
+        }
+
+
+
         public CameraSettingsContainer CurrentCameraSettings
         {
             get { return _currentCameraSettings; }
@@ -579,6 +604,28 @@ namespace Waveguide
             {
                 _currentCameraSettings.ExposureLimit = value;
                 NotifyPropertyChanged("ExposureLimit");
+                UpdateDatabase(CurrentCameraSettings);
+            }
+        }
+
+        public int EMGainLimit
+        {
+            get { return _currentCameraSettings.EMGainLimit; }
+            set
+            {
+                _currentCameraSettings.EMGainLimit = value;
+                NotifyPropertyChanged("EMGainLimit");
+                UpdateDatabase(CurrentCameraSettings);
+            }
+        }
+
+        public int StartingBinning
+        {
+            get { return _currentCameraSettings.StartingBinning; }
+            set
+            {
+                _currentCameraSettings.StartingBinning = value;
+                NotifyPropertyChanged("StartingBinning");
                 UpdateDatabase(CurrentCameraSettings);
             }
         }

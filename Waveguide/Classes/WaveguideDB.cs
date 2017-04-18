@@ -5831,6 +5831,8 @@ namespace Waveguide
                             cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(13);
                             cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(14);
                             cameraSettings.IncreasingSignal = reader.GetBoolean(15);
+                            cameraSettings.StartingBinning = reader.GetInt32(16);
+                            cameraSettings.EMGainLimit = reader.GetInt32(17);
 
                             m_cameraSettingsList.Add(cameraSettings);
                         }
@@ -5909,6 +5911,8 @@ namespace Waveguide
                             cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(13);
                             cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(14);
                             cameraSettings.IncreasingSignal = reader.GetBoolean(15);
+                            cameraSettings.StartingBinning = reader.GetInt32(16);
+                            cameraSettings.EMGainLimit = reader.GetInt32(17);
                         }
                     }
                     catch (Exception e)
@@ -5934,7 +5938,7 @@ namespace Waveguide
 
                 using (SqlCommand command = new SqlCommand("INSERT INTO CameraSettings (VSSIndex,HSSIndex,VertClockAmpIndex,PreAmpGainIndex,UseEMAmp,UseFrameTransfer,Description,IsDefault,StartingExposure,ExposureLimit,HighPixelThresholdPercent,LowPixelThresholdPercent,MinPercentPixelsAboveLowThreshold,MaxPercentPixelsAboveHighThreshold,IncreasingSignal) "
                                                             + "OUTPUT INSERTED.CameraSettingsID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,@p12,@p13,@p14,@p15)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,@p12,@p13,@p14,@p15,@p16,@p17)"
                                                             , con))
                 {
                     try
@@ -5954,6 +5958,8 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p13", cameraSettings.MinPercentPixelsAboveLowThreshold);
                         command.Parameters.AddWithValue("@p14", cameraSettings.MaxPercentPixelsAboveHighThreshold);
                         command.Parameters.AddWithValue("@p15", cameraSettings.IncreasingSignal);
+                        command.Parameters.AddWithValue("@p16", cameraSettings.StartingBinning);
+                        command.Parameters.AddWithValue("@p17", cameraSettings.EMGainLimit);
 
                         cameraSettings.CameraSettingID = (int)command.ExecuteScalar();
                     }
@@ -5981,8 +5987,9 @@ namespace Waveguide
                 using (SqlCommand command = new SqlCommand("UPDATE CameraSettings SET VSSIndex=@p1,HSSIndex=@p2,VertClockAmpIndex=@p3,PreAmpGainIndex=@p4," +
                                                            "UseEMAmp=@p5,UseFrameTransfer=@p6,Description=@p7,IsDefault=@p8,StartingExposure=@p9,ExposureLimit=@p10," +
                                                            "HighPixelThresholdPercent=@p11,LowPixelThresholdPercent=@p12,MinPercentPixelsAboveLowThreshold=@p13," +
-                                                           "MaxPercentPixelsAboveHighThreshold=@p14,IncreasingSignal=@p15 " +
-                                                           "WHERE CameraSettingsID=@p16", con))
+                                                           "MaxPercentPixelsAboveHighThreshold=@p14,IncreasingSignal=@p15," +
+                                                           "StartingBinning=@p16,EMGainLimit=@p17 " +
+                                                           "WHERE CameraSettingsID=@p18", con))
                 {
                     try
                     {
@@ -6001,8 +6008,10 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p13", cameraSettings.MinPercentPixelsAboveLowThreshold);
                         command.Parameters.AddWithValue("@p14", cameraSettings.MaxPercentPixelsAboveHighThreshold);
                         command.Parameters.AddWithValue("@p15", cameraSettings.IncreasingSignal);
+                        command.Parameters.AddWithValue("@p16", cameraSettings.StartingBinning);
+                        command.Parameters.AddWithValue("@p17", cameraSettings.EMGainLimit);
 
-                        command.Parameters.AddWithValue("@p16", cameraSettings.CameraSettingID);
+                        command.Parameters.AddWithValue("@p18", cameraSettings.CameraSettingID);
 
                         command.ExecuteNonQuery();
                     }

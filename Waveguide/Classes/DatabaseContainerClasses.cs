@@ -830,20 +830,8 @@ namespace Waveguide
 
 
 
-        public struct MaskAperture
-        {
-            public int row;
-            public int col;
-            public MaskAperture(int r, int c)
-            {
-                row = r;
-                col = c;
-            }
-        }
-
-
-
-        public void CheckImageLevelsInMask(UInt16[] image, List<MaskAperture> wells, int minPercentOfPixelsAboveLowLimit, UInt16 lowPixelValueThreshold,
+        public void CheckImageLevelsInMask(UInt16[] image, ObservableCollection<Tuple<int,int>> wells, 
+            int minPercentOfPixelsAboveLowLimit, UInt16 lowPixelValueThreshold,
             int maxPercentOfPixelsAboveHighLimit, UInt16 highPixelValueThreshold, ref bool tooDim, ref bool tooBright)
         {
             tooDim = false;
@@ -855,12 +843,12 @@ namespace Waveguide
             // wells == null, then use all mask apertures (all wells)
             if (wells == null)
             {
-                wells = new List<MaskAperture>();
+                wells = new ObservableCollection<Tuple<int, int>>();
 
                 for (int r = 0; r < Rows; r++)
                     for (int c = 0; c < Cols; c++)
                     {
-                        MaskAperture ap = new MaskAperture(r, c);
+                        Tuple<int,int> ap = Tuple.Create<int, int>(r, c);                        
                         wells.Add(ap);
                     }
             }
@@ -868,10 +856,10 @@ namespace Waveguide
             // go through all selected wells
             UInt16 lowestPixelValue = 65535;
             UInt16 highestPixelValue = 0;
-            foreach (MaskAperture ap in wells)
+            foreach (Tuple<int, int> ap in wells)
             {
                 // go through all pixels in well
-                foreach (int pixelNdx in PixelList[ap.row, ap.col])
+                foreach (int pixelNdx in PixelList[ap.Item1, ap.Item2])
                 {
                     if (image[pixelNdx] < lowestPixelValue) lowestPixelValue = image[pixelNdx];
                     if (image[pixelNdx] > highestPixelValue) highestPixelValue = image[pixelNdx];
@@ -1877,130 +1865,12 @@ namespace Waveguide
 
 
 
-    /////////////////////////////////////////////////////////
-    // PixelMask Container
-
-    //public class PixelMaskContainer : INotifyPropertyChanged
-    //{
-    //    private int _pixelMaskID;
-    //    private int _analysisID;
-    //    private int _width;
-    //    private int _height;
-    //    private byte[] _maskData;
-    //    private int _numBytes;
-    //    private COMPRESSION_ALGORITHM _compressionAlgorithm;
-
-
-    //    public bool Generate(ushort[] image, int threshold, int cutoff)
-    //    {
-    //        // This function generates the pixel mask for the given image using the given threshold and cutoff values.
-    //        // If image is null, it sets the pixel mask to all 1's (i.e. no masking).  this is typically used during initialization
-    //        // before there is an image.
-
-    //        bool success = true;
-
-    //        if(image == null)
-    //        {
-    //            for(int i = 0; i<_maskData.Length; i++)
-    //            {
-    //                _maskData[i] = 1;
-    //            }              
-    //        }
-    //        else if(image.Length == _maskData.Length)
-    //        {
-    //            for(int i = 0; i<image.Length ; i++)
-    //            {
-    //                if ((image[i] >= threshold) && (image[i]<= cutoff))
-    //                    _maskData[i] = 1;
-    //                else
-    //                    _maskData[i] = 0;
-    //            }
-    //        }
-    //        else
-    //        {
-    //            success = false;
-    //        }
-
-    //        return success;
-    //    }
-
-
-    //    public PixelMaskContainer(int pixelWidth=1024, int pixelHeight=1024)
-    //    {
-    //        _width = pixelWidth;
-    //        _height = pixelHeight;
-    //        _numBytes = _width * _height;
-    //        _maskData = new byte[pixelWidth * pixelHeight];
-
-    //        for (int i = 0; i < _maskData.Length; i++) { _maskData[i] = 0x01; }
-
-    //        _compressionAlgorithm = GlobalVars.CompressionAlgorithm;
-    //    }
-
-    //    public int PixelMaskID
-    //    {
-    //        get { return _pixelMaskID; }
-    //        set { _pixelMaskID = value; NotifyPropertyChanged("PixelMaskID"); }
-    //    }
-
-    //    public int AnalysisID
-    //    {
-    //        get { return _analysisID; }
-    //        set { _analysisID = value; NotifyPropertyChanged("AnalysisID"); }
-    //    }
-
-    //    public int Width
-    //    {
-    //        get { return _width; }
-    //        set { _width = value; NotifyPropertyChanged("Width"); }
-    //    }
-
-    //    public int Height
-    //    {
-    //        get { return _height; }
-    //        set { _height = value; NotifyPropertyChanged("Height"); }
-    //    }
-
-
-    //    public byte[] MaskData
-    //    {
-    //        get { return _maskData; }
-    //        set { _maskData = value; NotifyPropertyChanged("MaskData"); }
-    //    }
-
-    //    public int NumBytes
-    //    {
-    //        get { return _numBytes; }
-    //        set { _numBytes = value; NotifyPropertyChanged("NumBytes"); }
-    //    }
-
-    //    public COMPRESSION_ALGORITHM CompressionAlgorithm
-    //    {
-    //        get { return _compressionAlgorithm; }
-    //        set { _compressionAlgorithm = value; NotifyPropertyChanged("CompressionAlgorithm"); }
-    //    }
-
-
-    //    public event PropertyChangedEventHandler PropertyChanged;
-    //    private void NotifyPropertyChanged(String info)
-    //    {
-    //        if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(info)); }
-    //    }
-    //}
-
-
-
-    /////////////////////////////////////////////////////////
-    // Camera Settings Container
-
-
     public class CameraSettingsContainer : INotifyPropertyChanged
     {
         private int _cameraSettingID;
         private int _vssIndex;
         private int _hssIndex;
         private int _vertClockAmpIndex;
-        private int _preAmpGainIndex;
         private bool _useEMAmp;
         private bool _useFrameTransfer;       
         private string _description;
@@ -2039,12 +1909,6 @@ namespace Waveguide
         {
             get { return _vertClockAmpIndex; }
             set { _vertClockAmpIndex = value; NotifyPropertyChanged("VertClockAmpIndex"); }
-        }
-
-        public int PreAmpGainIndex
-        {
-            get { return _preAmpGainIndex; }
-            set { _preAmpGainIndex = value; NotifyPropertyChanged("PreAmpGainIndex"); }
         }
 
         public bool UseEMAmp

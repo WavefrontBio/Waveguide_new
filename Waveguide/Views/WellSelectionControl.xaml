@@ -3,10 +3,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namspace:Waveguide"
         mc:Ignorable="d"
         d:DesignHeight="400" d:DesignWidth="600"
         >
-    <Grid>
+    <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="25"/>
             <RowDefinition Height="*"/>
@@ -21,10 +22,11 @@
         <Grid Grid.Row="0" Grid.Column="1" x:Name="ColumnButtonGrid"/>
         
         <Grid Grid.Row="1" Grid.Column="0" x:Name="RowButtonGrid"/>
-        
+
+               
         <Image x:Name="PlateImage" Stretch="Fill" Source="{Binding}"
                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-               Grid.Row="1" Grid.Column="1"               
+               Grid.Row="1" Grid.Column="1"  SizeChanged="PlateImage_SizeChanged"         
                />
 
         <Image x:Name="SelectImage" Stretch="Fill" Source="{Binding}"

@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-using WpfD3D;
 using CudaToolsNet;
 using System.Windows.Interop;
 using WPFTools;
@@ -29,39 +28,42 @@ namespace Waveguide
     public struct ImagingParamsStruct
     {
         public Image            ImageControl;
-        public D3DImage         d3dImage;
-        public WriteableBitmap  bmapImage;
-        public IntPtr           pSurface;        
+        public WriteableBitmap  bmapImage;     
         public WriteableBitmap  histBitmap;
 
         public float            exposure;
+        public int              binning;
         public byte             excitationFilterPos;
         public byte             emissionFilterPos;
         public string           indicatorName;
         public int              cycleTime;
         public int              gain;
+        public int              preAmpGainIndex;
         public FLATFIELD_SELECT flatfieldType;
         public int              experimentIndicatorID;
-
+        public ObservableCollection<Tuple<int, int>> optimizeWellList;
+        
                                            
 
-        public ImagingParamsStruct(Image imageControl, D3DImage dImage, WriteableBitmap _bmapImage, IntPtr pSurf, WriteableBitmap _histBitmap,
-            float _exposure, byte _excitationFilterPos, byte _emissionFilterPos, string _indicatorName, 
-            int _cycleTime, int _gain, FLATFIELD_SELECT _flatfieldType, int _expIndicatorID)
+        public ImagingParamsStruct(Image imageControl, WriteableBitmap _bmapImage, WriteableBitmap _histBitmap,
+            float _exposure, int _binning, byte _excitationFilterPos, byte _emissionFilterPos, string _indicatorName, 
+            int _cycleTime, int _gain, int _preAmpGainIndex, FLATFIELD_SELECT _flatfieldType, int _expIndicatorID, 
+            ObservableCollection<Tuple<int,int>> _optimizeWellList = null)
         {
             ImageControl = imageControl;
-            d3dImage = dImage;
             bmapImage = _bmapImage;
-            pSurface = pSurf; 
             histBitmap = _histBitmap;
             exposure = _exposure;
+            binning = _binning;
             excitationFilterPos = _excitationFilterPos;
             emissionFilterPos = _emissionFilterPos;
             indicatorName = _indicatorName;
             cycleTime = _cycleTime;
             gain = _gain;
+            preAmpGainIndex = _preAmpGainIndex;
             flatfieldType = _flatfieldType;
             experimentIndicatorID = _expIndicatorID;
+            optimizeWellList = _optimizeWellList;            
         }
     }
 
@@ -95,11 +97,7 @@ namespace Waveguide
         public FilterContainer m_emFilter;
         public byte m_filterChangeSpeed;
 
-        // DirectX pointers
-        IntPtr mp_D3D;
-        IntPtr mp_D3D_Device;
-        IntPtr mp_D3D_DeviceEx;
-        
+             
         CancellationTokenSource m_cancelTokenSource;
 
         CancellationTokenSource m_cameraTemperatureTokenSource;
@@ -110,8 +108,7 @@ namespace Waveguide
         // dictionary of <Experiment Indicator ID, Stucture holding details of the display panel for this Exp. Ind. ID>
         public Dictionary<int, ImagingParamsStruct> m_ImagingDictionary;
 
-        // DirectX Surface collection
-        public SurfCollection m_SurfCollection;
+    
 
         public event CameraEventHandler m_cameraEvent;
         protected virtual void OnCameraEvent(CameraEventArgs e)
@@ -189,10 +186,7 @@ namespace Waveguide
 
         public void Shutdown()
         {
-            // clean up DirectX stuff
-            m_SurfCollection.ClearAll();
-            m_SurfCollection.Shutdown();
-            
+                    
             // clean up Cuda stuff
             if(m_cudaToolBox != null) m_cudaToolBox.ShutdownCudaTools();
 
@@ -245,7 +239,7 @@ namespace Waveguide
 
 
 
-            m_cudaToolBox.InitCudaTools(mp_D3D_DeviceEx); // Make sure this is done before calling any cuda function
+            m_cudaToolBox.InitCudaTools(IntPtr.Zero); // Make sure this is done before calling any cuda function
 
             // set up camera
          
@@ -277,9 +271,6 @@ namespace Waveguide
             ColorModelContainer colorModelContainer = null;
             SetColorModel(colorModelContainer); // pass null here creates the default color model
 
-
-            m_SurfCollection = new SurfCollection();
-            m_SurfCollection.GetD3DObjects(out mp_D3D, out mp_D3D_Device, out mp_D3D_DeviceEx);
 
 
             // start Temperature Monitoring Task
@@ -462,8 +453,9 @@ namespace Waveguide
                 if (histImageDictionary != null)
                 {                    
                     Image histImage;
-                    if(histImageDictionary.TryGetValue(ind.ExperimentIndicatorID,out histImage))
+                    if(histImageDictionary.ContainsKey(ind.ExperimentIndicatorID))
                     {
+                        histImage = histImageDictionary[ind.ExperimentIndicatorID];
                         ips.histBitmap = BitmapFactory.New(m_histogramImageWidth, m_histogramImageHeight);
                         histImage.Source = ips.histBitmap;
                     }
@@ -475,22 +467,19 @@ namespace Waveguide
 
 
                 if (imageDictionary != null)
-                {
-                    Image imageControl;
-                    if (imageDictionary.TryGetValue(ind.ExperimentIndicatorID, out imageControl))
+                {                   
+                    if (imageDictionary.ContainsKey(ind.ExperimentIndicatorID))
                     {
-                        ips.ImageControl = imageControl;
+                        ips.ImageControl = imageDictionary[ind.ExperimentIndicatorID];                        
                     }
                     else
                         ips.ImageControl = null;
                 }
                 else
                     ips.ImageControl = null;
-
-               
-                ips.d3dImage = null;
-                ips.bmapImage = null;
-                ips.pSurface = IntPtr.Zero;              
+                
+              
+                ips.bmapImage = null;           
 
                 m_ImagingDictionary.Add(ind.ExperimentIndicatorID,ips);
 
@@ -511,7 +500,6 @@ namespace Waveguide
             }
             m_ImagingDictionary.Clear();
 
-            m_SurfCollection.ClearAll();  
         }
 
       
@@ -523,32 +511,14 @@ namespace Waveguide
         {
             ImagingParamsStruct dps;
 
-            if (m_ImagingDictionary.TryGetValue(ID, out dps))
+            if (m_ImagingDictionary.ContainsKey(ID))
             {
                 dps = m_ImagingDictionary[ID];
 
                 // convert the grayscale image to color using the colormap that is already on the GPU
                 IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
 
-                if (dps.pSurface != IntPtr.Zero)
-                {
-                    try
-                    {
-                        dps.d3dImage.Lock();
-                        dps.d3dImage.SetBackBuffer(D3DResourceType.IDirect3DSurface9, dps.pSurface);
-
-                        // copy GPU array into IDirect3DSurface9
-                        m_cudaToolBox.Copy_GpuImageToD3DSurface(ID, colorImageOnGpu);
-
-                        dps.d3dImage.AddDirtyRect(new Int32Rect(0, 0, (int)m_camera.m_acqParams.BinnedFullImageWidth, (int)m_camera.m_acqParams.BinnedFullImageHeight));
-                        dps.d3dImage.Unlock();
-                    }
-                    catch (Exception e)
-                    {
-                        OnImagerEvent(new ImagerEventArgs("Imager Error: " + e.Message, ImagerState.Error));
-                    }
-                }
-                else if(dps.bmapImage != null)
+                if(dps.bmapImage != null)
                 {
                     byte[] colorImage;
                     m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
@@ -571,7 +541,7 @@ namespace Waveguide
         {
             ImagingParamsStruct dps;
 
-            if (m_ImagingDictionary.TryGetValue(ID, out dps))
+            if (m_ImagingDictionary.ContainsKey(ID))
             {
                 dps = m_ImagingDictionary[ID];
 
@@ -598,25 +568,7 @@ namespace Waveguide
                     // convert the grayscale image to color using the colormap that is already on the GPU
                     IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
 
-                    if (dps.pSurface != IntPtr.Zero)
-                    {
-                        try
-                        {
-                            dps.d3dImage.Lock();
-                            dps.d3dImage.SetBackBuffer(D3DResourceType.IDirect3DSurface9, dps.pSurface);
-
-                            // copy GPU array into IDirect3DSurface9
-                            m_cudaToolBox.Copy_GpuImageToD3DSurface(ID, colorImageOnGpu);
-
-                            dps.d3dImage.AddDirtyRect(new Int32Rect(0, 0, (int)m_camera.m_acqParams.BinnedFullImageWidth, (int)m_camera.m_acqParams.BinnedFullImageHeight));
-                            dps.d3dImage.Unlock();
-                        }
-                        catch (Exception e)
-                        {
-                            OnImagerEvent(new ImagerEventArgs("Imager Error: " + e.Message, ImagerState.Error)); 
-                        }
-                    }
-                    else if (dps.bmapImage != null)
+                    if (dps.bmapImage != null)
                     {
                         byte[] colorImage;
                         m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
@@ -659,7 +611,8 @@ namespace Waveguide
             uint ecode;
             string errMsg = "No Error";
                       
-            grayRoiImage = new ushort[m_camera.m_acqParams.BinnedFullImageNumPixels];
+            //grayRoiImage = new ushort[m_camera.m_acqParams.BinnedFullImageNumPixels];
+            grayRoiImage = new ushort[m_camera.m_acqParams.BinnedRoiImageNumPixels];
           
             ecode = m_camera.AcquireImage(exposure, ref grayRoiImage);
 
@@ -757,25 +710,7 @@ namespace Waveguide
                         IntPtr colorImageOnGpu = cuda.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
 
                         // display color image
-                        if (dps.pSurface != IntPtr.Zero)
-                        {
-                            try
-                            {
-                                dps.d3dImage.Lock();
-                                dps.d3dImage.SetBackBuffer(D3DResourceType.IDirect3DSurface9, dps.pSurface);
-
-                                // copy GPU array into IDirect3DSurface9
-                                cuda.Copy_GpuImageToD3DSurface(expIndID, colorImageOnGpu);
-
-                                dps.d3dImage.AddDirtyRect(new Int32Rect(0, 0, (int)acqParams.BinnedFullImageWidth, (int)acqParams.BinnedFullImageHeight));
-                                dps.d3dImage.Unlock();
-                            }
-                            catch (Exception e)
-                            {
-                                string msg = e.Message;
-                            }
-                        }
-                        else if (dps.bmapImage != null)
+                        if (dps.bmapImage != null)
                         {
                             byte[] colorImage;
                             m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
@@ -878,48 +813,11 @@ namespace Waveguide
             {
                 ImagingParamsStruct dps = m_ImagingDictionary[ID];
 
-                ////////////////////////////////////////
-                // START - DirectX Approach
-
-                //// if there's a surface already at this position, remove it, since we're about to create a new one
-                //success = m_cudaToolBox.Remove_D3dSurface(ID);
-
-                //// create new surface, and use the Invoke command to make sure it runs on UI thread since there's some UI-dependent code in here
-                //Application.Current.Dispatcher.Invoke(() =>
-                //{
-                //    m_SurfCollection.AddSurface((uint)ID, pixelWidth, pixelWidth, useAlphaChannel, dps.ImageControl);
-                //});
-
-
-                //// get 
-                //IntPtr pSurface = IntPtr.Zero;
-                //uint uWidth;
-                //uint uHeight;
-                //bool useAlpha;
-                //D3DImage d3dImage;
-
-                //m_SurfCollection.GetSurface_Params((uint)ID, out d3dImage, out pSurface, out uWidth, out uHeight, out useAlpha);
-
-                //success = m_cudaToolBox.Add_D3dSurface(ID, pSurface, (int)uWidth, (int)uHeight);
-
-                //dps.d3dImage = d3dImage;
-                //dps.pSurface = pSurface;
-
-                    dps.pSurface = IntPtr.Zero; // REMOVE THIS TO USE DirectX
-
-                // END - DirectX Approach
-                ///////////////////////////////////////////////////////////////////////////
-
-                ////////////////////////////////////////
-                // START - WriteableBitmap Approach
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         dps.bmapImage = BitmapFactory.New((int)pixelWidth,(int)pixelHeight);                   
                         dps.ImageControl.Source = dps.bmapImage;
                     });
-
-                // END - WriteableBitmap Approach
-                ///////////////////////////////////////////////////////////////////////////
 
                 // rebuild mask
                 m_mask.BuildPixelList(m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, m_camera.m_acqParams.HBin, m_camera.m_acqParams.HBin);
@@ -1419,9 +1317,9 @@ namespace Waveguide
 
             // Set Ring Exposure Times
             ImagingParamsStruct ips;
-            if(m_ImagingDictionary.TryGetValue(experimentIndicatorID,out ips))
+            if(m_ImagingDictionary.ContainsKey(experimentIndicatorID))
             {
-                m_camera.MyCamera.SetExposureTime(ips.exposure);
+                m_camera.MyCamera.SetExposureTime(m_ImagingDictionary[experimentIndicatorID].exposure);
             }
             else
             {
@@ -1726,7 +1624,10 @@ namespace Waveguide
             int count = 0;
             bool tooDim = false;
             bool tooBright = false;
-            
+
+
+            m_camera.SetCameraBinning(1, 1);
+            success = m_camera.PrepareAcquisition();
 
             // reset DirectX display panel for new size of image
             uint pixelWidth = (uint)(m_camera.XPixels / m_camera.m_acqParams.HBin);
@@ -1741,17 +1642,24 @@ namespace Waveguide
 
             int exposure = startingExposure;
 
-            // Initialize camera to starting condition
+            // Initialize camera to starting condition            
             m_camera.m_cameraParams.EMGain = 1;
             m_camera.m_cameraParams.HSSIndex = cameraSettings.HSSIndex;
-            m_camera.m_cameraParams.PreAmpGainIndex = cameraSettings.PreAmpGainIndex;
+            m_camera.m_cameraParams.PreAmpGainIndex = 0;
             m_camera.m_cameraParams.UseEMAmp = cameraSettings.UseEMAmp;
             m_camera.m_cameraParams.UseFrameTransfer = cameraSettings.UseFrameTransfer;
             m_camera.m_cameraParams.VertClockAmpIndex = cameraSettings.VertClockAmpIndex;
             m_camera.m_cameraParams.VSSIndex = cameraSettings.VSSIndex;
             
             success = m_camera.ConfigureCamera();
-            success = m_camera.PrepareAcquisition();
+
+            // get well list to use for optimization
+            ObservableCollection<Tuple<int, int>> wellsToOptimizeOver = null;
+            if (m_ImagingDictionary.ContainsKey((int)ID))
+            {
+                wellsToOptimizeOver = m_ImagingDictionary[(int)ID].optimizeWellList;
+            }
+            
 
             OnImagerEvent(new ImagerEventArgs("Optimization in Progress", ImagerState.Busy));
 
@@ -1780,30 +1688,7 @@ namespace Waveguide
                     // convert to color
                     IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
 
-                    // display from gpu
-                    //if (dps.pSurface != IntPtr.Zero)
-                    //{
-                    //    try
-                    //    {
-                    //         // use invoke here to make sure the code below runs on UI thread (sometimes this event is raised from non-UI threads)
-                    //        Application.Current.Dispatcher.Invoke(() =>
-                    //        {
-                    //            dps.d3dImage.Lock();
-                    //            dps.d3dImage.SetBackBuffer(D3DResourceType.IDirect3DSurface9, dps.pSurface);
-
-                    //            // copy GPU array into IDirect3DSurface9
-                    //            m_cudaToolBox.Copy_GpuImageToD3DSurface(ID, colorImageOnGpu);
-
-                    //            dps.d3dImage.AddDirtyRect(new Int32Rect(0, 0, (int)m_camera.m_acqParams.BinnedFullImageWidth, (int)m_camera.m_acqParams.BinnedFullImageHeight));
-                    //            dps.d3dImage.Unlock();
-                    //        });
-                    //    }
-                    //    catch (Exception e)
-                    //    {
-                    //        string msg = e.Message;
-                    //    }
-                    //}
-
+           
                     // check brightness levels
                     m_mask.CheckImageLevelsInMask(grayFullImage, null, minPercentOfPixelsAboveLowLimit, lowPixelValueThreshold,
                            maxPercentOfPixelsAboveHighLimit, highPixelValueThreshold, ref tooDim, ref tooBright);
@@ -1812,17 +1697,17 @@ namespace Waveguide
                     {
                         int hbin = m_camera.m_acqParams.HBin;
                         int vbin = m_camera.m_acqParams.VBin;
-                        
-                        if (DecreaseGain(ref tempEMGain, ref tempPreAmpIndex, m_camera.m_cameraParams.UseEMAmp))
+                        if (cameraSettings.UseEMAmp)
                         {
-                            // successfully decreased gain
-                            if (m_camera.m_cameraParams.UseEMAmp) m_camera.m_cameraParams.EMGain = tempEMGain;
-                            m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
-
-                            success = m_camera.ConfigureCamera();
-                            if (!success)
-                            {  // failed to camera config
-                                Done = true;
+                            if (DecreaseEMGain(ref tempEMGain))
+                            {
+                                // successfully decreased em gain
+                                m_camera.m_cameraParams.EMGain = tempEMGain;
+                                success = m_camera.ConfigureCamera();
+                                if (!success)
+                                {  // failed to camera config
+                                    Done = true;
+                                }
                             }
                         }
                         else if (DecreaseExposure(ref exposure))
@@ -1848,6 +1733,15 @@ namespace Waveguide
                                 Done = true;
                             }
                         }
+                        else if (DecreasePreAmpGain(ref tempPreAmpIndex))
+                        {
+                            m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
+                            success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
+                            if (!success)
+                            {  // failed to camera config
+                                Done = true;
+                            }
+                        }
                         else
                         {
                             success = false;
@@ -1858,7 +1752,17 @@ namespace Waveguide
                     {
                         int hbin = m_camera.m_acqParams.HBin;
                         int vbin = m_camera.m_acqParams.VBin;
-                        if (IncreaseBinning(ref hbin, ref vbin))
+
+                        if(IncreasePreAmpGain(ref tempPreAmpIndex))
+                        {
+                            m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
+                            success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
+                            if (!success)
+                            {  // failed to camera config
+                                Done = true;
+                            }
+                        }
+                        else if (IncreaseBinning(ref hbin, ref vbin))
                         {
                             m_camera.m_acqParams.HBin = hbin;
                             m_camera.m_acqParams.VBin = vbin;
@@ -1881,16 +1785,17 @@ namespace Waveguide
                                 Done = true;
                             }
                         }
-                        else if (IncreaseGain(ref tempEMGain, ref tempPreAmpIndex, cameraSettings.UseEMAmp, cameraSettings.EMGainLimit))
+                        else if (cameraSettings.UseEMAmp)                             
                         {
-                            // successfully increased gain
-                            if (m_camera.m_cameraParams.UseEMAmp) m_camera.m_cameraParams.EMGain = tempEMGain;
-                            m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
-
-                            success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
-                            if (!success)
-                            {  // failed to camera config
-                                Done = true;
+                            if (IncreaseEMGain(ref tempEMGain, cameraSettings.EMGainLimit))
+                            {
+                                // successfully increased gain
+                                m_camera.m_cameraParams.EMGain = tempEMGain;                                
+                                success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
+                                if (!success)
+                                {  // failed to camera config
+                                    Done = true;
+                                }
                             }
                         }                        
                         else
@@ -1909,9 +1814,12 @@ namespace Waveguide
                       
                         // Update Imaging Dictionary
                         dps.exposure = ((float)exposure)/1000;
-                        if (m_camera.m_cameraParams.UseEMAmp) dps.gain = m_camera.m_cameraParams.EMGain;
-                        else dps.gain = m_camera.m_cameraParams.PreAmpGainIndex;
-                        m_ImagingDictionary[(int)ID] = dps;
+                        if (dps.cycleTime < (exposure + 10)) dps.cycleTime = exposure + 10;
+                        dps.gain = m_camera.m_cameraParams.EMGain;
+                        dps.preAmpGainIndex = m_camera.m_cameraParams.PreAmpGainIndex;
+                        dps.binning = m_camera.m_acqParams.HBin;
+
+                        //m_ImagingDictionary[(int)ID] = dps;                        
                     }
                 }
                 else
@@ -2048,18 +1956,10 @@ namespace Waveguide
             return changed;
         }
 
-        public bool IncreaseGain(ref int emGain, ref int preAmpGainIndex, bool useEMAmp, int emGainLimit)
+        public bool IncreaseEMGain(ref int emGain, int emGainLimit)
         {
             bool changed = false;
-
-            // first try to increase PreAmpGain
-            if(preAmpGainIndex == 0)
-            {
-                preAmpGainIndex = 1;
-                changed = true;
-            }
-            else if (useEMAmp)
-            {
+            
                 if (emGain < emGainLimit)
                 {  // EM Amp
                     changed = true;
@@ -2070,19 +1970,27 @@ namespace Waveguide
                     emGain += stepInt;
 
                     if (emGain > emGainLimit) emGain = emGainLimit;
-                }
-            }           
+                }              
 
             return changed;
         }
 
-        public bool DecreaseGain(ref int emGain, ref int preAmpGainIndex, bool useEMAmp)
+        public bool IncreasePreAmpGain(ref int preAmpGainIndex)
+        {
+            bool changed = false;
+            if (preAmpGainIndex < 1)
+            {
+                preAmpGainIndex = 1;
+                changed = true;
+            }
+            return changed;
+        }
+
+        public bool DecreaseEMGain(ref int emGain)
         {
             bool changed = false;
 
-            // try to reduce emGain first
-            if (useEMAmp)
-            {  // EM Amp
+            // try to reduce emGain first           
                 if (emGain > 1)
                 {
                     changed = true;
@@ -2093,16 +2001,19 @@ namespace Waveguide
                     emGain -= stepInt;
 
                     if (emGain < 1) emGain = 1;
-                }
-            }
-           
-            // if the emGain could not be changed, try to reduce the preAmpGain
-            if(!changed && preAmpGainIndex > 0)
-            {  // Conventional Amp
-                preAmpGainIndex = 0;
-                changed = true;                
-            }
+                }           
+     
+            return changed;
+        }
 
+        public bool DecreasePreAmpGain(ref int preAmpGainIndex)
+        {
+            bool changed = false;
+            if (preAmpGainIndex > 0)
+            {
+                preAmpGainIndex = 0;
+                changed = true;
+            }
             return changed;
         }
 

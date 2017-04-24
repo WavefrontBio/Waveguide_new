@@ -514,10 +514,7 @@ namespace Waveguide
                 ips.indicatorName = indicator.Description; 
                 ips.histBitmap = null;  // no histogram shown 
                 ips.ImageControl = image;
-                
-                ips.d3dImage = null; // set after adding to m_imagingDictionary                                
-                ips.pSurface = IntPtr.Zero;
-
+              
                 m_imager.m_ImagingDictionary.Add(indicator.ExperimentIndicatorID,ips);
 
                 // this call sets d3dImage and pSurface

@@ -235,6 +235,8 @@ namespace Waveguide
         {
             ManualControlDialog dlg = new ManualControlDialog(m_imager, -1, true, true);
 
+            dlg.Owner = this;
+
             dlg.ShowDialog();
         }
 

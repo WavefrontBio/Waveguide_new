@@ -316,10 +316,10 @@ __global__ void BuildHistogramImage_Cuda(uint8_t* histImage, uint32_t* hist, uin
 
 	// determine if this pixel is in the bar or above it (i.e. determine color of pixel)
 	if (y < (height - barHeight)) // pixel is above bar (thus pixel is background color...likely white)
-	{
-		histImage[n + 0] = 255;	// blue
-		histImage[n + 1] = 255;	// green
-		histImage[n + 2] = 255;	// red
+	{   
+		histImage[n + 0] = 220;	// blue
+		histImage[n + 1] = 220;	// green
+		histImage[n + 2] = 220;	// red
 		histImage[n + 3] = 255;	// alpha
 	}
 	else  // pixel is part of bar, so make it the color of the bar (likely black)

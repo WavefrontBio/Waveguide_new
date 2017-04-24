@@ -38,17 +38,41 @@ namespace Waveguide
 
         bool[,] m_selected;
 
+        RowDefinition m_extraRow;
+        ColumnDefinition m_extraColumn;
+
+        Color m_SelectedWellColor;
+
+        public event EventHandler NewWellSetSelected;
+
+        protected virtual void OnNewWellSetSelected(WellSelectionEventArgs e)
+        {
+            if (NewWellSetSelected != null)
+                NewWellSetSelected(this, e);
+        }
+
+
+
         public WellSelectionControl()
         {
            
         }
 
 
-        public void Init(int rows, int cols, ObservableCollection<Tuple<int, int>> wellList)
+        public void Init(int rows, int cols, ObservableCollection<Tuple<int, int>> preSelectedWellList = null)
         {
+            m_SelectedWellColor = Colors.Red;
+
             m_rows = rows;
             m_cols = cols;
-            m_wellList = wellList;
+            m_wellList = new ObservableCollection<Tuple<int, int>>();
+
+            if(preSelectedWellList != null)
+            {
+                foreach (Tuple<int, int> well in preSelectedWellList) m_wellList.Add(well);
+            }
+
+            
 
             m_selected = new bool[m_rows, m_cols];
             for (int r = 0; r < m_rows; r++)
@@ -95,13 +119,19 @@ namespace Waveguide
                 Button button = new Button();
                 button.Tag = r;
                 button.Content = (char)(r + 65);
+                button.FontSize = 8;
                 button.Click += RowButton_Click;
 
                 Grid.SetRow(button, r);
                 Grid.SetColumn(button, 0);
 
                 RowButtonGrid.Children.Add(button);
-            }
+            }           
+            // add extra row that is used in resizing
+            m_extraRow = new RowDefinition();
+            m_extraRow.Height = new GridLength((double)(m_yPixelRange % m_rows));
+            RowButtonGrid.RowDefinitions.Add(m_extraRow);
+         
 
             for(int c = 0; c<m_cols; c++)
             {
@@ -111,7 +141,7 @@ namespace Waveguide
 
                 Button button = new Button();
                 button.Tag = c;
-                button.Content = (c+1).ToString();
+                button.Content = (c + 1).ToString(); button.FontSize = 8;
                 button.Click += ColumnButton_Click;
 
                 Grid.SetRow(button, 0);
@@ -119,6 +149,11 @@ namespace Waveguide
 
                 ColumnButtonGrid.Children.Add(button);
             }
+            // add extra column that is used for resizing
+            m_extraColumn = new ColumnDefinition();
+            m_extraColumn.Width = new GridLength((double)(m_xPixelRange % m_cols));
+            ColumnButtonGrid.ColumnDefinitions.Add(m_extraColumn);
+
         }
 
 
@@ -145,6 +180,8 @@ namespace Waveguide
             }
 
             DrawPlate();
+
+            BroadcastWellList();
         }
 
 
@@ -172,6 +209,8 @@ namespace Waveguide
             }
 
             DrawPlate();
+
+            BroadcastWellList();
         }
 
 
@@ -196,6 +235,8 @@ namespace Waveguide
                 }
 
             DrawPlate();
+
+            BroadcastWellList();
         }
 
 
@@ -214,24 +255,50 @@ namespace Waveguide
 
             m_plateBitmap.Clear();
 
+            // OLD
+            //for (int r = 0; r < m_rows; r++)
+            //    for (int c = 0; c < m_cols; c++)
+            //    {
+            //        x1 = (c * colWidth);
+            //        x2 = x1 + colWidth;
+            //        y1 = (r * rowHeight);
+            //        y2 = y1 + rowHeight;
+            //        m_plateBitmap.DrawRectangle(x1, y1, x2, y2, Colors.Black);
+
+            //        if(m_selected[r,c])
+            //            m_plateBitmap.FillRectangle(x1+2, y1+2, x2-2, y2-2, Colors.Red);
+            //    }
+
+            // NEW
+            x1 = 0; x2 = m_cols * colWidth;
+            for (int r = 0; r <= m_rows; r++ )
+            {
+                y1 = r * rowHeight;
+                m_plateBitmap.DrawLine(x1, y1, x2, y1, Colors.Black);
+            }
+            y1 = 0; y2 = m_rows * rowHeight;
+            for (int c = 0; c <= m_cols; c++ )
+            {
+                x1 = c * colWidth;
+                m_plateBitmap.DrawLine(x1, y1, x1, y2, Colors.Black);
+            }
+
+            int padding = 2;
             for (int r = 0; r < m_rows; r++)
                 for (int c = 0; c < m_cols; c++)
                 {
                     x1 = (c * colWidth);
                     x2 = x1 + colWidth;
                     y1 = (r * rowHeight);
-                    y2 = y1 + rowHeight;
-                    m_plateBitmap.DrawRectangle(x1, y1, x2, y2, Colors.Black);
+                    y2 = y1 + rowHeight;                 
 
-                    if(m_selected[r,c])
-                        m_plateBitmap.FillRectangle(x1+2, y1+2, x2-2, y2-2, Colors.Red);
+                    if (m_selected[r, c])  m_plateBitmap.FillRectangle(x1 + padding + 1, y1 + padding + 1, x2 - padding, y2 - padding, m_SelectedWellColor);
                 }
 
-            m_plateBitmap.Unlock();
+
+                m_plateBitmap.Unlock();
 
         }
-
-
 
         private void SelectImage_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -290,8 +357,21 @@ namespace Waveguide
 
             DrawPlate();
 
+            BroadcastWellList();
+            
         }
 
+
+        private void BroadcastWellList()
+        {
+            m_wellList.Clear();
+            for (int r = 0; r < m_rows; r++)
+                for (int c = 0; c < m_cols; c++)
+                {
+                    if (m_selected[r, c]) m_wellList.Add(Tuple.Create<int, int>(r, c));
+                }
+            OnNewWellSetSelected(new WellSelectionEventArgs(m_wellList));
+        }
 
 
         private void SelectImage_MouseLeave(object sender, MouseEventArgs e)
@@ -351,9 +431,50 @@ namespace Waveguide
             return success;
         }
 
+        private void PlateImage_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            double width = MainGrid.ColumnDefinitions[1].ActualWidth;
+            double height = MainGrid.RowDefinitions[1].ActualHeight;
 
+            Size size = new Size();
+            MainGrid.Measure(size);
+
+            m_xPixelRange = (int)width;
+            m_yPixelRange = (int)height;
+
+            m_plateBitmap = BitmapFactory.New(m_xPixelRange, m_yPixelRange);
+            PlateImage.Source = m_plateBitmap;
+
+            m_selectBitmap = BitmapFactory.New(m_xPixelRange, m_yPixelRange);
+            SelectImage.Source = m_selectBitmap;
+
+            m_extraRow.Height = new GridLength((double)(m_yPixelRange % m_rows));
+            m_extraColumn.Width = new GridLength((double)(m_xPixelRange % m_cols));
+
+            DrawPlate();
+        }
 
   
-        
+
+                
     }
+
+
+    public class WellSelectionEventArgs : EventArgs
+    {        
+        private ObservableCollection<Tuple<int, int>> wellList;
+
+        public WellSelectionEventArgs(ObservableCollection<Tuple<int, int>> _wellList)
+        {
+            wellList = _wellList;
+        }
+
+        public ObservableCollection<Tuple<int, int>> WellList
+        {
+            get { return wellList; }
+            set { wellList = value; }
+        }
+    }
+
+
 }

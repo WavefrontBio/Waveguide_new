@@ -8,6 +8,7 @@
         Loaded="Window_Loaded" 
         ContentRendered="Window_ContentRendered"
         Unloaded="Window_Unloaded"
+        WindowStartupLocation="CenterOwner"
         Icon="../Images/WG_icon1.ico">
     
     <Grid>

@@ -26,9 +26,9 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>       <!-- This column contains the Image -->
+                <ColumnDefinition Width="Auto"/>    <!-- This column contains the Tab(s) that are sideways -->
+                <ColumnDefinition Width="Auto"/>    <!-- This column contains the sliding panel(s) -->
             </Grid.ColumnDefinitions>
 
             <!-- Image Display -->
@@ -39,14 +39,14 @@
                     <RowDefinition Height="64"/>
                 </Grid.RowDefinitions>
                               
-                <Grid x:Name="ImageGrid" Grid.Row="0" >
+                <Grid x:Name="ImageGrid" Grid.Row="0">
                     <Image Stretch="Uniform" x:Name="ImageDisplay"/>
                 </Grid>
                 <WPFTools:RangeSlider x:Name="RangeSlider"  Grid.Row="1"  
                                       LowerValue="{Binding SliderLowPosition, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
                                       UpperValue="{Binding SliderHighPosition, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
                 
-                <Image Grid.Row="2" x:Name="HistImage" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Fill"/>
+                <Image Grid.Row="2" x:Name="HistImage" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Fill" Margin="4"/>
             </Grid>
 
 
@@ -92,7 +92,7 @@
             </Border>
 
             <!-- Set up the sliding panel contents. This contains the camera setup params that are not commonly changed. -->
-            <Border Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch" 
+            <Border Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="0,0,0,10"
                     BorderBrush="#FFEEEEEE" BorderThickness="1" Background="#FFDDDDDD" CornerRadius="10,0,0,10">
                 <Border.Style>
                     <Style TargetType="Border">
@@ -102,7 +102,7 @@
                                 <DataTrigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <DoubleAnimation Duration="0:0:0.3" Storyboard.TargetProperty="Width" To="300" />
+                                            <DoubleAnimation Duration="0:0:0.3" Storyboard.TargetProperty="Width" To="320" />
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </DataTrigger.EnterActions>
@@ -118,74 +118,187 @@
                     </Style>
                 </Border.Style>
 
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+
+
+                <Grid Grid.Column="1" Grid.Row="0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="230"/>
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="25"/>
 
-                    <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="Camera Parameters" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        <RowDefinition Height="300"/>
+                        
+                        <RowDefinition Height="45"/>
+                       
+                    </Grid.RowDefinitions>
 
-                    <Label Grid.Row="1" Grid.Column="0" Content="Vert Shift Speed" HorizontalAlignment="Right" VerticalAlignment="Center"/>                   
-                    <ComboBox Grid.Row="1" Grid.Column="1" x:Name="VSSCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="100"
+                    <!--<TextBlock Grid.Row="0" Grid.Column="0" Text="Database ID" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>-->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Description" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Vert Shift Speed" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Horz Readout Rate" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Vert Clock Amp" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Use EM Amp" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Use Frame Transfer" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                    <TextBlock Grid.Row="8" Grid.Column="0" Text="Is Default" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+
+                  
+
+                    <!--<TextBlock x:Name="CameraSettingIDTextBlock" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0"
+                       Text="{Binding CameraSettingID, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />-->
+
+                    <TextBox x:Name="DescriptionTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,5,0" IsReadOnly="True"
+                             Text="{Binding Description, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" />
+
+                    <ComboBox Grid.Row="2" Grid.Column="1" x:Name="VSSCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="100"
                       ItemsSource="{Binding Path=VSSpeeds}" DisplayMemberPath="description" SelectedValuePath="index"
-                      SelectedValue="{Binding Path=VSSIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                      SelectedValue="{Binding VSSIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                               SelectionChanged="VSSCombo_SelectionChanged"/>
 
-                    <Label Grid.Row="2" Grid.Column="0" Content="Horz Readout Rate" HorizontalAlignment="Right" VerticalAlignment="Center"/>                   
-                    <ComboBox Grid.Row="2" Grid.Column="1" x:Name="HorzReadoutRateCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="100"
-                        ItemsSource="{Binding Path=HSSpeeds}" DisplayMemberPath="description" SelectedValuePath="index"
-                        SelectedValue="{Binding Path=HSSIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                              SelectionChanged="HorzReadoutRateCombo_SelectionChanged"/>
+                    <ComboBox Grid.Row="3" Grid.Column="1" x:Name="HSSCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="100"
+                      ItemsSource="{Binding Path=HSSpeeds}" DisplayMemberPath="description" SelectedValuePath="index"
+                      SelectedValue="{Binding HSSIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                              SelectionChanged="HSSCombo_SelectionChanged"/>
 
-                    <Label Grid.Row="3" Grid.Column="0" Content="Pre Amp Gain" HorizontalAlignment="Right" VerticalAlignment="Center"/>                    
-                    <ComboBox Grid.Row="3" Grid.Column="1" x:Name="PreAmpGainCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="100"
-                        ItemsSource="{Binding Path=PreAmpGains}" DisplayMemberPath="description" SelectedValuePath="index"
-                        SelectedValue="{Binding Path=PreAmpGainIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                              SelectionChanged="PreAmpGainCombo_SelectionChanged"/>
-
-                    <Label Grid.Row="4" Grid.Column="0" Content="Vert Clock Amplitude" HorizontalAlignment="Right" VerticalAlignment="Center"/>                    
                     <ComboBox Grid.Row="4" Grid.Column="1" x:Name="VertClockAmpCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="100" 
                         ItemsSource="{Binding Path=VertClockVoltageAmplitudes}"  DisplayMemberPath="description" SelectedValuePath="index"
-                        SelectedValue="{Binding Path=VertClockAmpIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        SelectedValue="{Binding VertClockAmpIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                               SelectionChanged="VertClockAmpCombo_SelectionChanged"/>
 
-                    <CheckBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"  x:Name="UseEMGainCkBx"
-                        Content="Use EM Amp" HorizontalAlignment="Left" VerticalAlignment="Center" 
-                        Margin="20,0,0,0"
-                        IsChecked="{Binding Path=UseEMAmp, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                              Checked="UseEMGainCkBx_Checked" Unchecked="UseEMGainCkBx_Unchecked"/>
-                   
-                    <CheckBox  Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" x:Name="UseFrameTransferCkBx" Content="Use Frame Transfer"
+
+
+                    <CheckBox Grid.Row="6" Grid.Column="1" x:Name="UseEMGainCkBx"
+                        Content="" HorizontalAlignment="Left" VerticalAlignment="Center" 
+                        Margin="10,0,0,0"
+                        IsChecked="{Binding UseEMAmp, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        Checked="UseEMGainCkBx_Checked"  Unchecked="UseEMGainCkBx_Unchecked"/>
+
+                    <CheckBox  Grid.Row="7" Grid.Column="1" x:Name="UseFrameTransferCkBx" Content=""
                                HorizontalAlignment="Left" VerticalAlignment="Center" 
-                                Width="200" Margin="20,0,0,0"
-                                IsChecked="{Binding Path=UseFrameTransfer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                               Checked="UseFrameTransferCkBx_Checked" Unchecked="UseFrameTransferCkBx_Unchecked"/>
+                                Width="200" Margin="10,0,0,0"
+                                IsChecked="{Binding UseFrameTransfer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                               Checked="UseFrameTransferCkBx_Checked"  Unchecked="UseFrameTransferCkBx_Unchecked"/>
 
-                    <CheckBox Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"  Content="Autosize ROI" x:Name="AutosizeROICkBx"
-                        HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0"
-                        IsChecked="{Binding Path=AutosizeROI, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                              Checked="AutosizeROICkBx_Checked" Unchecked="AutosizeROICkBx_Unchecked"/>
+                    <CheckBox  Grid.Row="8" Grid.Column="1" x:Name="IsDefaultCkBx" Content=""
+                               HorizontalAlignment="Left" VerticalAlignment="Center" 
+                                Width="200" Margin="10,0,0,0"
+                                IsChecked="{Binding IsDefault, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                               Checked="IsDefaultCkBx_Checked"  Unchecked="IsDefaultCkBx_Unchecked"/>
 
-                    <Button Grid.Row="9" Grid.Column="0" Content="Load" Width="60" Height="26" x:Name="LoadCameraSettingsPB" Click="LoadCameraSettingsPB_Click"
-                            HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    
-                    <Button Grid.Row="9" Grid.Column="1" Content="Save" Width="60" Height="26" x:Name="SaveCameraSettingsPB" Click="SaveCameraSettingsPB_Click"
-                            HorizontalAlignment="Center" VerticalAlignment="Center" />
 
+
+                    <Grid Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="150"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="65"/>
+                        </Grid.RowDefinitions>
+
+                        <GroupBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Grid.RowSpan="10"  Header="Optimization Parameters" 
+                      BorderThickness="2" BorderBrush="DarkGray" Margin="5,0,30,0"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Starting Exposure (msecs)" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Exposure Limit (msecs)" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="EM Gain Limit" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Starting Binning" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="High Pixel Threshold (%)" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Low Pixel Threshold (%)" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Min % Pixels Above Low Thresh" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Max % Pixels Above High Thresh" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
+                        <!--<TextBlock Grid.Row="9" Grid.Column="0" Text="Increasing Signal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>-->
+
+
+                        <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" x:Name="StartingExposureUpDown" Width="70"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Minimum="1" Maximum="10000" Increment="1"
+                                ToolTip="The starting exposure time used in the optimization"
+                                Value="{Binding StartingExposure, 
+                                UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+
+                        <xctk:IntegerUpDown Grid.Row="2" Grid.Column="1" x:Name="ExposureLimitUpDown" Width="70"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Minimum="10" Maximum="10000" Increment="10"
+                                ToolTip="The maximum exposure time allowed in the optimization"
+                                Value="{Binding ExposureLimit, 
+                                UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+
+                        <xctk:IntegerUpDown Grid.Row="3" Grid.Column="1" x:Name="EMGainLimitUpDown" Width="70"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Minimum="10" Maximum="300" Increment="10"
+                                ToolTip="The maximum EM Gain allowed in the optimization"
+                                Value="{Binding EMGainLimit, 
+                                UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+
+                        <ComboBox Grid.Row="4" Grid.Column="1" x:Name="StartingBinningCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="70"
+                                ItemsSource="{Binding Path=BinningOptions}" DisplayMemberPath="description" SelectedValuePath="index"
+                                SelectedValue="{Binding StartingBinning, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                ToolTip="The binning value used at the start of optimization"
+                                SelectionChanged="StartingBinningCombo_SelectionChanged"/>
+
+                        <xctk:IntegerUpDown Grid.Row="5" Grid.Column="1" x:Name="HighPixelThresholdPercentUpDown" Width="70"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Minimum="1" Maximum="100" Increment="1"
+                                ToolTip="The percent of maximum pixel value that is considered the High Pixel Threshold"
+                                Value="{Binding HighPixelThresholdPercent, 
+                                UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+
+                        <xctk:IntegerUpDown Grid.Row="6" Grid.Column="1" x:Name="LowPixelThresholdPercentUpDown" Width="70"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Minimum="1" Maximum="100" Increment="1"
+                                ToolTip="The percent of maximum pixel value that is considered the Low Pixel Threshold"
+                                Value="{Binding LowPixelThresholdPercent, 
+                                UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+
+                        <xctk:IntegerUpDown Grid.Row="7" Grid.Column="1" x:Name="MinPercentPixelsAboveLowThresholdUpDown" Width="70"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Minimum="1" Maximum="100" Increment="1"
+                                ToolTip="The minimum number of pixels having a value above the LowPixelThreshold required for optimization to be complete.  Makes sure image is bright enough."
+                                Value="{Binding MinPercentPixelsAboveLowThreshold, 
+                                UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+
+                        <xctk:IntegerUpDown Grid.Row="8" Grid.Column="1" x:Name="MaxPercentPixelsAboveHighThresholdUpDown" Width="70"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Minimum="1" Maximum="100" Increment="1"
+                                ToolTip="The maximum number of pixels having a value above the HighPixelThreshold allowed begore optimization is stopped.  Makes sure image is not too bright."
+                                Value="{Binding MaxPercentPixelsAboveHighThreshold, 
+                                UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+
+                        <GroupBox Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Header="Signal Type" x:Name="SignalTypeGroupBox" Width="220" Height="45">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="Increasing" Margin="2" IsChecked="{Binding IncreasingSignal}" x:Name="IncreasingSignalRB" />
+                                <RadioButton Content="Decreasing" Margin="2" IsChecked="{Binding DecreasingSignal}" x:Name="DecreasingSignalRB"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                    </Grid>
+
+                
+
+                    <Button Grid.Row="11" Grid.Column="1" Content="New" Width="70" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Margin="0,0,35,0" ToolTip="Create a new Camera Setting Item" x:Name="NewPB" Click="NewPB_Click"/>
+
+        
                 </Grid>
 
             </Border>
@@ -196,75 +309,104 @@
         <!-- Primary Camera and Imaging settings Grid -->
         <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="32"/>
-                    <RowDefinition Height="32"/>
-                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
                     <RowDefinition Height="24"/>
-            </Grid.RowDefinitions>                        
+                </Grid.RowDefinitions>                        
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="80"/>
                     <ColumnDefinition Width="180"/>
-                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="160"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                <Label Grid.Row="0" Grid.Column="0" Content="EM Gain:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="EMGain" 
-                                    Value="{Binding EMGain,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
-                                    ValueChanged="EMGain_ValueChanged"/>
 
-                <Label Grid.Row="1" Grid.Column="0" Content="Exposure (msecs):" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="Exposure" 
-                                    Value="{Binding Exposure,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
-                                    ValueChanged="Exposure_ValueChanged"/>
 
-                <Label Grid.Row="2" Grid.Column="0" Content="Binning:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                <ComboBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="BinningCB"
+                <Label Grid.Row="0" Grid.Column="0" Content="Exposure (msecs):" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="Exposure" 
+                                        Value="{Binding Exposure,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Width="50"
+                                        ValueChanged="Exposure_ValueChanged"/>
+
+                <Label Grid.Row="1" Grid.Column="0" Content="EM Gain:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="EMGain" 
+                                        Value="{Binding EMGain,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Width="50"
+                                        ValueChanged="EMGain_ValueChanged"/>
+
+                <Label Grid.Row="2" Grid.Column="0" Content="PreAmp Gain:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <ComboBox Grid.Row="2" Grid.Column="1" x:Name="PreAmpGainCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="50"
+                        ItemsSource="{Binding Path=PreAmpGains}" DisplayMemberPath="description" SelectedValuePath="index"
+                        SelectedValue="{Binding PreAmpGainIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        SelectionChanged="PreAmpGainCombo_SelectionChanged"/>            
+
+                <Label Grid.Row="3" Grid.Column="0" Content="Binning:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <ComboBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="BinningCB" Width="50"
                         ItemsSource="{Binding Path=BinningOptions}"  DisplayMemberPath="description" SelectedValuePath="index"
                         SelectedValue="{Binding Path=Binning, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                         SelectionChanged="BinningCB_SelectionChanged"/>
 
                 <Label Grid.Row="0" Grid.Column="2" Content="Excitation Filter:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 <ComboBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="ExcitationFilterCB" 
-                          ItemsSource="{Binding Path=ExFilterList}" SelectedItem="{Binding Path=ExFilter}"
+                          ItemsSource="{Binding Path=ExFilterList}" SelectedItem="{Binding Path=ExFilter}" Width="160"
                           DisplayMemberPath="Description"
                           IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding Path=IsManualMode}"
                           SelectionChanged="ExcitationFilterCB_SelectionChanged"/>
 
                 <Label Grid.Row="1" Grid.Column="2" Content="Emission Filter:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 <ComboBox Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="EmissionFilterCB" 
-                           ItemsSource="{Binding Path=EmFilterList}" SelectedItem="{Binding Path=EmFilter}"
+                           ItemsSource="{Binding Path=EmFilterList}" SelectedItem="{Binding Path=EmFilter}"  Width="160"
                           DisplayMemberPath="Description"
                           IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding Path=IsManualMode}"
                           SelectionChanged="EmissionFilterCB_SelectionChanged"/>
 
 
 
-            <CheckBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Content="Apply Mask" HorizontalAlignment="Left" VerticalAlignment="Center"
+                <CheckBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Content="Apply Mask" HorizontalAlignment="Left" VerticalAlignment="Center"
                           x:Name="ApplyMaskCkBx" IsChecked="{Binding ApplyMask}" Margin="20,0,0,0" 
                        Checked="ApplyMaskCkBx_Checked" Unchecked="ApplyMaskCkBx_Unchecked"/>
 
-                <Button Grid.Row="0" Grid.Column="4" Content="Optimize" Width="60" Height="25" HorizontalAlignment="Center" x:Name="OptimizePB" Click="OptimizePB_Click"/>
+
+                <StackPanel Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Horizontal">
+                    <Button Content="Optimize" Width="125" Height="25" Margin="0,0,5,0"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="OptimizePB" Click="OptimizePB_Click"/>
+                    <Button Content="" Width="20" Height="25"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="WellSelectionPB" Click="WellSelectionPB_Click"/>
+                </StackPanel>
+
+
+                <GroupBox Header="Camera Setting" Grid.Row="2" Grid.Column="4" Grid.RowSpan="2">
             
-                <GroupBox Grid.Row="1" Grid.Column="4" Grid.RowSpan="2" Header="Signal Type" x:Name="SignalTypeGroupBox">
-                    <StackPanel Orientation="Vertical">
-                        <RadioButton Content="Increasing" Margin="2" IsChecked="{Binding IsIncreasingSignal}" />
-                        <RadioButton Content="Decreasing" Margin="2"/>
-                    </StackPanel>
+                    <ComboBox HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="CameraSettingsCB" 
+                          ItemsSource="{Binding Path=CameraSettingsList}" SelectedItem="{Binding Path=CurrentCameraSettings}"  Width="145"
+                          DisplayMemberPath="Description"
+                          IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding Path=IsManualMode}"
+                          SelectionChanged="CameraSettingsCB_SelectionChanged"/>
                 </GroupBox>
-            
-                <Button Grid.Row="0" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="TakePicturePB" Click="TakePicturePB_Click"
-                        Content="Take Picture" Width="120" Height="25" Margin="40,2,0,2"/>
+
+
+            <Button Grid.Row="0" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="TakePicturePB" Click="TakePicturePB_Click"
+                        Content="Take Picture" Width="120" Height="22" Margin="40,2,0,2"/>
             
                 <Button Grid.Row="1" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="StartVideoPB" Click="StartVideoPB_Click"
-                        Content="Start Video" Width="120" Height="25" Margin="40,2,0,2"/>
+                        Content="Start Video" Width="120" Height="22" Margin="40,2,0,2"/>
             
-            <TextBlock Grid.Row="2" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="SpeedLimitText"  Margin="40,2,0,2"
+            
+
+
+            <Label Grid.Row="4" Grid.Column="0" Content="CycleTime (msecs):" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            <xctk:IntegerUpDown Grid.Row="4" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="CycleTime" 
+                                    Value="{Binding CycleTime,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                    Minimum="{Binding MinCycleTime,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                    Maximum="{Binding MaxCycleTime,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"                                    
+                                    ValueChanged="Exposure_ValueChanged"/>
+
+            <TextBlock Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="SpeedLimitText"  Margin="40,2,0,2"
                        Text=""/>
-            
-            <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="ErrorText"
+
+
+            <TextBlock Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="2" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="ErrorText"
                        Margin="10,0,0,0" Foreground="Red" Text=""/>
 
             </Grid>

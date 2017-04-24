@@ -79,13 +79,13 @@
 
 
             <Label Grid.Column="1" Grid.Row="2" FontSize="18" HorizontalAlignment="Right" VerticalAlignment="Center">User Name</Label>
-            <TextBox Grid.Column="2" Grid.Row="2" Margin="10" Height="40" TabIndex="0"
-                     ToolTip="Enter Your User Name" VerticalAlignment="Center"
+            <TextBox Grid.Column="2" Grid.Row="2" Margin="10" Height="40" TabIndex="0" Padding="5"
+                     ToolTip="Enter Your User Name" VerticalAlignment="Center" 
                      Name="txtUserName"
                      FontSize="18"/>
             <Label Grid.Column="1" Grid.Row="3" FontSize="18" HorizontalAlignment="Right" VerticalAlignment="Center">Password</Label>
             <PasswordBox Grid.Column="2" Grid.Row="3" Margin="10" Height="40" TabIndex="1"
-                         FontSize="18" VerticalAlignment="Center"                   
+                         FontSize="18" VerticalAlignment="Center" Padding="5"           
                          ToolTip="Enter Your Password" 
                          Name="txtPassword" />
 

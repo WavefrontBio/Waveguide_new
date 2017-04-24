@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-        Title="CameraSettingsManager" Height="700" Width="800">
+        Title="CameraSettingsManager" Height="700" Width="650">
     <Grid>
 
         <Grid.ColumnDefinitions>
@@ -35,7 +35,7 @@
         <Grid Grid.Column="1" Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
@@ -59,7 +59,7 @@
                 <RowDefinition Height="25"/>
                 <RowDefinition Height="25"/>
                 <RowDefinition Height="25"/>
-                <RowDefinition Height="65"/>
+                <RowDefinition Height="55"/>
             </Grid.RowDefinitions>
             
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Database ID" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
@@ -67,7 +67,6 @@
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Vert Shift Speed" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
             <TextBlock Grid.Row="3" Grid.Column="0" Text="Horz Readout Rate" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
             <TextBlock Grid.Row="4" Grid.Column="0" Text="Vert Clock Amp" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="Pre Amp Gain" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
             <TextBlock Grid.Row="6" Grid.Column="0" Text="Use EM Amp" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
             <TextBlock Grid.Row="7" Grid.Column="0" Text="Use Frame Transfer" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>          
             <TextBlock Grid.Row="8" Grid.Column="0" Text="Is Default" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5"/>
@@ -105,10 +104,7 @@
                         SelectedValue="{Binding VertClockAmpIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                               SelectionChanged="VertClockAmpCombo_SelectionChanged"/>
 
-            <ComboBox Grid.Row="5" Grid.Column="1" x:Name="PreAmpGainCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="100"
-                        ItemsSource="{Binding Path=PreAmpGains}" DisplayMemberPath="description" SelectedValuePath="index"
-                        SelectedValue="{Binding PreAmpGainIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                              SelectionChanged="PreAmpGainCombo_SelectionChanged"/>
+       
 
             <CheckBox Grid.Row="6" Grid.Column="1" x:Name="UseEMGainCkBx"
                         Content="" HorizontalAlignment="Left" VerticalAlignment="Center" 
@@ -190,10 +186,10 @@
                                 IsChecked="{Binding IncreasingSignal, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                Checked="IncreasingSignalCkBx_Checked"  Unchecked="IncreasingSignalCkBx_Unchecked"/>
 
-            <Button Grid.Row="20" Grid.Column="1" Content="Save As..." Width="70" Height="30" HorizontalAlignment="Right" VerticalAlignment="Center"
+            <Button Grid.Row="20" Grid.Column="1" Content="Save As..." Width="70" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Margin="0,0,35,0" ToolTip="Create a new Camera Setting Item" x:Name="SaveAsPB" Click="SaveAsPB_Click"/>
 
-            <Button Grid.Row="20" Grid.Column="1" Content="Delete" Width="70" Height="30" HorizontalAlignment="Left" VerticalAlignment="Center"
+            <Button Grid.Row="20" Grid.Column="0" Content="Delete" Width="70" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Margin="0,0,10,0" ToolTip="Delete this Camera Setting Item (if not the last one)" x:Name="DeletePB" Click="DeletePB_Click"/>
 
         </Grid>

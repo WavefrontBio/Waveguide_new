@@ -72,6 +72,9 @@
   <PropertyGroup>
     <ApplicationIcon>WG_icon1.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Arction.DirectX">
       <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.DirectX.dll</HintPath>
@@ -159,10 +162,6 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="WpfD3D, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\D3DHost\D3DHost\bin\x64\Debug\WpfD3D.dll</HintPath>
-    </Reference>
     <Reference Include="WriteableBitmapEx.Wpf">
       <HintPath>..\packages\WriteableBitmapEx.1.5.0.0\lib\net40\WriteableBitmapEx.Wpf.dll</HintPath>
     </Reference>
@@ -300,6 +299,9 @@
     </Compile>
     <Compile Include="Views\Splash.xaml.cs">
       <DependentUpon>Splash.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\StringEntryDialog.xaml.cs">
+      <DependentUpon>StringEntryDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\TemperatureMonitorDialog.xaml.cs">
       <DependentUpon>TemperatureMonitorDialog.xaml</DependentUpon>
@@ -450,6 +452,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\StringEntryDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\TemperatureMonitorDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -489,6 +495,9 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="app.manifest">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

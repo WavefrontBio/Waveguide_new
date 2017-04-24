@@ -1043,16 +1043,8 @@ namespace Waveguide
         public uint AcquireImage(int exposure, ref ushort[] image)
         { 
             // exp is the exposure time in milliseconds
-
-            Stopwatch sw = new Stopwatch();
-            long t1 = 0;
-            long t2 = 0;
-            long t3 = 0;
-            long t4 = 0;
-
             float expSeconds = (float)(exposure) / 1000;
-
-
+            
             if (!SystemInitialized)
             {
                 image = null;
@@ -1080,25 +1072,15 @@ namespace Waveguide
             int status = 0;
 
             // set exposure time in seconds
-            sw.Start(); // start timer
             if (MyCamera.SetExposureTime(expSeconds) == AndorSDK.DRV_SUCCESS)
             {
                 MyCamera.SetShutter(1, 1, 0, 0); // open shutter
                 uiErrorCode = MyCamera.PrepareAcquisition();
-                t1 = sw.ElapsedMilliseconds;
                                 
                 // start the image acquisition
                 if (MyCamera.StartAcquisition() == AndorSDK.DRV_SUCCESS)
                 {
-                    t2 = sw.ElapsedMilliseconds;
-                    //while (status != AndorSDK.DRV_IDLE)
-                    //{
-                    //    uiErrorCode = MyCamera.GetStatus(ref status);
-                    //}
-
                     uiErrorCode = MyCamera.WaitForAcquisition();
-                    
-                    t3 = sw.ElapsedMilliseconds;
                 }
             }
             MyCamera.SetShutter(1, 0, 0, 0); // close shutter
@@ -1111,15 +1093,12 @@ namespace Waveguide
                 {
                     //uiErrorCode = MyCamera.GetAcquiredData16(image, (uint)TotalPixels);
                     uiErrorCode = MyCamera.GetOldestImage16(image, (uint)m_acqParams.BinnedRoiImageNumPixels);
-                    t4 = sw.ElapsedMilliseconds;
                 }
                 else
                 {
                     image = null;
                 }
             }
-
-            sw.Stop();  // stop timer
 
             return uiErrorCode;
         }
@@ -1207,8 +1186,14 @@ namespace Waveguide
             // Set Readout
             //// set to full resolution for the full image
             //// params: horizontal binning, vertical binning,horz start pixel, horz end pixel, vert start pixel, vert end pixel 
-            uiErrorCode = MyCamera.SetImage(horzBinning, vertBinning, 1, XPixels, 1, YPixels);
+            //uiErrorCode = MyCamera.SetImage(horzBinning, vertBinning, 1, XPixels, 1, YPixels);
 
+            m_acqParams.HBin = horzBinning;
+            m_acqParams.VBin = vertBinning;
+
+            PrepareAcquisition();
+
+            uiErrorCode = SUCCESS;
             return uiErrorCode;
         }
 

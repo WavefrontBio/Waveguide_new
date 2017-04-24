@@ -70,7 +70,6 @@ namespace Waveguide
                 VSSCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
                 HSSCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
                 VertClockAmpCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
-                PreAmpGainCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
                 UseEMGainCkBx.GetBindingExpression(CheckBox.IsCheckedProperty).UpdateTarget();
                 UseFrameTransferCkBx.GetBindingExpression(CheckBox.IsCheckedProperty).UpdateTarget();
                 IsDefaultCkBx.GetBindingExpression(CheckBox.IsCheckedProperty).UpdateTarget();
@@ -220,7 +219,6 @@ namespace Waveguide
                 CurrentCameraSettings.VSSIndex = 0;                
                 CurrentCameraSettings.HSSIndex = 0;
                 CurrentCameraSettings.VertClockAmpIndex = 0;
-                CurrentCameraSettings.PreAmpGainIndex = 0;
                 CurrentCameraSettings.UseEMAmp = true;
                 CurrentCameraSettings.UseFrameTransfer = true;                
                 CurrentCameraSettings.Description = "";
@@ -267,7 +265,6 @@ namespace Waveguide
             cs.LowPixelThresholdPercent = CurrentCameraSettings.LowPixelThresholdPercent;
             cs.MaxPercentPixelsAboveHighThreshold = CurrentCameraSettings.MaxPercentPixelsAboveHighThreshold;
             cs.MinPercentPixelsAboveLowThreshold = CurrentCameraSettings.MinPercentPixelsAboveLowThreshold;
-            cs.PreAmpGainIndex = CurrentCameraSettings.PreAmpGainIndex;
             cs.StartingExposure = CurrentCameraSettings.StartingExposure;
             cs.UseEMAmp = CurrentCameraSettings.UseEMAmp;
             cs.UseFrameTransfer = CurrentCameraSettings.UseFrameTransfer;
@@ -486,8 +483,7 @@ namespace Waveguide
                 NotifyPropertyChanged("CameraSettingID");
             }
         }
-
-
+        
         public int VSSIndex
         {
             get { return _currentCameraSettings.VSSIndex; }
@@ -520,18 +516,7 @@ namespace Waveguide
                 UpdateDatabase(CurrentCameraSettings);
             }
         }
-
-        public int PreAmpGainIndex
-        {
-            get { return _currentCameraSettings.PreAmpGainIndex; }
-            set
-            {
-                _currentCameraSettings.PreAmpGainIndex = value;
-                NotifyPropertyChanged("PreAmpGainIndex");
-                UpdateDatabase(CurrentCameraSettings);
-            }
-        }
-
+        
         public bool UseEMAmp
         {
             get { return _currentCameraSettings.UseEMAmp; }

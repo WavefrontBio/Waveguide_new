@@ -632,6 +632,31 @@ namespace Waveguide
         }
 
 
+        public bool GetDefaultMask(ref MaskContainer mask)
+        {
+            bool success = true;
+            mask = null;
+
+            if (GetAllMasks())
+            {
+                foreach (MaskContainer _mask in m_maskList)
+                {
+                    if (_mask.IsDefault)
+                    {
+                        mask = _mask;
+                        break;
+                    }
+                }
+
+                if (mask == null) success = false;
+            }
+            else
+            {                
+                success = false;
+            }
+
+            return success;
+        }
 
 
         public bool GetAllMasksForPlateType(int plateTypeID)
@@ -5453,239 +5478,6 @@ namespace Waveguide
 
 
 
-        #region PixelMask
-
-        //////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////
-        // Pixel Mask
-
-
-
-        //public bool GetPixelMask(int pixelMaskID, out PixelMaskContainer pMask)
-        //{
-        //    bool success = true;
-
-        //    pMask = null;
-
-        //    using (SqlConnection con = new SqlConnection(m_connectionString))
-        //    {
-        //        con.Open();
-
-        //        using (SqlCommand command = new SqlCommand("SELECT * FROM PixelMask WHERE PixelMaskID=@p1", con))
-        //        {
-        //            command.Parameters.Add("@p1", System.Data.SqlDbType.Int).Value = pixelMaskID;
-
-        //            try
-        //            {
-        //                SqlDataReader reader = command.ExecuteReader();                        
-
-        //                if (reader.Read())
-        //                {
-        //                    pMask = new PixelMaskContainer();
-
-        //                    pMask.PixelMaskID = reader.GetInt32(0);
-        //                    pMask.AnalysisID = reader.GetInt32(1);
-        //                    pMask.Width = reader.GetInt32(2);
-        //                    pMask.Height = reader.GetInt32(3);
-        //                    pMask.NumBytes = reader.GetInt32(5);
-        //                    pMask.CompressionAlgorithm = (COMPRESSION_ALGORITHM)reader.GetInt32(6);
-
-        //                    byte[] buffer = new byte[pMask.NumBytes];
-        //                    buffer = (byte[])reader["MaskData"];
-
-        //                    byte[] decompressedImage;
-        //                    if (DecompressMask(pMask.CompressionAlgorithm, buffer, out decompressedImage))
-        //                    {
-        //                        pMask.MaskData = decompressedImage;
-        //                        pMask.NumBytes = pMask.MaskData.Length;
-        //                    }
-        //                }
-        //            }
-        //            catch (Exception e)
-        //            {
-        //                lastErrMsg = e.Message;
-        //                success = false;
-        //                RecordError(e.Message);
-        //            }
-        //        }
-        //    }
-
-        //    return success;
-        //}
-
-
-
-
-        //public bool GetPixelMaskForAnalysis(int analysisID, out PixelMaskContainer pMask)
-        //{
-        //    bool success = true;
-
-        //    pMask = null;
-
-        //    using (SqlConnection con = new SqlConnection(m_connectionString))
-        //    {
-        //        con.Open();
-
-        //        using (SqlCommand command = new SqlCommand("SELECT * FROM PixelMask WHERE AnalysisID=@p1", con))
-        //        {
-        //            command.Parameters.Add("@p1", System.Data.SqlDbType.Int).Value = analysisID;
-
-        //            try
-        //            {
-        //                SqlDataReader reader = command.ExecuteReader();
-
-        //                if (reader.Read())
-        //                {
-        //                    pMask = new PixelMaskContainer();
-
-        //                    pMask.PixelMaskID = reader.GetInt32(0);
-        //                    pMask.AnalysisID = reader.GetInt32(1);
-        //                    pMask.Width = reader.GetInt32(2);
-        //                    pMask.Height = reader.GetInt32(3);
-        //                    pMask.NumBytes = reader.GetInt32(5);
-        //                    pMask.CompressionAlgorithm = (COMPRESSION_ALGORITHM)reader.GetInt32(6);
-
-        //                    byte[] buffer = new byte[pMask.NumBytes];
-        //                    buffer = (byte[])reader["MaskData"];
-
-        //                    byte[] decompressedImage;
-        //                    if (DecompressMask(pMask.CompressionAlgorithm, buffer, out decompressedImage))
-        //                    {
-        //                        pMask.MaskData = decompressedImage;
-        //                        pMask.NumBytes = pMask.MaskData.Length;
-        //                    }
-        //                }
-        //            }
-        //            catch (Exception e)
-        //            {
-        //                lastErrMsg = e.Message;
-        //                success = false;
-        //                RecordError(e.Message);
-        //            }
-        //        }
-        //    }
-
-        //    return success;
-        //}
-
-
-        //public bool InsertPixelMask(ref PixelMaskContainer pMask)
-        //{
-        //    bool success = true;
-
-        //    using (SqlConnection con = new SqlConnection(m_connectionString))
-        //    {
-        //        con.Open();
-
-        //        using (SqlCommand command = new SqlCommand("INSERT INTO PixelMask (AnalysisID,Width,Height,MaskData,NumBytes,CompressionAlgorithm) "
-        //                                                    + "OUTPUT INSERTED.PixelMaskID "
-        //                                                    + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6)"
-        //                                                    , con))
-        //        {
-        //            try
-        //            {
-        //                byte[] imageBuffer;
-        //                CompressMask(pMask.CompressionAlgorithm, pMask.MaskData, out imageBuffer);
-
-        //                command.Parameters.AddWithValue("@p1", pMask.AnalysisID);
-        //                command.Parameters.AddWithValue("@p2", pMask.Width);
-        //                command.Parameters.AddWithValue("@p3", pMask.Height);
-        //                command.Parameters.Add("@p4", SqlDbType.VarBinary, imageBuffer.Length).Value = imageBuffer;
-
-        //                command.Parameters.AddWithValue("@p5", imageBuffer.Length);
-        //                command.Parameters.AddWithValue("@p6", (int)pMask.CompressionAlgorithm);
-
-        //                pMask.PixelMaskID = (int)command.ExecuteScalar();
-        //            }
-        //            catch (Exception e)
-        //            {
-        //                lastErrMsg = e.Message;
-        //                success = false;
-        //                RecordError(e.Message);
-        //            }
-        //        }
-        //    }
-
-        //    return success;
-        //}
-
-
-
-        //public bool UpdatePixelMask(PixelMaskContainer pMask)
-        //{
-        //    bool success = true;
-
-        //    using (SqlConnection con = new SqlConnection(m_connectionString))
-        //    {
-        //        con.Open();
-
-        //        using (SqlCommand command = new SqlCommand("UPDATE PixelMask SET AnalysisID=@p1,Width=@p2,Height=@p3,MaskData=@p4," +
-        //                                                    "NumBytes=@p5,CompressionAlgorithm=@p6 " +
-        //                                                    "WHERE PixelMaskID=@p7", con))
-        //        {
-        //            try
-        //            {
-        //                byte[] imageBuffer;
-        //                CompressMask(pMask.CompressionAlgorithm, pMask.MaskData, out imageBuffer);
-
-        //                command.Parameters.AddWithValue("@p1", pMask.AnalysisID);
-        //                command.Parameters.AddWithValue("@p2", pMask.Width);
-        //                command.Parameters.AddWithValue("@p3", pMask.Height);
-        //                command.Parameters.Add("@p4", SqlDbType.VarBinary, imageBuffer.Length).Value = imageBuffer;
-
-        //                command.Parameters.AddWithValue("@p5", imageBuffer.Length);
-        //                command.Parameters.AddWithValue("@p6", (int)pMask.CompressionAlgorithm);
-        //                command.Parameters.AddWithValue("@p7", pMask.PixelMaskID);
-
-        //                command.ExecuteNonQuery();
-        //            }
-        //            catch (Exception e)
-        //            {
-        //                lastErrMsg = e.Message;
-        //                success = false;
-        //                RecordError(e.Message);
-        //            }
-        //        }
-        //    }
-
-        //    return success;
-        //}
-
-
-
-        //public bool DeletePixelMask(int pMaskID)
-        //{
-        //    bool success = true;
-
-        //    using (SqlConnection con = new SqlConnection(m_connectionString))
-        //    {
-        //        con.Open();
-
-        //        using (SqlCommand command = new SqlCommand("DELETE FROM PixelMask WHERE PixelMaskID=@p1", con))
-        //        {
-        //            try
-        //            {
-        //                command.Parameters.AddWithValue("@p1", pMaskID);
-
-        //                command.ExecuteNonQuery();
-        //            }
-        //            catch (Exception e)
-        //            {
-        //                lastErrMsg = e.Message;
-        //                success = false;
-        //                RecordError(e.Message);
-        //            }
-        //        }
-        //    }
-
-        //    return success;
-        //}
-
-
-        #endregion
-
-
-
         #region Image Compression
         //////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////
@@ -5819,20 +5611,19 @@ namespace Waveguide
                             cameraSettings.VSSIndex = reader.GetInt32(1);
                             cameraSettings.HSSIndex = reader.GetInt32(2);
                             cameraSettings.VertClockAmpIndex = reader.GetInt32(3);
-                            cameraSettings.PreAmpGainIndex = reader.GetInt32(4);
-                            cameraSettings.UseEMAmp = reader.GetBoolean(5);
-                            cameraSettings.UseFrameTransfer = reader.GetBoolean(6);                           
-                            cameraSettings.Description = reader.GetString(7);
-                            cameraSettings.IsDefault = reader.GetBoolean(8);
-                            cameraSettings.StartingExposure = reader.GetInt32(9);
-                            cameraSettings.ExposureLimit = reader.GetInt32(10);
-                            cameraSettings.HighPixelThresholdPercent = reader.GetInt32(11);
-                            cameraSettings.LowPixelThresholdPercent = reader.GetInt32(12);
-                            cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(13);
-                            cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(14);
-                            cameraSettings.IncreasingSignal = reader.GetBoolean(15);
-                            cameraSettings.StartingBinning = reader.GetInt32(16);
-                            cameraSettings.EMGainLimit = reader.GetInt32(17);
+                            cameraSettings.UseEMAmp = reader.GetBoolean(4);
+                            cameraSettings.UseFrameTransfer = reader.GetBoolean(5);   
+                            cameraSettings.Description = reader.GetString(6);
+                            cameraSettings.IsDefault = reader.GetBoolean(7);
+                            cameraSettings.StartingExposure = reader.GetInt32(8);
+                            cameraSettings.ExposureLimit = reader.GetInt32(9);
+                            cameraSettings.HighPixelThresholdPercent = reader.GetInt32(10);
+                            cameraSettings.LowPixelThresholdPercent = reader.GetInt32(11);
+                            cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(12);
+                            cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(13);
+                            cameraSettings.IncreasingSignal = reader.GetBoolean(14);
+                            cameraSettings.StartingBinning = reader.GetInt32(15);
+                            cameraSettings.EMGainLimit = reader.GetInt32(16);
 
                             m_cameraSettingsList.Add(cameraSettings);
                         }
@@ -5899,20 +5690,19 @@ namespace Waveguide
                             cameraSettings.VSSIndex = reader.GetInt32(1);
                             cameraSettings.HSSIndex = reader.GetInt32(2);
                             cameraSettings.VertClockAmpIndex = reader.GetInt32(3);
-                            cameraSettings.PreAmpGainIndex = reader.GetInt32(4);
-                            cameraSettings.UseEMAmp = reader.GetBoolean(5);
-                            cameraSettings.UseFrameTransfer = reader.GetBoolean(6);
-                            cameraSettings.Description = reader.GetString(7);
-                            cameraSettings.IsDefault = reader.GetBoolean(8);
-                            cameraSettings.StartingExposure = reader.GetInt32(9);
-                            cameraSettings.ExposureLimit = reader.GetInt32(10);
-                            cameraSettings.HighPixelThresholdPercent = reader.GetInt32(11);
-                            cameraSettings.LowPixelThresholdPercent = reader.GetInt32(12);
-                            cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(13);
-                            cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(14);
-                            cameraSettings.IncreasingSignal = reader.GetBoolean(15);
-                            cameraSettings.StartingBinning = reader.GetInt32(16);
-                            cameraSettings.EMGainLimit = reader.GetInt32(17);
+                            cameraSettings.UseEMAmp = reader.GetBoolean(4);
+                            cameraSettings.UseFrameTransfer = reader.GetBoolean(5);
+                            cameraSettings.Description = reader.GetString(6);
+                            cameraSettings.IsDefault = reader.GetBoolean(7);
+                            cameraSettings.StartingExposure = reader.GetInt32(8);
+                            cameraSettings.ExposureLimit = reader.GetInt32(9);
+                            cameraSettings.HighPixelThresholdPercent = reader.GetInt32(10);
+                            cameraSettings.LowPixelThresholdPercent = reader.GetInt32(11);
+                            cameraSettings.MinPercentPixelsAboveLowThreshold = reader.GetInt32(12);
+                            cameraSettings.MaxPercentPixelsAboveHighThreshold = reader.GetInt32(13);
+                            cameraSettings.IncreasingSignal = reader.GetBoolean(14);
+                            cameraSettings.StartingBinning = reader.GetInt32(15);
+                            cameraSettings.EMGainLimit = reader.GetInt32(16);
                         }
                     }
                     catch (Exception e)
@@ -5936,9 +5726,11 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO CameraSettings (VSSIndex,HSSIndex,VertClockAmpIndex,PreAmpGainIndex,UseEMAmp,UseFrameTransfer,Description,IsDefault,StartingExposure,ExposureLimit,HighPixelThresholdPercent,LowPixelThresholdPercent,MinPercentPixelsAboveLowThreshold,MaxPercentPixelsAboveHighThreshold,IncreasingSignal) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO CameraSettings (VSSIndex,HSSIndex,VertClockAmpIndex,UseEMAmp,UseFrameTransfer,Description,IsDefault,StartingExposure," 
+                                                            + "ExposureLimit,HighPixelThresholdPercent,LowPixelThresholdPercent,MinPercentPixelsAboveLowThreshold,"
+                                                            + "MaxPercentPixelsAboveHighThreshold,IncreasingSignal,StartingBinning,EMGainLimit) "
                                                             + "OUTPUT INSERTED.CameraSettingsID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,@p12,@p13,@p14,@p15,@p16,@p17)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,@p12,@p13,@p14,@p15,@p16)"
                                                             , con))
                 {
                     try
@@ -5946,20 +5738,19 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p1", cameraSettings.VSSIndex);
                         command.Parameters.AddWithValue("@p2", cameraSettings.HSSIndex);
                         command.Parameters.AddWithValue("@p3", cameraSettings.VertClockAmpIndex);
-                        command.Parameters.AddWithValue("@p4", cameraSettings.PreAmpGainIndex);
-                        command.Parameters.AddWithValue("@p5", cameraSettings.UseEMAmp);
-                        command.Parameters.AddWithValue("@p6", cameraSettings.UseFrameTransfer);
-                        command.Parameters.AddWithValue("@p7", cameraSettings.Description);
-                        command.Parameters.AddWithValue("@p8", cameraSettings.IsDefault);
-                        command.Parameters.AddWithValue("@p9", cameraSettings.StartingExposure);
-                        command.Parameters.AddWithValue("@p10", cameraSettings.ExposureLimit);
-                        command.Parameters.AddWithValue("@p11", cameraSettings.HighPixelThresholdPercent);
-                        command.Parameters.AddWithValue("@p12", cameraSettings.LowPixelThresholdPercent);
-                        command.Parameters.AddWithValue("@p13", cameraSettings.MinPercentPixelsAboveLowThreshold);
-                        command.Parameters.AddWithValue("@p14", cameraSettings.MaxPercentPixelsAboveHighThreshold);
-                        command.Parameters.AddWithValue("@p15", cameraSettings.IncreasingSignal);
-                        command.Parameters.AddWithValue("@p16", cameraSettings.StartingBinning);
-                        command.Parameters.AddWithValue("@p17", cameraSettings.EMGainLimit);
+                        command.Parameters.AddWithValue("@p4", cameraSettings.UseEMAmp);
+                        command.Parameters.AddWithValue("@p5", cameraSettings.UseFrameTransfer);
+                        command.Parameters.AddWithValue("@p6", cameraSettings.Description);
+                        command.Parameters.AddWithValue("@p7", cameraSettings.IsDefault);
+                        command.Parameters.AddWithValue("@p8", cameraSettings.StartingExposure);
+                        command.Parameters.AddWithValue("@p9", cameraSettings.ExposureLimit);
+                        command.Parameters.AddWithValue("@p10", cameraSettings.HighPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p11", cameraSettings.LowPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p12", cameraSettings.MinPercentPixelsAboveLowThreshold);
+                        command.Parameters.AddWithValue("@p13", cameraSettings.MaxPercentPixelsAboveHighThreshold);
+                        command.Parameters.AddWithValue("@p14", cameraSettings.IncreasingSignal);
+                        command.Parameters.AddWithValue("@p15", cameraSettings.StartingBinning);
+                        command.Parameters.AddWithValue("@p16", cameraSettings.EMGainLimit);
 
                         cameraSettings.CameraSettingID = (int)command.ExecuteScalar();
                     }
@@ -5984,34 +5775,33 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("UPDATE CameraSettings SET VSSIndex=@p1,HSSIndex=@p2,VertClockAmpIndex=@p3,PreAmpGainIndex=@p4," +
-                                                           "UseEMAmp=@p5,UseFrameTransfer=@p6,Description=@p7,IsDefault=@p8,StartingExposure=@p9,ExposureLimit=@p10," +
-                                                           "HighPixelThresholdPercent=@p11,LowPixelThresholdPercent=@p12,MinPercentPixelsAboveLowThreshold=@p13," +
-                                                           "MaxPercentPixelsAboveHighThreshold=@p14,IncreasingSignal=@p15," +
-                                                           "StartingBinning=@p16,EMGainLimit=@p17 " +
-                                                           "WHERE CameraSettingsID=@p18", con))
+                using (SqlCommand command = new SqlCommand("UPDATE CameraSettings SET VSSIndex=@p1,HSSIndex=@p2,VertClockAmpIndex=@p3," +
+                                                           "UseEMAmp=@p4,UseFrameTransfer=@p5,Description=@p6,IsDefault=@p7,StartingExposure=@p8,ExposureLimit=@p9," +
+                                                           "HighPixelThresholdPercent=@p10,LowPixelThresholdPercent=@p11,MinPercentPixelsAboveLowThreshold=@p12," +
+                                                           "MaxPercentPixelsAboveHighThreshold=@p13,IncreasingSignal=@p14," +
+                                                           "StartingBinning=@p15,EMGainLimit=@p16 " +
+                                                           "WHERE CameraSettingsID=@p17", con))
                 {
                     try
                     {
                         command.Parameters.AddWithValue("@p1", cameraSettings.VSSIndex);
                         command.Parameters.AddWithValue("@p2", cameraSettings.HSSIndex);
                         command.Parameters.AddWithValue("@p3", cameraSettings.VertClockAmpIndex);
-                        command.Parameters.AddWithValue("@p4", cameraSettings.PreAmpGainIndex);
-                        command.Parameters.AddWithValue("@p5", cameraSettings.UseEMAmp);
-                        command.Parameters.AddWithValue("@p6", cameraSettings.UseFrameTransfer);
-                        command.Parameters.AddWithValue("@p7", cameraSettings.Description);
-                        command.Parameters.AddWithValue("@p8", cameraSettings.IsDefault);
-                        command.Parameters.AddWithValue("@p9", cameraSettings.StartingExposure);
-                        command.Parameters.AddWithValue("@p10", cameraSettings.ExposureLimit);
-                        command.Parameters.AddWithValue("@p11", cameraSettings.HighPixelThresholdPercent);
-                        command.Parameters.AddWithValue("@p12", cameraSettings.LowPixelThresholdPercent);
-                        command.Parameters.AddWithValue("@p13", cameraSettings.MinPercentPixelsAboveLowThreshold);
-                        command.Parameters.AddWithValue("@p14", cameraSettings.MaxPercentPixelsAboveHighThreshold);
-                        command.Parameters.AddWithValue("@p15", cameraSettings.IncreasingSignal);
-                        command.Parameters.AddWithValue("@p16", cameraSettings.StartingBinning);
-                        command.Parameters.AddWithValue("@p17", cameraSettings.EMGainLimit);
+                        command.Parameters.AddWithValue("@p4", cameraSettings.UseEMAmp);
+                        command.Parameters.AddWithValue("@p5", cameraSettings.UseFrameTransfer);
+                        command.Parameters.AddWithValue("@p6", cameraSettings.Description);
+                        command.Parameters.AddWithValue("@p7", cameraSettings.IsDefault);
+                        command.Parameters.AddWithValue("@p8", cameraSettings.StartingExposure);
+                        command.Parameters.AddWithValue("@p9", cameraSettings.ExposureLimit);
+                        command.Parameters.AddWithValue("@p10", cameraSettings.HighPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p11", cameraSettings.LowPixelThresholdPercent);
+                        command.Parameters.AddWithValue("@p12", cameraSettings.MinPercentPixelsAboveLowThreshold);
+                        command.Parameters.AddWithValue("@p13", cameraSettings.MaxPercentPixelsAboveHighThreshold);
+                        command.Parameters.AddWithValue("@p14", cameraSettings.IncreasingSignal);
+                        command.Parameters.AddWithValue("@p15", cameraSettings.StartingBinning);
+                        command.Parameters.AddWithValue("@p16", cameraSettings.EMGainLimit);
 
-                        command.Parameters.AddWithValue("@p18", cameraSettings.CameraSettingID);
+                        command.Parameters.AddWithValue("@p17", cameraSettings.CameraSettingID);
 
                         command.ExecuteNonQuery();
                     }

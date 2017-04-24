@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -54,19 +55,24 @@ namespace Waveguide
         {
             m_imager = _imager;
             m_camera = m_imager.m_camera;
-            vm = new CameraSetupModel(m_imager, AllowCameraConfiguration, IsManualMode);
+            vm = new CameraSetupModel(m_imager, m_wgDB, AllowCameraConfiguration, IsManualMode);
 
             m_ID = indicatorID;
-
+            
 
             ///////////////////////////////////////////////////////////////////////////////////
             // Set ImagingParamsStruct
             ImagingParamsStruct ips;
-            if (m_imager.m_ImagingDictionary.TryGetValue(m_ID, out ips))
+            if (m_imager.m_ImagingDictionary.ContainsKey(m_ID))
             {
+                ips = m_imager.m_ImagingDictionary[m_ID];
                 vm.Exposure = (int)(ips.exposure * 1000);
                 vm.EMGain = ips.gain;
-
+                vm.Binning = ips.binning;
+                vm.MinCycleTime = m_imager.m_camera.GetCycleTime();
+                if (ips.cycleTime < vm.MinCycleTime) vm.CycleTime = vm.MinCycleTime;
+                else vm.CycleTime = ips.cycleTime; 
+                        
                 FilterContainer filter;
 
                 if (m_wgDB.GetEmissionFilterAtPosition(ips.emissionFilterPos, out filter))
@@ -83,7 +89,6 @@ namespace Waveguide
                 HistImage.Source = ips.histBitmap;
                 ips.ImageControl = ImageDisplay;
                 ips.indicatorName = "Setup";
-                ips.pSurface = IntPtr.Zero;
 
                 m_imager.m_ImagingDictionary.Add(m_ID, ips); // Not sure if this is right
 
@@ -101,8 +106,8 @@ namespace Waveguide
                 m_imager.m_camera.MyCamera.GetAcquisitionTimings(ref exposure, ref accum, ref kin);
                 if (exposure < 0.002) exposure = 0.002f;
                 ips.exposure = exposure;
+                ips.binning = 1;
                 ips.cycleTime = (int)(exposure * 1000) + 50;
-                ips.d3dImage = null;
                 ips.emissionFilterPos = 0;
                 ips.excitationFilterPos = 0;
                 ips.experimentIndicatorID = m_ID;
@@ -112,11 +117,13 @@ namespace Waveguide
                 HistImage.Source = ips.histBitmap;
                 ips.ImageControl = ImageDisplay;
                 ips.indicatorName = "Setup";
-                ips.pSurface = IntPtr.Zero;
           
 
-                vm.EMGain = 5;
+                vm.EMGain = 1;
+                vm.Binning = 1;
                 vm.Exposure = (int)(ips.exposure * 1000);
+                vm.CycleTime = GlobalVars.CameraDefaultCycleTime;
+                vm.MinCycleTime = 100;
 
                 m_wgDB.GetAllEmissionFilters();
                 if (m_wgDB.m_filterList.Count>0)
@@ -142,28 +149,16 @@ namespace Waveguide
             AcquisitionParams aParams;
             m_imager.m_camera.GetCurrentCameraSettings(out cParams, out aParams);
 
-            vm.Binning = aParams.HBin;
-            vm.AcquisitionMode = aParams.AcquisitionMode;
-            vm.ADChannel = aParams.ADChannel;
+            vm.Binning = aParams.HBin;         
             vm.ApplyMask = m_imager.m_UseMask;
-            vm.AutosizeROI = m_imager.m_ROIAdjustToMask;
             vm.EmFilterList = m_imager.m_emFilterList;
             vm.ExFilterList = m_imager.m_exFilterList;
             vm.PreAmpGainIndex = cParams.PreAmpGainIndex;
-            vm.ReadMode = aParams.ReadMode;
-            vm.RoiX = aParams.RoiX;
-            vm.RoiY = aParams.RoiY;
-            vm.RoiW = aParams.RoiW;
-            vm.RoiH = aParams.RoiH;
-            vm.TriggerMode = aParams.TriggerMode;
             vm.UseEMAmp = cParams.UseEMAmp;
             vm.UseFrameTransfer = cParams.UseFrameTransfer;
             vm.VertClockAmpIndex = cParams.VertClockAmpIndex;
             vm.VSSIndex = cParams.VSSIndex;
             vm.HSSIndex = cParams.HSSIndex;
-            vm.EMGainMode = aParams.EMGainMode;
-            vm.XPixels = m_camera.XPixels;
-            vm.YPixels = m_camera.YPixels;
 
             vm.SliderLowPosition = 0.0;
             vm.SliderHighPosition = 100.0;
@@ -222,6 +217,7 @@ namespace Waveguide
                             {
                                 vm.Exposure = m_imager.OptimizationResult_Exposure;
                                 vm.EMGain = m_imager.m_camera.m_cameraParams.EMGain;
+                                vm.PreAmpGainIndex = m_imager.m_camera.m_cameraParams.PreAmpGainIndex;
                                 vm.Binning = m_imager.m_camera.m_acqParams.HBin;
                                 CalculateTimings();
                             }
@@ -238,10 +234,13 @@ namespace Waveguide
                         ExcitationFilterCB.IsEnabled = true;
                         EmissionFilterCB.IsEnabled = true;
                         BinningCB.IsEnabled = true;
+                        CycleTime.IsEnabled = true;
+                        PreAmpGainCombo.IsEnabled = true;
                         Exposure.IsEnabled = true;
                         EMGain.IsEnabled = true;
                         ApplyMaskCkBx.IsEnabled = true;
                         SignalTypeGroupBox.IsEnabled = true;
+                        CameraSettingsCB.IsEnabled = true;
                         StartVideoPB.IsEnabled = true;
                         StartVideoPB.Content = "Start Video";
                         OptimizePB.Content = "Optimize";
@@ -307,6 +306,8 @@ namespace Waveguide
             {
                 TakePicturePB.IsEnabled = false;
                 OptimizePB.IsEnabled = false;
+                CycleTime.IsEnabled = false;
+                PreAmpGainCombo.IsEnabled = false;
                 ExcitationFilterCB.IsEnabled = false;
                 EmissionFilterCB.IsEnabled = false;
                 BinningCB.IsEnabled = false;
@@ -314,11 +315,13 @@ namespace Waveguide
                 EMGain.IsEnabled = false;
                 ApplyMaskCkBx.IsEnabled = false;
                 SignalTypeGroupBox.IsEnabled = false;
+                CameraSettingsCB.IsEnabled = false;
                 StartVideoPB.Content = "Stop Video";
 
                 ImagingParamsStruct ips;
-                if(m_imager.m_ImagingDictionary.TryGetValue(m_ID,out ips))
+                if(m_imager.m_ImagingDictionary.ContainsKey(m_ID))
                 {
+                    ips = m_imager.m_ImagingDictionary[m_ID];
                     ips.cycleTime = vm.Exposure + 50;
                 }
                 
@@ -349,15 +352,15 @@ namespace Waveguide
                 EmissionFilterCB.IsEnabled = false;
                 BinningCB.IsEnabled = false;
                 Exposure.IsEnabled = false;
+                CycleTime.IsEnabled = false;
+                PreAmpGainCombo.IsEnabled = false;
                 EMGain.IsEnabled = false;
                 ApplyMaskCkBx.IsEnabled = false;
                 SignalTypeGroupBox.IsEnabled = false;
+                CameraSettingsCB.IsEnabled = false;
                 OptimizePB.Content = "Abort";
-
-                CameraSettingsContainer cs;
-                m_wgDB.GetCameraSettingsDefault(out cs);
-
-                m_imager.StartOptimization(m_ID, cs); // vm.IsIncreasingSignal, vm.Exposure);
+                               
+                m_imager.StartOptimization(m_ID, vm.CurrentCameraSettings); // vm.IsIncreasingSignal, vm.Exposure);
 
                 vm.IsOptimizing = true;
             }
@@ -372,7 +375,7 @@ namespace Waveguide
         private void CalculateTimings()
         {
             bool success;
-            success = m_camera.PrepareAcquisition(vm.ReadMode, vm.AcquisitionMode, vm.TriggerMode, vm.EMGainMode, vm.ADChannel, vm.Binning, vm.Binning, vm.RoiX, vm.RoiY, vm.RoiW, vm.RoiH);
+            m_camera.SetCameraBinning(vm.Binning, vm.Binning); m_camera.PrepareAcquisition();          
             success = m_camera.ConfigureCamera(vm.VSSIndex, vm.HSSIndex, vm.VertClockAmpIndex, vm.PreAmpGainIndex, vm.UseEMAmp, vm.EMGain, vm.UseFrameTransfer);
             uint ecode = m_camera.MyCamera.SetExposureTime((float)(vm.Exposure) / 1000.0f);
 
@@ -386,12 +389,17 @@ namespace Waveguide
             float maxRate = 1000.0f / (float)(minCycleTime);
 
             ImagingParamsStruct ips;
-            if (m_imager.m_ImagingDictionary.TryGetValue(m_ID, out ips))
-            {                
-                ips.cycleTime = minCycleTime > 100 ? minCycleTime : 100;              
+            if (m_imager.m_ImagingDictionary.ContainsKey(m_ID))
+            {
+                ips = m_imager.m_ImagingDictionary[m_ID];
+                ips.cycleTime = minCycleTime > 100 ? minCycleTime : 100;
+                m_imager.m_ImagingDictionary[m_ID] = ips;
             }     
 
             SpeedLimitText.Text = "Min Cycle Time = " + minCycleTime.ToString() + " (" + maxRate.ToString("N1") + " Hz)";
+
+            vm.MinCycleTime = minCycleTime;
+            if (vm.CycleTime < vm.MinCycleTime) vm.CycleTime = vm.MinCycleTime;
         }
 
 
@@ -434,7 +442,7 @@ namespace Waveguide
 
             m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
 
-            CalculateTimings();
+            UpdateImagingDictionary();
         }
 
         private void VSSCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -455,7 +463,7 @@ namespace Waveguide
         {
             m_camera.m_cameraParams.PreAmpGainIndex = vm.PreAmpGainIndex;
 
-            CalculateTimings();
+            UpdateImagingDictionary();
         }
 
         private void VertClockAmpCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -493,42 +501,17 @@ namespace Waveguide
             CalculateTimings();
         }
 
-        private void AutosizeROICkBx_Checked(object sender, RoutedEventArgs e)
-        {
-            m_imager.m_ROIAdjustToMask = vm.AutosizeROI;
-
-            CalculateTimings();
-        }
-
-        private void AutosizeROICkBx_Unchecked(object sender, RoutedEventArgs e)
-        {
-            m_imager.m_ROIAdjustToMask = vm.AutosizeROI;
-
-            CalculateTimings();
-        }
-
+     
         private void EMGain_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             m_camera.m_cameraParams.EMGain = vm.EMGain;
 
-            ImagingParamsStruct ips;
-            if (m_imager.m_ImagingDictionary.TryGetValue(m_ID, out ips))
-            {
-                ips.gain = (int)vm.EMGain;
-            }
-
-            CalculateTimings();
+            UpdateImagingDictionary();
         }
 
         private void Exposure_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            ImagingParamsStruct ips; 
-            if(m_imager.m_ImagingDictionary.TryGetValue(m_ID, out ips))
-            {
-                ips.exposure = (float)(vm.Exposure) / 1000.0f;
-
-                CalculateTimings();
-            }            
+            UpdateImagingDictionary();          
         }
 
         private void ApplyMaskCkBx_Checked(object sender, RoutedEventArgs e)
@@ -547,6 +530,113 @@ namespace Waveguide
 
 
 
+        private void UpdateImagingDictionary()
+        {
+            ImagingParamsStruct ips;
+            if (m_imager.m_ImagingDictionary.ContainsKey(m_ID))
+            {
+                ips = m_imager.m_ImagingDictionary[m_ID];
+                ips.emissionFilterPos = (byte)vm.EmFilter.PositionNumber;
+                ips.excitationFilterPos = (byte)vm.ExFilter.PositionNumber;
+                ips.cycleTime = vm.CycleTime;
+                ips.binning = (int)vm.Binning;
+                ips.gain = (int)vm.EMGain;
+                ips.exposure = (float)(vm.Exposure) / 1000.0f;
+                ips.preAmpGainIndex = vm.PreAmpGainIndex;
+                m_imager.m_ImagingDictionary[m_ID] = ips;
+
+                CalculateTimings();
+            }
+        }
+
+        private void HSSCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void IsDefaultCkBx_Checked(object sender, RoutedEventArgs e)
+        {
+            // make sure only one CameraSetting is set as Default
+            foreach (var cs in vm.CameraSettingsList)
+            {
+                if (cs.CameraSettingID != vm.CurrentCameraSettings.CameraSettingID) cs.IsDefault = false;
+            }
+        }
+
+        private void IsDefaultCkBx_Unchecked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void StartingBinningCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void IncreasingSignalCkBx_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void IncreasingSignalCkBx_Unchecked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void NewPB_Click(object sender, RoutedEventArgs e)
+        {
+            StringEntryDialog dlg = new StringEntryDialog("Add New Camera Settings Entry", "Enter Name:");
+          
+            dlg.ShowDialog();
+
+            if(dlg.result == MessageBoxResult.OK)
+            {
+                CameraSettingsContainer cs = vm.AddNew(dlg.enteredString);
+            }
+        }
+
+
+        private void CameraSettingsCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DescriptionTextBox != null)
+            {
+                //CameraSettingIDTextBlock.GetBindingExpression(TextBlock.TextProperty).UpdateTarget();
+                DescriptionTextBox.GetBindingExpression(TextBox.TextProperty).UpdateTarget();
+                VSSCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
+                HSSCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
+                VertClockAmpCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
+                UseEMGainCkBx.GetBindingExpression(CheckBox.IsCheckedProperty).UpdateTarget();
+                UseFrameTransferCkBx.GetBindingExpression(CheckBox.IsCheckedProperty).UpdateTarget();
+                IsDefaultCkBx.GetBindingExpression(CheckBox.IsCheckedProperty).UpdateTarget();
+                StartingExposureUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
+                ExposureLimitUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
+                HighPixelThresholdPercentUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
+                LowPixelThresholdPercentUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
+                MinPercentPixelsAboveLowThresholdUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
+                MaxPercentPixelsAboveHighThresholdUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();                
+                IncreasingSignalRB.GetBindingExpression(RadioButton.IsCheckedProperty).UpdateTarget();
+                DecreasingSignalRB.GetBindingExpression(RadioButton.IsCheckedProperty).UpdateTarget();
+                StartingBinningCombo.GetBindingExpression(ComboBox.SelectedValueProperty).UpdateTarget();
+                EMGainLimitUpDown.GetBindingExpression(Xceed.Wpf.Toolkit.IntegerUpDown.ValueProperty).UpdateTarget();
+            }
+        }
+
+        private void WellSelectionPB_Click(object sender, RoutedEventArgs e)
+        {
+            // TODO: this well list should not be created, but rather assigned from the Imaging dictionary
+            ObservableCollection<Tuple<int,int>> wellList = new ObservableCollection<Tuple<int,int>>();
+
+            WellSelectionDialog dlg = new WellSelectionDialog(m_imager.m_mask.Rows,m_imager.m_mask.Cols,wellList);
+
+            dlg.ShowDialog();
+
+            if (dlg.m_accepted)
+            {
+                wellList.Clear();
+                foreach (Tuple<int, int> well in dlg.m_wellList)
+                    wellList.Add(well);
+            }
+        }
 
 	}
 }

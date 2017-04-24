@@ -212,20 +212,20 @@ namespace Waveguide
             else
             {
                 // Initialize Lambda (filter controller)
-                //if (!m_lambda.SystemInitialized)
-                //{
-                //    success = m_lambda.Initialize();
-                //    if (!success)
-                //    {
-                //        ImagerReady = false;
-                //        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
-                //        return;
-                //    }
-                //    else
-                //    {
-                //        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
-                //    }
-                //}
+                if (!m_lambda.SystemInitialized)
+                {
+                    success = m_lambda.Initialize();
+                    if (!success)
+                    {
+                        ImagerReady = false;
+                        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
+                        return;
+                    }
+                    else
+                    {
+                        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
+                    }
+                }
             }
 
             ImagerReady = true;

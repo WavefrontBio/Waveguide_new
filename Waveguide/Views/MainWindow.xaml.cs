@@ -107,7 +107,7 @@ namespace Waveguide
                 while(!done)
                 {
                     m_imager.Init();
-                    if(true)// (m_imager.ImagerReady)
+                    if(m_imager.ImagerReady)
                     {
                         done = true;
                         m_imager.m_cameraEvent += Imager_CameraEvent;

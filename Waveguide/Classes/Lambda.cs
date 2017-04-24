@@ -156,7 +156,7 @@ namespace Waveguide
 
                 // Set up device data parameters
                 // Set Baud rate to 9600 or 128000, may have to check to see what the speed is set at on the filter controller (this is the speed used by the USB to RS232 converter inside the filter controller)
-                ftStatus = myFtdiDevice.SetBaudRate(128000);
+                ftStatus = myFtdiDevice.SetBaudRate(9600);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                 {
                     PostError("Failed to set Lambda Filter Controller baud rate");

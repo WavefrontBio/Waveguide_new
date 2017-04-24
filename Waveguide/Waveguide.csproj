@@ -73,6 +73,21 @@
     <ApplicationIcon>WG_icon1.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="InfragisticsWPF4.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Editors.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DragDrop.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataVisualization.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataPresenter.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataManager.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Menus.XamMenu.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Layouts.XamTileManager.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Interactions.XamDialogWindow.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Gauges.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamSlider.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamMaskedInput.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamComboEditor.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamColorPicker.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Charts.XamDataChart.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
     <Reference Include="Arction.DirectX">
       <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.DirectX.dll</HintPath>
     </Reference>
@@ -114,21 +129,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\x64\Debug\FTDI64_NET.dll</HintPath>
     </Reference>
-    <Reference Include="InfragisticsWPF4.Controls.Charts.XamDataChart.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamColorPicker.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamComboEditor.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamMaskedInput.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamSlider.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Gauges.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Interactions.XamDialogWindow.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Layouts.XamTileManager.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Menus.XamMenu.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataManager.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataPresenter.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataVisualization.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DragDrop.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Editors.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
     <Reference Include="MjpegProcessor, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\x64\Debug\MjpegProcessor.dll</HintPath>

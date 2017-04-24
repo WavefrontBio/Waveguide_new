@@ -72,7 +72,7 @@ namespace Waveguide
                 vm.MinCycleTime = m_imager.m_camera.GetCycleTime();
                 if (ips.cycleTime < vm.MinCycleTime) vm.CycleTime = vm.MinCycleTime;
                 else vm.CycleTime = ips.cycleTime; 
-                        
+        
                 FilterContainer filter;
 
                 if (m_wgDB.GetEmissionFilterAtPosition(ips.emissionFilterPos, out filter))
@@ -162,6 +162,11 @@ namespace Waveguide
 
             vm.SliderLowPosition = 0.0;
             vm.SliderHighPosition = 100.0;
+
+            if(ips.optimizeWellList != null)
+                vm.WellSelectionPBLabel = ips.optimizeWellList.Count.ToString();
+            else
+                vm.WellSelectionPBLabel = (m_imager.m_mask.Rows * m_imager.m_mask.Cols).ToString();
 
                
             this.DataContext = vm;
@@ -622,20 +627,53 @@ namespace Waveguide
         }
 
         private void WellSelectionPB_Click(object sender, RoutedEventArgs e)
-        {
-            // TODO: this well list should not be created, but rather assigned from the Imaging dictionary
-            ObservableCollection<Tuple<int,int>> wellList = new ObservableCollection<Tuple<int,int>>();
+        {            
+            ObservableCollection<Tuple<int,int>> wellList;
 
-            WellSelectionDialog dlg = new WellSelectionDialog(m_imager.m_mask.Rows,m_imager.m_mask.Cols,wellList);
+            ImagingParamsStruct ips;
+            if (m_imager.m_ImagingDictionary.ContainsKey(m_ID))
+            {
+                ips = m_imager.m_ImagingDictionary[m_ID];
+                wellList = ips.optimizeWellList;
+                if (wellList == null) wellList = new ObservableCollection<Tuple<int, int>>();
+                if(wellList.Count == 0)
+                { // can't allow empty set of wells for optimization, so add them all
+                    for (int r = 0; r < m_imager.m_mask.Rows; r++)
+                        for (int c = 0; c < m_imager.m_mask.Cols; c++)
+                        {
+                            wellList.Add(Tuple.Create<int, int>(r, c));
+                        }
+                }
+            }
+            else
+            {                
+                wellList = new ObservableCollection<Tuple<int, int>>();
+                ips.optimizeWellList = wellList;
+            }
+
+
+            WellSelectionDialog dlg = new WellSelectionDialog(m_imager.m_mask.Rows, m_imager.m_mask.Cols, "Select Wells to be used for Optimization", false, wellList);
 
             dlg.ShowDialog();
 
             if (dlg.m_accepted)
-            {
+            {                   
+                if (wellList == null)
+                {
+                    wellList = new ObservableCollection<Tuple<int, int>>();
+                }
+
                 wellList.Clear();
                 foreach (Tuple<int, int> well in dlg.m_wellList)
                     wellList.Add(well);
-            }
+
+                ips = m_imager.m_ImagingDictionary[m_ID];
+                ips.optimizeWellList = wellList;
+                m_imager.m_ImagingDictionary[m_ID] = ips;
+
+                vm.WellSelectionPBLabel = ips.optimizeWellList.Count.ToString();
+            }                
+            
         }
 
 	}

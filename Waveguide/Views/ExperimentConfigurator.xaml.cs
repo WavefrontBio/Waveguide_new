@@ -572,7 +572,7 @@ namespace Waveguide
 
         private void ControlSubtractionPlateImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            WellSelectionDialog dlg = new WellSelectionDialog(VM.PlateType.Rows, VM.PlateType.Cols,
+            WellSelectionDialog dlg = new WellSelectionDialog(VM.PlateType.Rows, VM.PlateType.Cols, "Select Wells for Control Subtraction", true,
                 VM.ControlSubtractionWellList);
 
             dlg.ShowDialog();

@@ -30,6 +30,7 @@ namespace Waveguide
         private int emGain_LowLimit;
         private int emGain_HighLimit;
         private bool isOptimizing;
+        private string wellSelectionPBLabel;
    
     
        
@@ -155,6 +156,8 @@ namespace Waveguide
             cycleTime = 1;
             minCycleTime = 1;
             maxCycleTime = 10000;
+
+            WellSelectionPBLabel = "";
 		}
 
 
@@ -831,6 +834,18 @@ namespace Waveguide
                 NotifyPropertyChanged("DecreasingSignal");
             }
         }
+
+
+        public string WellSelectionPBLabel
+        {
+            get { return wellSelectionPBLabel; }
+            set
+            {
+                wellSelectionPBLabel = value;
+                NotifyPropertyChanged("WellSelectionPBLabel");
+            }
+        }
+
 
         ///////////////////////////////////////////////////////////////////////////////////
 

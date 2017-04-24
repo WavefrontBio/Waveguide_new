@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,10 +23,16 @@ namespace Waveguide
     {
         public bool m_accepted;
         public ObservableCollection<Tuple<int, int>> m_wellList;
+        public bool m_allowEmptySelectionList;
+        public WellSelectionDialog_ViewModel vm;
 
-        public WellSelectionDialog(int rows, int cols, ObservableCollection<Tuple<int, int>> wellList = null)
+        public WellSelectionDialog(int rows, int cols, string title, bool allowEmptySelectionList, ObservableCollection<Tuple<int, int>> wellList = null)
         {          
             InitializeComponent();
+
+            vm = new WellSelectionDialog_ViewModel();
+            vm.DialogTitle = title;
+            DataContext = vm;
 
             m_wellList = new ObservableCollection<Tuple<int, int>>();
 
@@ -36,7 +43,7 @@ namespace Waveguide
                     {
                         m_wellList.Add(Tuple.Create<int, int>(r, c));
                     }
-            }
+            }          
             else
             {
                 foreach(Tuple<int,int> well in wellList)
@@ -45,7 +52,7 @@ namespace Waveguide
                 }
             }
                        
-            WellControl.Init(rows, cols, wellList);
+            WellControl.Init(rows, cols, m_wellList);
             WellControl.NewWellSetSelected += WellControl_NewWellSetSelected;
 
             m_accepted = false;
@@ -70,8 +77,40 @@ namespace Waveguide
 
         private void OKPB_Click(object sender, RoutedEventArgs e)
         {
+            if (!m_allowEmptySelectionList && m_wellList.Count == 0)
+            {
+                MessageBox.Show("You must select at least 1 well to be used for optimization", "Error Selecting Optimization Wells", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             m_accepted = true;
             Close();
+        }
+    }
+
+
+    public class WellSelectionDialog_ViewModel : INotifyPropertyChanged
+    {
+        private string dialogTitle;
+
+        public string DialogTitle
+        {
+            get { return dialogTitle; }
+            set
+            {
+                dialogTitle = value;
+                NotifyPropertyChanged("DialogTitle");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void NotifyPropertyChanged(String info)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(info));
+            }
         }
     }
 }

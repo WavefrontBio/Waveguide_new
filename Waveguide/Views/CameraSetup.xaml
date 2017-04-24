@@ -317,7 +317,7 @@
                 </Grid.RowDefinitions>                        
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120"/>
-                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="70"/>
                     <ColumnDefinition Width="80"/>
                     <ColumnDefinition Width="180"/>
                     <ColumnDefinition Width="160"/>
@@ -327,22 +327,22 @@
 
                 <Label Grid.Row="0" Grid.Column="0" Content="Exposure (msecs):" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="Exposure" 
-                                        Value="{Binding Exposure,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Width="50"
+                                        Value="{Binding Exposure,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Width="60"
                                         ValueChanged="Exposure_ValueChanged"/>
 
                 <Label Grid.Row="1" Grid.Column="0" Content="EM Gain:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="EMGain" 
-                                        Value="{Binding EMGain,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Width="50"
+                                        Value="{Binding EMGain,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Width="60"
                                         ValueChanged="EMGain_ValueChanged"/>
 
                 <Label Grid.Row="2" Grid.Column="0" Content="PreAmp Gain:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                <ComboBox Grid.Row="2" Grid.Column="1" x:Name="PreAmpGainCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="50"
+                <ComboBox Grid.Row="2" Grid.Column="1" x:Name="PreAmpGainCombo" HorizontalAlignment="Left" VerticalAlignment="Center" Width="60"
                         ItemsSource="{Binding Path=PreAmpGains}" DisplayMemberPath="description" SelectedValuePath="index"
                         SelectedValue="{Binding PreAmpGainIndex, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                         SelectionChanged="PreAmpGainCombo_SelectionChanged"/>            
 
                 <Label Grid.Row="3" Grid.Column="0" Content="Binning:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                <ComboBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="BinningCB" Width="50"
+                <ComboBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="BinningCB" Width="60"
                         ItemsSource="{Binding Path=BinningOptions}"  DisplayMemberPath="description" SelectedValuePath="index"
                         SelectedValue="{Binding Path=Binning, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                         SelectionChanged="BinningCB_SelectionChanged"/>
@@ -371,7 +371,7 @@
                 <StackPanel Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Horizontal">
                     <Button Content="Optimize" Width="125" Height="25" Margin="0,0,5,0"
                             HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="OptimizePB" Click="OptimizePB_Click"/>
-                    <Button Content="" Width="20" Height="25"
+                    <Button Content="{Binding WellSelectionPBLabel}" Width="25" Height="25" FontSize="10" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                             HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="WellSelectionPB" Click="WellSelectionPB_Click"/>
                 </StackPanel>
 

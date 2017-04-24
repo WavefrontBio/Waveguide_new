@@ -1690,7 +1690,7 @@ namespace Waveguide
 
            
                     // check brightness levels
-                    m_mask.CheckImageLevelsInMask(grayFullImage, null, minPercentOfPixelsAboveLowLimit, lowPixelValueThreshold,
+                    m_mask.CheckImageLevelsInMask(grayFullImage, wellsToOptimizeOver, minPercentOfPixelsAboveLowLimit, lowPixelValueThreshold,
                            maxPercentOfPixelsAboveHighLimit, highPixelValueThreshold, ref tooDim, ref tooBright);
 
                     if (tooBright)

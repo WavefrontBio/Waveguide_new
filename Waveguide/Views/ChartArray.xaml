@@ -541,11 +541,11 @@
                                     </igDP:Field.Settings>
                                 </igDP:Field>
 
-                                <igDP:Field Name="UsePixelMask" Label="Pixel Mask">
+                                <!--<igDP:Field Name="UsePixelMask" Label="Pixel Mask">
                                     <igDP:Field.Settings>
                                         <igDP:FieldSettings AllowEdit="False" LabelTextAlignment="Center"/>
                                     </igDP:Field.Settings>
-                                </igDP:Field>
+                                </igDP:Field>-->
 
                                 <igDP:Field Name="FlatFieldCorrection" Label="Flat Field">
                                     <igDP:Field.Settings>

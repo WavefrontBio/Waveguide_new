@@ -2218,7 +2218,7 @@ namespace Waveguide
 
                         model.m_controlPts[1].m_value = (int)RangeMinThumb.Value;
                         model.m_controlPts[1].m_colorIndex = 0;
-                        model.m_controlPts[2].m_value = (int)RangeMaxThumb.Value;
+                        model.m_controlPts[2].m_value = (int)RangeMaxThumb.Value; 
                         model.m_controlPts[2].m_colorIndex = 1023;
                         model.BuildColorGradient();
                         model.BuildColorMap();

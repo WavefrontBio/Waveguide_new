@@ -115,12 +115,14 @@ namespace Waveguide
                 RowDefinition gridRow = new RowDefinition();
 
                 RowButtonGrid.RowDefinitions.Add(gridRow);
+                gridRow.Height = new GridLength(1, GridUnitType.Star);
 
                 Button button = new Button();
                 button.Tag = r;
                 button.Content = (char)(r + 65);
                 button.FontSize = 8;
                 button.Click += RowButton_Click;
+                
 
                 Grid.SetRow(button, r);
                 Grid.SetColumn(button, 0);
@@ -138,6 +140,7 @@ namespace Waveguide
                 ColumnDefinition gridCol = new ColumnDefinition();
                 
                 ColumnButtonGrid.ColumnDefinitions.Add(gridCol);
+                gridCol.Width = new GridLength(1, GridUnitType.Star);
 
                 Button button = new Button();
                 button.Tag = c;
@@ -452,6 +455,7 @@ namespace Waveguide
             m_extraColumn.Width = new GridLength((double)(m_xPixelRange % m_cols));
 
             DrawPlate();
+
         }
 
   

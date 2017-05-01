@@ -35,7 +35,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="200"/>
+            <RowDefinition Height="500"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
@@ -383,11 +383,12 @@
                         <Image Grid.Row="0" MouseLeftButtonUp="ControlSubtractionPlateImage_MouseLeftButtonUp"
                                x:Name="ControlSubtractionPlateImage" Stretch="Fill"
                                Source="{Binding}"/>
-                        
-                        <!--<TextBlock Grid.Row="1" Text="Selected Control Wells"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>-->
-                    </Grid>
+
+                           
+                        <!--<local:WellSelectionControl Grid.Row="0" x:Name="WellSelection" Width="600" Height="400"/>-->
+                           
+
+                        </Grid>
                 </GroupBox>
 
                 <GroupBox Grid.Column="2" x:Name="DynamicRatioGroup"

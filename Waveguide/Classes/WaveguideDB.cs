@@ -5019,8 +5019,6 @@ namespace Waveguide
                             cont.Description = reader.GetString(2);
                             cont.TimeStamp = reader.GetDateTime(3);
                             cont.RuntimeAnalysis = reader.GetBoolean(4);
-                            cont.FlatFieldRefImageID = reader.GetInt32(5);
-                            cont.DarkRefImageID = reader.GetInt32(6);
 
                             m_analysisList.Add(cont);
                         }
@@ -5065,8 +5063,6 @@ namespace Waveguide
                             analysis.Description = reader.GetString(2);
                             analysis.TimeStamp = reader.GetDateTime(3);
                             analysis.RuntimeAnalysis = reader.GetBoolean(4);
-                            analysis.FlatFieldRefImageID = reader.GetInt32(5);
-                            analysis.DarkRefImageID = reader.GetInt32(6);
                         }
                     }
                     catch (Exception e)
@@ -5096,9 +5092,9 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO Analysis (ExperimentIndicatorID,Description,TimeStamp,RuntimeAnalysis,FlatFieldRefImageID,DarkRefImageID) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO Analysis (ExperimentIndicatorID,Description,TimeStamp,RuntimeAnalysis) "
                                                             + "OUTPUT INSERTED.AnalysisID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4)"
                                                             , con))
                 {
                     try
@@ -5111,9 +5107,6 @@ namespace Waveguide
                         command.Parameters.Add(DateTimeParam);
 
                         command.Parameters.AddWithValue("@p4", analysis.RuntimeAnalysis);
-
-                        command.Parameters.AddWithValue("@p5", analysis.FlatFieldRefImageID);
-                        command.Parameters.AddWithValue("@p6", analysis.DarkRefImageID);
 
                         analysis.AnalysisID = (int)command.ExecuteScalar();
                     }
@@ -5140,9 +5133,8 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("UPDATE Analysis SET ExperimentIndicatorID=@p1,Description=@p2,TimeStamp=@p3,RuntimeAnalysis=@p4," +
-                                                           "FlatFieldRefImageID=@p5,DarkRefImageID=@p6 " +
-                                                            "WHERE AnalysisID=@p7", con))
+                using (SqlCommand command = new SqlCommand("UPDATE Analysis SET ExperimentIndicatorID=@p1,Description=@p2,TimeStamp=@p3,RuntimeAnalysis=@p4 " +                                                           
+                                                            "WHERE AnalysisID=@p5", con))
                 {
                     try
                     {
@@ -5155,10 +5147,7 @@ namespace Waveguide
 
                         command.Parameters.AddWithValue("@p4", analysis.RuntimeAnalysis);
 
-                        command.Parameters.AddWithValue("@p5", analysis.FlatFieldRefImageID);
-                        command.Parameters.AddWithValue("@p6", analysis.DarkRefImageID);
-
-                        command.Parameters.AddWithValue("@p7", analysis.AnalysisID);
+                        command.Parameters.AddWithValue("@p5", analysis.AnalysisID);
 
                         command.ExecuteNonQuery();
                     }

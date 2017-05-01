@@ -182,8 +182,6 @@ namespace Waveguide
         private string _description;
         private DateTime _timeStamp;
         private List<float[,]> _data;
-        private int _flatFieldRefImageID;
-        private int _darkRefImageID;
 
         // constructor
         public AnalysisContainer()
@@ -228,19 +226,6 @@ namespace Waveguide
             get { return _data; }
             set { _data = value; NotifyPropertyChanged("Data"); }
         }
-
-        public int FlatFieldRefImageID
-        {
-            get { return _flatFieldRefImageID; }
-            set { _flatFieldRefImageID = value; NotifyPropertyChanged("FlatFieldRefImageID"); }
-        }
-
-        public int DarkRefImageID
-        {
-            get { return _darkRefImageID; }
-            set { _darkRefImageID = value; NotifyPropertyChanged("DarkRefImageID"); }
-        }
-
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged(String info)

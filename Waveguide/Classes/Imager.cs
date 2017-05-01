@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows;
 using System.ComponentModel;
 using System.Windows.Controls;
+using System.Collections;
 
 namespace Waveguide
 {
@@ -191,7 +192,7 @@ namespace Waveguide
             if(m_cudaToolBox != null) m_cudaToolBox.ShutdownCudaTools();
 
             // stop the temperature monitoring Task
-            m_cameraTemperatureTokenSource.Cancel();       
+            if(m_cameraTemperatureTokenSource != null) m_cameraTemperatureTokenSource.Cancel();       
         }
 
         public void Init()
@@ -2055,7 +2056,710 @@ namespace Waveguide
         }
 
         #endregion
+
+
+        #region Start Imaging
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+        //public async void StartImaging(ImagingParameters iParams,
+        //    Tuple<MaskContainer, ObservableCollection<Tuple<int, int>>, int, int, int> analysisParams,
+        //    CancellationToken cancelToken, TaskScheduler uiTask,
+        //    Progress<int> progress, ImageDisplay imageDisplay, WG_Color[] colorMap,
+        //    Histogram histogram, ChartArray chartArray = null)
+        //{
+        //    // the imageDisplay and chartArray parameters are a little confusing.  You either supply one or the other.  If you have a chartArray that the images
+        //    // are displayed to, then supply chartArray and set imageDisplay = null.  If you're not using a chartArray, but simply want to display to 
+        //    // and ImageDisplay, then supply an imageDisplay and set chartArray = null;
+
+
+        //    bool saveImages = false;
+        //    int imageCount = 0;
+
+
+        //    if (iParams.ExperimentIndicatorID != null)
+        //        if (iParams.ExperimentIndicatorID.Length > 0)
+        //            if (iParams.ExperimentIndicatorID[0] > 0)
+        //                saveImages = true;
+
+        //    ITargetBlock<Tuple<ushort[], int, int, int, WG_Color[]>> displayPipeline;
+
+        //    Dictionary<int, FLATFIELD_SELECT> ffcDictionary = new Dictionary<int, FLATFIELD_SELECT>();
+
+        //    if (chartArray == null && imageDisplay != null)// ImageDisplay Supplied
+        //    {
+        //        // create a hashtable for the image display
+        //        Dictionary<int, ImageDisplay> idDictionary = new Dictionary<int, ImageDisplay>();
+        //        idDictionary.Add(iParams.ExperimentIndicatorID[0], imageDisplay);
+
+        //        // create a hashtable for the flat field select                
+        //        ffcDictionary.Add(iParams.ExperimentIndicatorID[0], iParams.FlatFieldSelect[0]);
+
+        //        displayPipeline = CreateDisplayPipeline(uiTask, idDictionary, iParams.HorzBinning, iParams.VertBinning, ffcDictionary);
+        //    }
+        //    else if (chartArray != null)  // ChartArray supplied
+        //    {
+        //        Dictionary<int, ImageDisplay> idDictionary = chartArray.GetImageDisplayDictionary();
+
+        //        // create a hashtable for the flat field select                
+        //        Dictionary<int, ExperimentIndicatorContainer> expIndDictionary = chartArray.GetExperimentIndicatorDictionary();
+        //        foreach (KeyValuePair<int, ExperimentIndicatorContainer> entry in expIndDictionary)
+        //        {
+        //            int expIndID = entry.Key;
+        //            ExperimentIndicatorContainer expIndCont = entry.Value;
+        //            ffcDictionary.Add(expIndID, expIndCont.FlatFieldCorrection);
+        //        }
+
+        //        displayPipeline = CreateDisplayPipeline(uiTask, idDictionary, iParams.HorzBinning, iParams.VertBinning, ffcDictionary);
+
+        //    }
+        //    else  // neither an ImageDisplay or ChartArray were supplied
+        //        return;
+
+
+
+        //    ITargetBlock<Tuple<ushort[], int, int, int>> storagePipeline = null;
+
+        //    ITargetBlock<Tuple<ushort[], int>> histogramPipeline = null;
+
+        //    ITargetBlock<Tuple<ushort[], int, int>> analysisPipeline = null;
+
+        //    if (saveImages)
+        //    {
+        //        storagePipeline = CreateImageStoragePipeline(GlobalVars.CompressionAlgorithm, iParams.imageWidth, iParams.imageHeight);
+        //    }
+
+        //    if (chartArray != null && analysisParams != null)
+        //    {
+        //        MaskContainer mask = analysisParams.Item1;
+        //        ObservableCollection<Tuple<int, int>> controlWells = analysisParams.Item2;
+        //        int numFoFrames = analysisParams.Item3;
+        //        int dynamicRatioNumeratorID = analysisParams.Item4;
+        //        int dynamicRatioDenominatorID = analysisParams.Item5;
+
+        //        analysisPipeline = CreateAnalysisPipeline(chartArray, mask, iParams.imageWidth,
+        //            iParams.imageHeight, iParams.HorzBinning, iParams.VertBinning,
+        //            iParams.ExperimentIndicatorID, controlWells, numFoFrames,
+        //            dynamicRatioNumeratorID, dynamicRatioDenominatorID, iParams.PixelMask);
+        //    }
+
+        //    if (histogram != null)
+        //    {
+        //        histogramPipeline = CreateHistogramPipeline(uiTask, histogram, iParams.HorzBinning, iParams.VertBinning, ffcDictionary);
+        //    }
+
+        //    Task<int> ImagingTask;
+
+        //    if (iParams.NumIndicators == 1 && iParams.CycleTime[0] < 300)
+        //    {
+        //        /// Start Fast Imaging Task 
+        //        ImagingTask = Task.Factory.StartNew<int>(() => ImageReader_worker(iParams,
+        //            progress,
+        //            cancelToken,
+        //            colorMap,
+        //            displayPipeline,
+        //            storagePipeline,
+        //            histogramPipeline,
+        //            analysisPipeline),
+        //            cancelToken);
+        //    }
+        //    else
+        //    {
+
+        //        /// Start Normal Imaging Task 
+        //        ImagingTask = Task.Factory.StartNew<int>(() => ImageReader_worker(iParams,
+        //            progress,
+        //            cancelToken,
+        //            colorMap,
+        //            displayPipeline,
+        //            storagePipeline,
+        //            histogramPipeline,
+        //            analysisPipeline),
+        //            cancelToken);
+        //    }
+
+        //    try
+        //    {
+        //        imageCount = await ImagingTask;
+        //    }
+        //    catch (AggregateException aggEx)
+        //    {
+        //        StringBuilder sb = new StringBuilder();
+        //        sb.Append("Exception(s) occurred: ");
+        //        foreach (Exception ex in aggEx.InnerExceptions)
+        //        {
+        //            sb.Append(ex.Message);
+        //            sb.Append(", ");
+        //        }
+
+        //        m_imagerRunning = false;
+        //        OnCameraEvent(new CameraEventArgs(sb.ToString(), false));
+        //    }
+        //    catch (OperationCanceledException)
+        //    {
+        //        m_imagerRunning = false;
+        //        OnCameraEvent(new CameraEventArgs("Imaging Cancelled", false));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        m_imagerRunning = false;
+        //        OnCameraEvent(new CameraEventArgs(ex.Message, false));
+        //    }
+        //    finally
+        //    {
+        //        ImagingTask.Dispose();
+        //    }
+
+        //    ((IProgress<int>)progress).Report(imageCount);
+        //}
+
+
+
+        #endregion
+
+
+        #region Image Storage Pipeline
+
+
+        public ITargetBlock<Tuple<ushort[], int, int, int>> CreateImageStoragePipeline(int projectID, int plateID, int experimentID, COMPRESSION_ALGORITHM compAlgorithm)
+        {
+            int m_projectID = projectID;
+            int m_plateID = plateID;
+            int m_experimentID = experimentID;
+            COMPRESSION_ALGORITHM m_compAlgorithm = compAlgorithm;
+            int m_maxPixelValue = GlobalVars.MaxPixelValue;
+
+            string m_baseFilePath = GlobalVars.ImageFileSaveLocation + "\\" + m_projectID.ToString() + "\\" + m_plateID.ToString() + "\\" +
+                                    m_experimentID.ToString() + "\\";
+
+            WaveguideDB m_wgDB = new WaveguideDB();
+
+
+            // input: grayimage (ushort[]), ExperimentIndicatorID (int), time (int), exposure (int)            
+            var storeImage = new ActionBlock<Tuple<ushort[], int, int, int>>(inputData =>
+            {
+                ushort[] grayImage = inputData.Item1;
+                int expIndicatorID = inputData.Item2;
+                int time = inputData.Item3;
+
+                try
+                {
+                    ExperimentImageContainer expImage = new ExperimentImageContainer();
+
+                    expImage.CompressionAlgorithm = m_compAlgorithm;
+                    expImage.ExperimentIndicatorID = expIndicatorID;
+                    expImage.ImageData = grayImage;
+                    expImage.MaxPixelValue = GlobalVars.MaxPixelValue;
+                    expImage.MSecs = time;
+
+                    expImage.TimeStamp = DateTime.Now;
+
+                    expImage.FilePath = m_baseFilePath + expIndicatorID.ToString() + "\\" + expImage.MSecs.ToString("D8") + "_wgi.zip";
+
+                    bool success = m_wgDB.InsertExperimentImage(ref expImage);
+
+                    if (success)
+                    {
+                        // write image file to disk
+                        try
+                        {
+                            Zip.Compress_File(grayImage, expImage.FilePath);
+                        }
+                        catch (Exception e)
+                        {
+                            string errMsg = e.Message;
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+
+                }
+            },
+               new ExecutionDataflowBlockOptions
+               {
+                   MaxDegreeOfParallelism = 8
+               });
+
+
+            // return head of storage pipeline
+            return storeImage;
+
+        }
+
+
+
+
+
+
+        #endregion
+
         
+
+
+
+        #region Analysis Pipeline
+
+        public ITargetBlock<Tuple<ushort[], int, int>> CreateAnalysisPipeline(ChartArray chartArray,
+                 MaskContainer mask, int pixelWidth, int pixelHeight, int hBinning, int vBinning,
+                 int[] indicatorIdList, ObservableCollection<Tuple<int, int>> controlWells,
+                 int numFoFrames, int dynamicRatioNumeratorID, int dynamicRatioDenominatorID)
+        {
+            // perform pre-processing of mask.  This creates a 2D array with an array element for each mask aperture.  The idea
+            // is that for each aperture, create an array of the pixels inside that aperture.  This is only done once, when the 
+            // AnalysisPipeline is created.  Thus all that is required to find the sum of pixels within an aperture is to go to
+            // that aperture's array of pixels and get the value for each one of those pixels, adding to the sum.  
+            //
+            // int pixelList[mask.rows, mask.cols][numPixels] will contain the pixel list for each aperture.
+            //
+            // for example, to sum all pixels in aperture [1,1], you would do this:
+            //
+            //     foreach(int ndx in pixelList[1,1]) sum[1,1] += grayImage[ndx];
+            //
+            //          NOTE: grayImage is the raw image from the camera and is a 1D array
+
+            // now...preprocess the mask, i.e. create pixelList[mask.rows,mask.cols][numPixels]
+
+            mask.BuildPixelList(pixelWidth, pixelHeight, hBinning, vBinning);
+
+            TaskScheduler m_chartArrayTask = chartArray.GetTaskScheduler();
+
+            Hashtable m_Fo_Hash = new Hashtable();
+            Hashtable m_FoCount_Hash = new Hashtable();
+            Hashtable m_FoReady_Hash = new Hashtable();
+            Hashtable m_analysis_Hash = new Hashtable();
+            Hashtable m_pixelMask_Hash = new Hashtable();
+
+            int m_dynamicRatioNumeratorID = dynamicRatioNumeratorID;
+            int m_dynamicRatioDenominatorID = dynamicRatioDenominatorID;
+            bool m_dynamicRatioNumeratorReady = false;
+            bool m_dynamicRatioDenominatorReady = false;
+            float[,] m_dynamicRatioNumeratorValues = new float[mask.Rows, mask.Cols];
+            float[,] m_dynamicRatioDenominatorValues = new float[mask.Rows, mask.Cols];
+
+            WaveguideDB wgDB = new WaveguideDB();
+
+            bool success;
+
+            ExperimentIndicatorContainer indicator;
+            ushort[] Flat;
+            ushort[] Dark;
+            int flatID = 0;
+            int darkID = 0;
+
+            int cnt = 0;
+
+            foreach (int expIndID in indicatorIdList)
+            {
+                //////////////////////////////////////////////////////////////////////////////
+                // Calculate Fo for this experiment indicator
+                float[,] Fo = new float[mask.Rows, mask.Cols];
+                for (int r = 0; r < mask.Rows; r++)
+                    for (int c = 0; c < mask.Cols; c++)
+                    {
+                        Fo[r, c] = 0.0f;
+                    }
+                m_Fo_Hash.Add(expIndID, Fo);
+
+                int Fo_count = 0;
+                m_FoCount_Hash.Add(expIndID, Fo_count);
+
+                bool Fo_ready = false;
+                m_FoReady_Hash.Add(expIndID, Fo_ready);
+
+                AnalysisContainer anal = new AnalysisContainer();
+                anal.Description = "PixelSum";
+                anal.ExperimentIndicatorID = expIndID;
+                anal.TimeStamp = DateTime.Now;
+                anal.RuntimeAnalysis = true;
+                wgDB.InsertAnalysis(ref anal);
+                m_analysis_Hash.Add(expIndID, anal);
+
+                cnt++;
+            }
+
+
+            // calculate the sum of all pixel values for each mask aperture.  These sums are 
+            // stored in a array of mask.rows x mask.cols. 
+            //      input: grayimage (ushort[]), ExperimentIndicatorID (int), time (int)
+            //      output: array of raw pixel sums for each mask aperture (float[,]), ExperimentIndicatorID (int)
+            //              and time (int)
+            var calculateApertureSums = new TransformBlock<Tuple<ushort[], int, int>, Tuple<float[,], int, int>>(inputData =>
+            {
+                ushort[] grayImage = inputData.Item1;
+                int expIndicatorID = inputData.Item2;
+                int time = inputData.Item3;
+
+                try
+                {
+                    // sum all pixels in pixelList
+                    float[,] F = new float[mask.Rows, mask.Cols];
+
+                    for (int r = 0; r < mask.Rows; r++)
+                        for (int c = 0; c < mask.Cols; c++)
+                        {
+                            F[r, c] = 0;
+
+                            int pixelCount = 0;
+
+                            // calculate sum of pixels inside mask aperture[r,c]
+                            foreach (int ndx in mask.PixelList[r, c])
+                            {                              
+                                F[r, c] += grayImage[ndx];
+                                pixelCount++;                              
+                            }
+
+                            if (pixelCount > 0)
+                                F[r, c] = F[r, c] / pixelCount;
+                        }
+
+                    return Tuple.Create(F, expIndicatorID, time);
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            },
+               new ExecutionDataflowBlockOptions
+               {
+                   MaxDegreeOfParallelism = 1
+               });
+
+
+
+            // calculate Static Ratio: F/Fo for each mask aperture.  Fo is the average of the 
+            // first N frames for each mask aperture, and F is the raw pixel sum from each 
+            // mask aperture.  N is set to numFoFrames, which is passed in during the creation
+            // of this pipeline.
+            //      input: F array (float[,]), ExperimentIndicatorID (int), and time (int)
+            //      output: F array (float[,]), F/Fo array (float[,]), ExperimentIndicatorID (int),
+            //              and time (int)
+            var calculateStaticRatio = new TransformBlock<Tuple<float[,], int, int>, Tuple<float[,], float[,], int, int>>(inputData =>
+            {
+                float[,] F = inputData.Item1;
+                int expIndicatorID = inputData.Item2;
+                int time = inputData.Item3;
+
+                // retrieve data relevant to this ExperimentIndicatore
+                float[,] Fo = (float[,])m_Fo_Hash[expIndicatorID];
+                int FoCount = (int)m_FoCount_Hash[expIndicatorID];
+                bool FoReady = (bool)m_FoReady_Hash[expIndicatorID];
+
+                float[,] staticRatio = null;
+
+                try
+                {
+                    if (FoReady)
+                    {
+                        staticRatio = new float[mask.Rows, mask.Cols];
+                        for (int r = 0; r < mask.Rows; r++)
+                            for (int c = 0; c < mask.Cols; c++)
+                            {
+                                staticRatio[r, c] = F[r, c] / Fo[r, c];
+                            }
+                    }
+                    else
+                    {
+                        for (int r = 0; r < mask.Rows; r++)
+                            for (int c = 0; c < mask.Cols; c++)
+                            {
+                                Fo[r, c] += F[r, c];
+                            }
+                        FoCount++;
+                        m_FoCount_Hash[expIndicatorID] = FoCount; // update Hashtable
+
+                        if (FoCount >= numFoFrames)
+                        {
+                            FoReady = true;
+                            m_FoReady_Hash[expIndicatorID] = FoReady; // update Hashtable
+
+                            for (int r = 0; r < mask.Rows; r++)
+                                for (int c = 0; c < mask.Cols; c++)
+                                {
+                                    Fo[r, c] /= numFoFrames;
+                                }
+                        }
+
+                        staticRatio = null;
+                    }
+
+                    return Tuple.Create(F, staticRatio, expIndicatorID, time);
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            },
+                // Specify a task scheduler as that which is passed in
+                // so that the action runs on the UI thread. 
+               new ExecutionDataflowBlockOptions
+               {
+                   MaxDegreeOfParallelism = 1
+               });
+
+
+
+
+
+
+
+            // calculate Control Subtraction: for a selected group of wells (mask apertures), designated
+            // as "control wells", find the average of the static ratio for those wells and subtract 
+            // it from the static ratio of each individual mask aperture.
+            //      input: F array (float[,]), F/Fo array (float[,]), ExperimentIndicatorID (int),
+            //             and time(int)
+            //      output: F array (float[,]), F/Fo array aka "static Ratio" (float[,]), 
+            //              control subtraction array (float[,]), and ExperimentIndicatorID (int)
+            var calculateControlSubtraction = new TransformBlock<Tuple<float[,], float[,], int, int>, Tuple<float[,], float[,], float[,], int, int>>(inputData =>
+            {
+                float[,] F = inputData.Item1;
+                float[,] staticRatio = inputData.Item2;
+                int expIndicatorID = inputData.Item3;
+                int time = inputData.Item4;
+
+                float avgControl = 0.0f;
+
+                float[,] controlSubtraction = new float[mask.Rows, mask.Cols];
+
+                try
+                {
+                    // only do this if the control wells are specified and staticRatio available
+                    if (controlWells.Count() > 0 && staticRatio != null)
+                    {
+                        // calculate Avg(F/Fo) for control wells
+                        foreach (Tuple<int, int> well in controlWells)
+                        {
+                            int row = well.Item1;
+                            int col = well.Item2;
+
+                            avgControl += staticRatio[row, col];
+                        }
+                        avgControl /= controlWells.Count();
+
+
+                        for (int r = 0; r < mask.Rows; r++)
+                            for (int c = 0; c < mask.Cols; c++)
+                            {
+                                controlSubtraction[r, c] = staticRatio[r, c] - avgControl;
+                            }
+                    }
+                    else
+                    {
+                        controlSubtraction = null;
+                    }
+
+                    return Tuple.Create(F, staticRatio, controlSubtraction, expIndicatorID, time);
+
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            },
+                // Specify a task scheduler as that which is passed in
+                // so that the action runs on the UI thread. 
+               new ExecutionDataflowBlockOptions
+               {
+                   MaxDegreeOfParallelism = 1
+               });
+
+
+
+
+
+
+
+            // calculate Dynamic Ratio: this is the ration of the static ratios for two given 
+            // indicators.  Before this block can actually create a value, it must recieve an
+            // input from both indicators.  
+            //      input: F array (float[,]), F/Fo array aka "static Ratio" (float[,]), 
+            //              control subtraction array (float[,]), ExperimentIndicatorID (int),
+            //              and time (int)
+            //      output: F array (float[,]), F/Fo array aka "static Ratio" (float[,]), 
+            //              control subtraction array (float[,]), dyanamic ratio array (float[,]),
+            //              ExperimentIndicatorID (int), and time (int)
+            var calculateDynamicRatio = new TransformBlock<Tuple<float[,], float[,], float[,], int, int>, Tuple<float[,], float[,], float[,], float[,], int, int>>(inputData =>
+            {
+                float[,] F = inputData.Item1;
+                float[,] staticRatio = inputData.Item2;
+                float[,] controlSubtraction = inputData.Item3;
+                int expIndicatorID = inputData.Item4;
+                int time = inputData.Item5;
+
+                float[,] dynamicRatio = null;
+
+                try
+                {
+                    if (staticRatio != null)
+                    {
+                        if (expIndicatorID == m_dynamicRatioNumeratorID)
+                        {
+                            for (int r = 0; r < mask.Rows; r++)
+                                for (int c = 0; c < mask.Cols; c++)
+                                {
+                                    m_dynamicRatioNumeratorValues[r, c] = staticRatio[r, c];
+                                }
+                            m_dynamicRatioNumeratorReady = true;
+                        }
+                        else if (expIndicatorID == m_dynamicRatioDenominatorID)
+                        {
+                            for (int r = 0; r < mask.Rows; r++)
+                                for (int c = 0; c < mask.Cols; c++)
+                                {
+                                    m_dynamicRatioDenominatorValues[r, c] = staticRatio[r, c];
+                                }
+                            m_dynamicRatioDenominatorReady = true;
+                        }
+                    }
+
+                    if (m_dynamicRatioNumeratorReady && m_dynamicRatioDenominatorReady)
+                    {
+                        m_dynamicRatioNumeratorReady = false;
+                        m_dynamicRatioDenominatorReady = false;
+
+                        dynamicRatio = new float[mask.Rows, mask.Cols];
+
+                        for (int r = 0; r < mask.Rows; r++)
+                            for (int c = 0; c < mask.Cols; c++)
+                            {
+                                dynamicRatio[r, c] = m_dynamicRatioNumeratorValues[r, c] / m_dynamicRatioDenominatorValues[r, c];
+                            }
+                    }
+                    else
+                    {
+                        dynamicRatio = null;
+                    }
+
+                    return Tuple.Create(F, staticRatio, controlSubtraction, dynamicRatio, expIndicatorID, time);
+
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+            },
+                // Specify a task scheduler as that which is passed in
+                // so that the action runs on the UI thread. 
+               new ExecutionDataflowBlockOptions
+               {
+                   MaxDegreeOfParallelism = 1
+               });
+
+
+
+
+
+
+
+            // Post the analysis results to the charting display
+            //      input: F array (float[,]), F/Fo array aka "static Ratio" (float[,]),  
+            //              control subtraction array (float[,]), dyanamic ratio array (float[,]),
+            //              ExperimentIndicatorID (int), and time (int)
+            var PostAnalysisResults = new TransformBlock<Tuple<float[,], float[,], float[,], float[,], int, int>,
+                Tuple<float[,], float[,], float[,], float[,], int, int>>(inputData =>
+                {
+                    float[,] F = inputData.Item1;
+                    float[,] staticRatio = inputData.Item2;
+                    float[,] controlSubtraction = inputData.Item3;
+                    float[,] dynamicRatio = inputData.Item4;
+                    int expIndicatorID = inputData.Item5;
+                    int time = inputData.Item6;
+
+                    try
+                    {
+                        // send the data to be displayed
+                        chartArray.AppendNewData(ref F, ref staticRatio, ref controlSubtraction,
+                                                 ref dynamicRatio, time, expIndicatorID);
+
+                        return Tuple.Create(F, staticRatio, controlSubtraction, dynamicRatio, expIndicatorID, time);
+
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return null;
+                    }
+                    catch (Exception e)
+                    {
+                        string errmsg = e.Message;
+                        return null;
+                    }
+                },
+                // Specify a task scheduler as that which is passed in
+                // so that the action runs on the UI thread. 
+               new ExecutionDataflowBlockOptions
+               {
+                   TaskScheduler = m_chartArrayTask,
+                   MaxDegreeOfParallelism = 8
+               });
+
+
+
+
+
+
+            // Post the analysis results to the charting display and store the results in the 
+            // database.                          
+            //      input: F array (float[,]), F/Fo array aka "static Ratio" (float[,]),  
+            //              control subtraction array (float[,]), dyanamic ratio array (float[,]),
+            //              ExperimentIndicatorID (int), and time (int)
+            var StoreAnalysisResults = new ActionBlock<Tuple<float[,], float[,], float[,], float[,], int, int>>(inputData =>
+            {
+                float[,] F = inputData.Item1;
+                float[,] staticRatio = inputData.Item2;
+                float[,] controlSubtraction = inputData.Item3;
+                float[,] dynamicRatio = inputData.Item4;
+                int expIndicatorID = inputData.Item5;
+                int time = inputData.Item6;
+
+
+                try
+                {
+                    // write F to database
+                    WaveguideDB wgDB2 = new WaveguideDB();
+
+                    AnalysisContainer anal = (AnalysisContainer)m_analysis_Hash[expIndicatorID];
+
+                    bool success2 = wgDB2.InsertAnalysisFrame(anal.AnalysisID, time, F);
+
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception e)
+                {
+                    string errmsg = e.Message;
+                }
+            },
+                // Specify a task scheduler as that which is passed in
+                // so that the action runs on the UI thread. 
+               new ExecutionDataflowBlockOptions
+               {
+                   MaxDegreeOfParallelism = 8
+               });
+
+
+
+
+            // link blocks
+            calculateApertureSums.LinkTo(calculateStaticRatio);
+            calculateStaticRatio.LinkTo(calculateControlSubtraction);
+            calculateControlSubtraction.LinkTo(calculateDynamicRatio);
+            calculateDynamicRatio.LinkTo(PostAnalysisResults);
+            PostAnalysisResults.LinkTo(StoreAnalysisResults);
+
+
+            // return head of display pipeline
+            return calculateApertureSums;
+          
+
+        } // END CreateAnalysisPipeline()
+
+
+        #endregion
+
+    
 
     }
 

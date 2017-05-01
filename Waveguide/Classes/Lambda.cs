@@ -121,7 +121,7 @@ namespace Waveguide
             FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
 
             // Populate our device list
-            ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
+            ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);  
 
             // Search list for Lambda device
             if (ftStatus == FTDI.FT_STATUS.FT_OK)

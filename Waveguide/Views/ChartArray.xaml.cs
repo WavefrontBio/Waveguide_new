@@ -497,11 +497,11 @@ namespace Waveguide
                 ImageGrid.Children.Add(stack);
 
 
-                Image image = new Image();
-                image.Margin = new Thickness(2);
-                Grid.SetColumn(image,i);
-                Grid.SetRow(image,1);
-                ImageGrid.Children.Add(image);
+                ImageDisplay imageDisplay = new ImageDisplay();
+                imageDisplay.Margin = new Thickness(2);
+                Grid.SetColumn(imageDisplay, i);
+                Grid.SetRow(imageDisplay, 1);
+                ImageGrid.Children.Add(imageDisplay);
 
                 ImagingParamsStruct ips = new ImagingParamsStruct();
                 ips.cycleTime = 1000; // TODO:  this needs to be set somewhere else
@@ -513,7 +513,7 @@ namespace Waveguide
                 ips.gain = indicator.Gain;
                 ips.indicatorName = indicator.Description; 
                 ips.histBitmap = null;  // no histogram shown 
-                ips.ImageControl = image;
+                ips.ImageControl = imageDisplay;
               
                 m_imager.m_ImagingDictionary.Add(indicator.ExperimentIndicatorID,ips);
 

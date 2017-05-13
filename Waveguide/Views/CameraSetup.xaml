@@ -40,7 +40,8 @@
                 </Grid.RowDefinitions>
                               
                 <Grid x:Name="ImageGrid" Grid.Row="0">
-                    <Image Stretch="Uniform" x:Name="ImageDisplay"/>
+                    <local:ImageDisplay x:Name="ImageDisplayControl"/>
+                    <!--<Image Stretch="Uniform" x:Name="ImageDisplay"/>-->
                 </Grid>
                 <WPFTools:RangeSlider x:Name="RangeSlider"  Grid.Row="1"  
                                       LowerValue="{Binding SliderLowPosition, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
@@ -386,13 +387,14 @@
                 </GroupBox>
 
 
-            <Button Grid.Row="0" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="TakePicturePB" Click="TakePicturePB_Click"
+                <Button Grid.Row="0" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="TakePicturePB" Click="TakePicturePB_Click"
                         Content="Take Picture" Width="120" Height="22" Margin="40,2,0,2"/>
             
                 <Button Grid.Row="1" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="StartVideoPB" Click="StartVideoPB_Click"
                         Content="Start Video" Width="120" Height="22" Margin="40,2,0,2"/>
-            
-            
+
+                <Button Grid.Row="2" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="SaveImagePB" Click="SaveImagePB_Click"
+                        Content="Save Image" Width="120" Height="22" Margin="40,2,0,2"/>
 
 
             <Label Grid.Row="4" Grid.Column="0" Content="CycleTime (msecs):" HorizontalAlignment="Right" VerticalAlignment="Center"/>

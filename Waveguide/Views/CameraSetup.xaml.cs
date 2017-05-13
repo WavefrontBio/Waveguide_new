@@ -87,7 +87,7 @@ namespace Waveguide
 
                 ips.histBitmap = BitmapFactory.New(m_imager.m_histogramImageWidth, m_imager.m_histogramImageHeight);
                 HistImage.Source = ips.histBitmap;
-                ips.ImageControl = ImageDisplay;
+                ips.ImageControl = ImageDisplayControl;
                 ips.indicatorName = "Setup";
 
                 m_imager.m_ImagingDictionary.Add(m_ID, ips); // Not sure if this is right
@@ -115,7 +115,7 @@ namespace Waveguide
                 ips.gain = 5;
                 ips.histBitmap = BitmapFactory.New(m_imager.m_histogramImageWidth, m_imager.m_histogramImageHeight);
                 HistImage.Source = ips.histBitmap;
-                ips.ImageControl = ImageDisplay;
+                ips.ImageControl = ImageDisplayControl;
                 ips.indicatorName = "Setup";
           
 
@@ -674,6 +674,20 @@ namespace Waveguide
                 vm.WellSelectionPBLabel = ips.optimizeWellList.Count.ToString();
             }                
             
+        }
+
+        private void SaveImagePB_Click(object sender, RoutedEventArgs e)
+        {
+            bool allowSaveRefImage = false;
+            if (vm.Binning == 1) allowSaveRefImage = true;
+
+            SaveImageDialog dlg = new SaveImageDialog(ImageDisplayControl.m_imageBitmap,
+                                                      ImageDisplayControl.m_grayImage, 
+                                                      m_camera.m_acqParams.BinnedFullImageWidth, 
+                                                      m_camera.m_acqParams.BinnedFullImageHeight,                                                      
+                                                      allowSaveRefImage);
+
+            dlg.ShowDialog();
         }
 
 	}

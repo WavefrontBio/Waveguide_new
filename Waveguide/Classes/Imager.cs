@@ -28,8 +28,8 @@ namespace Waveguide
 
     public struct ImagingParamsStruct
     {
-        public Image            ImageControl;
-        public WriteableBitmap  bmapImage;     
+        public ImageDisplay     ImageControl;
+        //public WriteableBitmap  bmapImage;     
         public WriteableBitmap  histBitmap;
 
         public float            exposure;
@@ -46,13 +46,12 @@ namespace Waveguide
         
                                            
 
-        public ImagingParamsStruct(Image imageControl, WriteableBitmap _bmapImage, WriteableBitmap _histBitmap,
+        public ImagingParamsStruct(ImageDisplay imageControl, WriteableBitmap _histBitmap,
             float _exposure, int _binning, byte _excitationFilterPos, byte _emissionFilterPos, string _indicatorName, 
             int _cycleTime, int _gain, int _preAmpGainIndex, FLATFIELD_SELECT _flatfieldType, int _expIndicatorID, 
             ObservableCollection<Tuple<int,int>> _optimizeWellList = null)
         {
             ImageControl = imageControl;
-            bmapImage = _bmapImage;
             histBitmap = _histBitmap;
             exposure = _exposure;
             binning = _binning;
@@ -207,20 +206,20 @@ namespace Waveguide
             else
             {
                 // Initialize Lambda (filter controller)
-                if (!m_lambda.SystemInitialized)
-                {
-                    success = m_lambda.Initialize();
-                    if (!success)
-                    {
-                        ImagerReady = false;
-                        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
-                        return;
-                    }
-                    else
-                    {
-                        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
-                    }
-                }
+                //if (!m_lambda.SystemInitialized)
+                //{
+                //    success = m_lambda.Initialize();
+                //    if (!success)
+                //    {
+                //        ImagerReady = false;
+                //        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
+                //        return;
+                //    }
+                //    else
+                //    {
+                //        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
+                //    }
+                //}
             }
 
             ImagerReady = true;
@@ -426,7 +425,7 @@ namespace Waveguide
 
 
         public Dictionary<int,ImagingParamsStruct> BuildImagingDictionary(Dictionary<int, ExperimentIndicatorContainer> indicatorDictionary, 
-                                                                          Dictionary<int,Image> imageDictionary,  // dictionary of Image controls that the D3DImage controls are connected to
+                                                                          Dictionary<int,ImageDisplay> imageDictionary,  // dictionary of ImageDisplay controls
                                                                           Dictionary<int,int>   cycleTimeDictionary, // dictionary of cycle times for each experiment indicator                                                                          
                                                                           Dictionary<int,Image> histImageDictionary)  // can be null if no Histogram Images are to be displayed, otherwise
                                                                                                                       // a dictionary of Image controls used to display histograms
@@ -480,7 +479,7 @@ namespace Waveguide
                     ips.ImageControl = null;
                 
               
-                ips.bmapImage = null;           
+                ips.ImageControl.m_imageBitmap = null;           
 
                 m_ImagingDictionary.Add(ind.ExperimentIndicatorID,ips);
 
@@ -519,16 +518,16 @@ namespace Waveguide
                 // convert the grayscale image to color using the colormap that is already on the GPU
                 IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
 
-                if(dps.bmapImage != null)
+                if(dps.ImageControl.m_imageBitmap != null)
                 {
                     byte[] colorImage;
                     m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                     // display the image
                     Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
-                    dps.bmapImage.Lock();
-                    dps.bmapImage.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
-                    dps.bmapImage.Unlock();
+                    dps.ImageControl.m_imageBitmap.Lock();
+                    dps.ImageControl.m_imageBitmap.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
+                    dps.ImageControl.m_imageBitmap.Unlock();
                 }
             }
             else
@@ -569,16 +568,16 @@ namespace Waveguide
                     // convert the grayscale image to color using the colormap that is already on the GPU
                     IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
 
-                    if (dps.bmapImage != null)
+                    if (dps.ImageControl.m_imageBitmap != null)
                     {
                         byte[] colorImage;
                         m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                         // display the image
                         Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
-                        dps.bmapImage.Lock();
-                        dps.bmapImage.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);                       
-                        dps.bmapImage.Unlock();
+                        dps.ImageControl.m_imageBitmap.Lock();
+                        dps.ImageControl.m_imageBitmap.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
+                        dps.ImageControl.m_imageBitmap.Unlock();
                     }
                 
 
@@ -711,16 +710,16 @@ namespace Waveguide
                         IntPtr colorImageOnGpu = cuda.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
 
                         // display color image
-                        if (dps.bmapImage != null)
+                        if (dps.ImageControl.m_imageBitmap != null)
                         {
                             byte[] colorImage;
                             m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                             // display the image
                             Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
-                            dps.bmapImage.Lock();
-                            dps.bmapImage.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
-                            dps.bmapImage.Unlock();
+                            dps.ImageControl.m_imageBitmap.Lock();
+                            dps.ImageControl.m_imageBitmap.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
+                            dps.ImageControl.m_imageBitmap.Unlock();
                         }
 
                     }
@@ -816,8 +815,8 @@ namespace Waveguide
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        dps.bmapImage = BitmapFactory.New((int)pixelWidth,(int)pixelHeight);                   
-                        dps.ImageControl.Source = dps.bmapImage;
+                        dps.ImageControl.SetImageSize((int)pixelWidth, (int)pixelHeight,GlobalVars.MaxPixelValue);
+                        dps.ImageControl.ImageBox.Source = dps.ImageControl.m_imageBitmap;
                     });
 
                 // rebuild mask

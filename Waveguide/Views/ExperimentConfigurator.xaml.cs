@@ -52,6 +52,19 @@ namespace Waveguide
             m_controlSubtractionBitmap = BitmapFactory.New(384, 256);
 
             ControlSubtractionPlateImage.Source = m_controlSubtractionBitmap;
+
+            //WellSelection.NewWellSetSelected += WellSelection_NewWellSetSelected;
+        }
+
+        void WellSelection_NewWellSetSelected(object sender, EventArgs e)
+        {
+            WellSelectionEventArgs ev = (WellSelectionEventArgs)e;
+            VM.ControlSubtractionWellList.Clear();
+
+            foreach (Tuple<int, int> well in ev.WellList)
+            {
+                VM.ControlSubtractionWellList.Add(well);
+            }            
         }
 
 
@@ -272,7 +285,11 @@ namespace Waveguide
 
             VM.SetExperimentStatus();
 
-            DrawPlate(); 
+            DrawPlate();
+
+            //if (VM.Mask != null)
+            //    WellSelection.Init(VM.Mask.Rows, VM.Mask.Cols);
+           
 
         }
 
@@ -388,6 +405,8 @@ namespace Waveguide
                 ShowErrorDialog("Method not set", "Data Error");
                 return;
             }
+
+
 
 // *************************************************************************************
 // *************************************************************************************

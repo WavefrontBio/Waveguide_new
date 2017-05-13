@@ -19,9 +19,9 @@
         
         <Button Grid.Row="0" Grid.Column="0" x:Name="SelectAllButton" Click="SelectAllButton_Click"/>
         
-        <Grid Grid.Row="0" Grid.Column="1" x:Name="ColumnButtonGrid"/>
+        <Grid Grid.Row="0" Grid.Column="1" x:Name="ColumnButtonGrid" HorizontalAlignment="Stretch"/>
         
-        <Grid Grid.Row="1" Grid.Column="0" x:Name="RowButtonGrid"/>
+        <Grid Grid.Row="1" Grid.Column="0" x:Name="RowButtonGrid" VerticalAlignment="Stretch"/>
 
                
         <Image x:Name="PlateImage" Stretch="Fill" Source="{Binding}"

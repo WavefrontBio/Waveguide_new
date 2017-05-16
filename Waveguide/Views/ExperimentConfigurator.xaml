@@ -25,9 +25,9 @@
     
 
 
-    <ScrollViewer HorizontalScrollBarVisibility="Auto" 
-                  VerticalScrollBarVisibility="Auto" x:Name="ScrollView">
-    <Grid>
+    <!--<ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                  VerticalScrollBarVisibility="Auto" x:Name="ScrollView">-->
+    <Grid Background="White">
         
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -35,7 +35,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="500"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
@@ -302,9 +302,9 @@
                   x:Name="RuntimeAnalysisGroup">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>                 
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="1.5*"/>
+                    <ColumnDefinition Width="Auto"/>                 
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
@@ -377,18 +377,15 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
-                        <Image Grid.Row="0" MouseLeftButtonUp="ControlSubtractionPlateImage_MouseLeftButtonUp"
+                        <!--<Image Grid.Row="0" MouseLeftButtonUp="ControlSubtractionPlateImage_MouseLeftButtonUp"
                                x:Name="ControlSubtractionPlateImage" Stretch="Fill"
-                               Source="{Binding}"/>
+                               Source="{Binding}"/>-->
+                                                   
+                        <local:WellSelectionControl Grid.Row="0" x:Name="WellSelection" Width="500" Height="300"/>
 
-                           
-                        <!--<local:WellSelectionControl Grid.Row="0" x:Name="WellSelection" Width="600" Height="400"/>-->
-                           
-
-                        </Grid>
+                    </Grid>
                 </GroupBox>
 
                 <GroupBox Grid.Column="2" x:Name="DynamicRatioGroup"
@@ -489,5 +486,5 @@
                     Click="StartExperimentPB_Click"/>
 
     </Grid>
-    </ScrollViewer>
+    <!--</ScrollViewer>-->
 </UserControl>

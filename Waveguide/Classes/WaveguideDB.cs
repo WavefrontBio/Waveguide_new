@@ -3274,6 +3274,34 @@ namespace Waveguide
         }
 
 
+        public bool GetDefaultPlateType(out PlateTypeContainer platetype)
+        {
+            bool success = true;
+
+            GetAllPlateTypes();
+
+            platetype = null;
+
+            foreach (PlateTypeContainer ptc in m_plateTypeList)
+            {
+                if (ptc.IsDefault)
+                {
+                    platetype = new PlateTypeContainer();
+                    platetype.Cols = ptc.Cols;
+                    platetype.Description = ptc.Description;
+                    platetype.IsDefault = ptc.IsDefault;
+                    platetype.PlateTypeID = ptc.PlateTypeID;
+                    platetype.Rows = ptc.Rows; 
+                      
+                    break;
+                }
+            }
+
+            if (platetype == null) success = false;
+
+            return success;
+        }
+
 
         public bool InsertPlateType(ref PlateTypeContainer platetype)
         {

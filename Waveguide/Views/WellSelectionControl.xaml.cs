@@ -26,8 +26,8 @@ namespace Waveguide
         ObservableCollection<Tuple<int, int>> m_wellList;
         WriteableBitmap m_plateBitmap;
         WriteableBitmap m_selectBitmap;
-        int m_xPixelRange;
-        int m_yPixelRange;
+        double m_xPixelRange;
+        double m_yPixelRange;
 
         int m_startX;
         int m_startY;
@@ -35,6 +35,8 @@ namespace Waveguide
         int m_endY;
 
         bool m_dragging;
+        bool m_startX_dragging;
+        bool m_startY_dragging;
 
         bool[,] m_selected;
 
@@ -87,60 +89,52 @@ namespace Waveguide
             }
 
 
-            // this trick makes sure that the image pixel size is a nice integer multiple
-            // of rows and cols
-            m_xPixelRange = 1024 / m_cols * m_cols;
-            m_yPixelRange = 1024 / m_rows * m_rows;
-
             InitializeComponent();
-
-            m_plateBitmap = BitmapFactory.New(m_xPixelRange, m_yPixelRange);
-            PlateImage.Source = m_plateBitmap;
-
-            m_selectBitmap = BitmapFactory.New(m_xPixelRange, m_yPixelRange);
-            SelectImage.Source = m_selectBitmap;
-
-            m_dragging = false;
 
             SetUpButtons();
 
             DrawPlate();
 
+            m_dragging = false;
+            m_startX_dragging = true;
+            m_startY_dragging = true;
+
         }
 
         private void SetUpButtons()
         {
-            for(int r = 0; r<m_rows; r++)
+            RowButtonGrid.RowDefinitions.Clear();
+            ColumnButtonGrid.ColumnDefinitions.Clear();
+
+            for (int r = 0; r < m_rows; r++)
             {
                 RowDefinition gridRow = new RowDefinition();
 
                 RowButtonGrid.RowDefinitions.Add(gridRow);
-                gridRow.Height = new GridLength(1, GridUnitType.Star);
 
                 Button button = new Button();
                 button.Tag = r;
                 button.Content = (char)(r + 65);
                 button.FontSize = 8;
                 button.Click += RowButton_Click;
-                
+
 
                 Grid.SetRow(button, r);
                 Grid.SetColumn(button, 0);
 
                 RowButtonGrid.Children.Add(button);
-            }           
+            }
             // add extra row that is used in resizing
             m_extraRow = new RowDefinition();
             m_extraRow.Height = new GridLength((double)(m_yPixelRange % m_rows));
             RowButtonGrid.RowDefinitions.Add(m_extraRow);
-         
 
-            for(int c = 0; c<m_cols; c++)
+
+            for (int c = 0; c < m_cols; c++)
             {
                 ColumnDefinition gridCol = new ColumnDefinition();
-                
+
                 ColumnButtonGrid.ColumnDefinitions.Add(gridCol);
-                gridCol.Width = new GridLength(1, GridUnitType.Star);
 
                 Button button = new Button();
                 button.Tag = c;
@@ -157,6 +151,32 @@ namespace Waveguide
             m_extraColumn.Width = new GridLength((double)(m_xPixelRange % m_cols));
             ColumnButtonGrid.ColumnDefinitions.Add(m_extraColumn);
 
+
+  
+            //double rowHeight = ((double)m_yPixelRange - (double)(m_yPixelRange % (double)m_rows)) / (double)m_rows;
+            //foreach (Button b in RowButtonGrid.Children)
+            //{
+            //    b.Height = Math.Round(rowHeight);
+            //}
+
+            //double colWidth = ((double)m_xPixelRange - (double)(m_xPixelRange % (double)m_cols)) / (double)m_cols;
+            //foreach (Button b in ColumnButtonGrid.Children)
+            //{
+            //    b.Width = Math.Round(colWidth);
+            //}
+            
+
+            m_xPixelRange = (int)MainGrid.ColumnDefinitions[1].ActualWidth;
+            m_yPixelRange = (int)MainGrid.RowDefinitions[1].ActualHeight;
+
+            m_plateBitmap = BitmapFactory.New((int)m_xPixelRange, (int)m_yPixelRange);
+            PlateImage.Source = m_plateBitmap;
+
+            m_selectBitmap = BitmapFactory.New((int)m_xPixelRange, (int)m_yPixelRange);
+            SelectImage.Source = m_selectBitmap;
+
+            ColumnButtonGrid.Width = m_xPixelRange;
+            RowButtonGrid.Height = m_yPixelRange;           
         }
 
 
@@ -246,8 +266,8 @@ namespace Waveguide
 
         public void DrawPlate()
         {                      
-            int colWidth = m_xPixelRange / m_cols;
-            int rowHeight = m_yPixelRange / m_rows;
+            double colWidth = (int)(m_xPixelRange / m_cols);
+            double rowHeight = (int)(m_yPixelRange / m_rows);
 
             int x1;
             int x2;
@@ -258,48 +278,33 @@ namespace Waveguide
 
             m_plateBitmap.Clear();
 
-            // OLD
-            //for (int r = 0; r < m_rows; r++)
-            //    for (int c = 0; c < m_cols; c++)
-            //    {
-            //        x1 = (c * colWidth);
-            //        x2 = x1 + colWidth;
-            //        y1 = (r * rowHeight);
-            //        y2 = y1 + rowHeight;
-            //        m_plateBitmap.DrawRectangle(x1, y1, x2, y2, Colors.Black);
-
-            //        if(m_selected[r,c])
-            //            m_plateBitmap.FillRectangle(x1+2, y1+2, x2-2, y2-2, Colors.Red);
-            //    }
-
-            // NEW
-            x1 = 0; x2 = m_cols * colWidth;
-            for (int r = 0; r <= m_rows; r++ )
-            {
-                y1 = r * rowHeight;
-                m_plateBitmap.DrawLine(x1, y1, x2, y1, Colors.Black);
-            }
-            y1 = 0; y2 = m_rows * rowHeight;
-            for (int c = 0; c <= m_cols; c++ )
-            {
-                x1 = c * colWidth;
-                m_plateBitmap.DrawLine(x1, y1, x1, y2, Colors.Black);
-            }
-
-            int padding = 2;
-            for (int r = 0; r < m_rows; r++)
-                for (int c = 0; c < m_cols; c++)
+                x1 = 0; x2 = (int)(m_cols * colWidth);
+                for (int r = 0; r <= m_rows; r++ )
                 {
-                    x1 = (c * colWidth);
-                    x2 = x1 + colWidth;
-                    y1 = (r * rowHeight);
-                    y2 = y1 + rowHeight;                 
-
-                    if (m_selected[r, c])  m_plateBitmap.FillRectangle(x1 + padding + 1, y1 + padding + 1, x2 - padding, y2 - padding, m_SelectedWellColor);
+                    y1 = (int)(r * rowHeight);
+                    m_plateBitmap.DrawLine(x1, y1, x2, y1, Colors.Black);
+                }
+                y1 = 0; y2 = (int)(m_rows * rowHeight);
+                for (int c = 0; c <= m_cols; c++ )
+                {
+                    x1 = (int)(c * colWidth);
+                    m_plateBitmap.DrawLine(x1, y1, x1, y2, Colors.Black);
                 }
 
+                int padding = 2;
+                for (int r = 0; r < m_rows; r++)
+                    for (int c = 0; c < m_cols; c++)
+                    {
+                        x1 = (int)(c * colWidth);
+                        x2 = (int)(x1 + colWidth);
+                        y1 = (int)(r * rowHeight);
+                        y2 = (int)(y1 + rowHeight); 
 
-                m_plateBitmap.Unlock();
+                        if (m_selected[r, c])  m_plateBitmap.FillRectangle(x1 + padding + 1, y1 + padding + 1, x2 - padding, y2 - padding, m_SelectedWellColor);
+                    }
+
+
+           m_plateBitmap.Unlock();
 
         }
 
@@ -311,6 +316,9 @@ namespace Waveguide
            
             m_startX = (int)(pt.X / SelectImage.ActualWidth * m_xPixelRange);
             m_startY = (int)(pt.Y / SelectImage.ActualHeight * m_yPixelRange);
+
+            m_endX = m_startX;
+            m_endY = m_startY;
         }
 
 
@@ -319,30 +327,7 @@ namespace Waveguide
         {
             m_dragging = false;
             m_selectBitmap.Clear();
-            Point pt = e.GetPosition(SelectImage);
-            int x = (int)(pt.X / SelectImage.ActualWidth * m_xPixelRange);
-            int y = (int)(pt.Y / SelectImage.ActualHeight * m_yPixelRange);
-
-            if (x < m_startX)
-            {
-                m_endX = m_startX;
-                m_startX = x;
-            }
-            else
-            {
-                m_endX = x;
-            }
-
-            if (y < m_startY)
-            {
-                m_endY = m_startY;
-                m_startY = y;
-            }
-            else
-            {
-                m_endY = y;
-            }
-
+     
             int startCol = 0, endCol = 0, startRow = 0, endRow = 0;
 
             if(GetRowColFromPoint(m_startX,m_startY,ref startRow,ref startCol))
@@ -365,6 +350,45 @@ namespace Waveguide
         }
 
 
+
+
+        private void SelectImage_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (m_dragging)
+            {
+                m_selectBitmap.Clear();
+                Point pt = e.GetPosition(SelectImage);
+                int x = (int)(pt.X / SelectImage.ActualWidth * m_xPixelRange);
+                int y = (int)(pt.Y / SelectImage.ActualHeight * m_yPixelRange);
+
+                if (x < m_startX) m_startX_dragging = true;
+                else if (x > m_endX) m_startX_dragging = false;
+                
+                if (y < m_startY) m_startY_dragging = true;
+                else if (y > m_endY) m_startY_dragging = false;
+
+                if (m_startX_dragging) m_startX = x;
+                else m_endX = x;
+
+                if (m_startY_dragging) m_startY = y;
+                else m_endY = y;
+
+            
+                m_selectBitmap.DrawRectangle(m_startX, m_startY, m_endX, m_endY, Colors.Blue);
+            }
+        }
+
+
+
+        private void SelectImage_MouseLeave(object sender, MouseEventArgs e)
+        {
+            m_dragging = false;
+            m_selectBitmap.Clear();
+        }
+
+
+
+
         private void BroadcastWellList()
         {
             m_wellList.Clear();
@@ -377,58 +401,15 @@ namespace Waveguide
         }
 
 
-        private void SelectImage_MouseLeave(object sender, MouseEventArgs e)
-        {
-            m_dragging = false;
-            m_selectBitmap.Clear();
-        }
-
-
-
-        private void SelectImage_MouseMove(object sender, MouseEventArgs e)
-        {
-            if(m_dragging)
-            {
-                m_selectBitmap.Clear();
-                Point pt = e.GetPosition(SelectImage);
-                int x = (int)(pt.X / SelectImage.ActualWidth *m_xPixelRange);
-                int y = (int)(pt.Y / SelectImage.ActualHeight * m_yPixelRange);
-
-                if(x<m_startX)
-                {
-                    m_endX = m_startX;
-                    m_startX = x;
-                }
-                else
-                {
-                    m_endX = x;
-                }
-
-                if (y < m_startY)
-                {
-                    m_endY = m_startY;
-                    m_startY = y;
-                }
-                else
-                {
-                    m_endY = y;
-                }
-
-                m_selectBitmap.DrawRectangle(m_startX, m_startY, m_endX, m_endY, Colors.Blue);
-
-            }
-        }
-
-
         private bool GetRowColFromPoint(int x, int y, ref int row, ref int col)
         {
             bool success = true;
 
-            int colWidth = m_xPixelRange / m_cols;
-            int rowHeight = m_yPixelRange / m_rows;
+            double colWidth = m_xPixelRange / m_cols;
+            double rowHeight = m_yPixelRange / m_rows;
 
-            col = x / colWidth;
-            row = y / rowHeight;
+            col = (int)(x / colWidth);
+            row = (int)(y / rowHeight);
 
             if (row > (m_rows-1) || col > (m_cols-1)) success = false;
             return success;
@@ -444,17 +425,32 @@ namespace Waveguide
 
             m_xPixelRange = (int)width;
             m_yPixelRange = (int)height;
+            
+            ColumnButtonGrid.Width = m_xPixelRange;
+            RowButtonGrid.Height = m_yPixelRange;
 
-            m_plateBitmap = BitmapFactory.New(m_xPixelRange, m_yPixelRange);
+            m_plateBitmap = BitmapFactory.New((int)m_xPixelRange, (int)m_yPixelRange);
             PlateImage.Source = m_plateBitmap;
 
-            m_selectBitmap = BitmapFactory.New(m_xPixelRange, m_yPixelRange);
+            m_selectBitmap = BitmapFactory.New((int)m_xPixelRange, (int)m_yPixelRange);
             SelectImage.Source = m_selectBitmap;
 
             m_extraRow.Height = new GridLength((double)(m_yPixelRange % m_rows));
             m_extraColumn.Width = new GridLength((double)(m_xPixelRange % m_cols));
 
             DrawPlate();
+
+            //double rowHeight = ((double)m_yPixelRange - (double)(m_yPixelRange % m_rows)) / m_rows;
+            //foreach(Button b in RowButtonGrid.Children)
+            //{
+            //    b.Height = Math.Ceiling(rowHeight+1);
+            //}
+
+            //double colWidth = ((double)m_xPixelRange - (double)(m_xPixelRange % m_cols)) / m_cols;
+            //foreach (Button b in ColumnButtonGrid.Children)
+            //{
+            //    b.Width = Math.Ceiling(colWidth+1);
+            //}
 
         }
 

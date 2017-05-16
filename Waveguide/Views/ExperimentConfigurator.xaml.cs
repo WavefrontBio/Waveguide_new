@@ -32,8 +32,6 @@ namespace Waveguide
 
         VWorks m_vworks;
 
-        WriteableBitmap m_controlSubtractionBitmap;
-
 
         public ExperimentConfigurator()
         {
@@ -49,11 +47,16 @@ namespace Waveguide
 
             this.DataContext = VM;
 
-            m_controlSubtractionBitmap = BitmapFactory.New(384, 256);
+            PlateTypeContainer ptc;
+            bool success = wgDB.GetDefaultPlateType(out ptc);
+            if (success)
+                WellSelection.Init(ptc.Rows, ptc.Cols);
+            else
+                WellSelection.Init(16, 24);
 
-            ControlSubtractionPlateImage.Source = m_controlSubtractionBitmap;
+            WellSelection.NewWellSetSelected += WellSelection_NewWellSetSelected;
+            
 
-            //WellSelection.NewWellSetSelected += WellSelection_NewWellSetSelected;
         }
 
         void WellSelection_NewWellSetSelected(object sender, EventArgs e)
@@ -285,10 +288,9 @@ namespace Waveguide
 
             VM.SetExperimentStatus();
 
-            DrawPlate();
 
-            //if (VM.Mask != null)
-            //    WellSelection.Init(VM.Mask.Rows, VM.Mask.Cols);
+            if (VM.Mask != null)
+                WellSelection.Init(VM.Mask.Rows, VM.Mask.Cols);
            
 
         }
@@ -488,7 +490,6 @@ namespace Waveguide
             MethodComboBox.SelectedIndex = -1;  // clear method combobox selection
 
             VM.ControlSubtractionWellList.Clear();  // clear control subtraction well list
-            DrawPlate();            
         }
 
 
@@ -517,6 +518,8 @@ namespace Waveguide
 
                 if(success)
                 {
+                    WellSelection.Init(ptc.Rows, ptc.Cols);
+
                     VM.MaskList.Clear();
                     VM.Mask = null;
 
@@ -533,49 +536,6 @@ namespace Waveguide
 
 
 
-        public void DrawPlate()
-        {
-            int colWidth = (int)(m_controlSubtractionBitmap.Width / VM.PlateType.Cols);
-            int rowHeight = (int)(m_controlSubtractionBitmap.Height / VM.PlateType.Rows);
-
-            int x1;
-            int x2;
-            int y1;
-            int y2;
-
-            m_controlSubtractionBitmap.Lock();
-
-            m_controlSubtractionBitmap.Clear();
-
-            for (int r = 0; r < VM.PlateType.Rows; r++)
-                for (int c = 0; c < VM.PlateType.Cols; c++)
-                {
-                    x1 = (c * colWidth);
-                    x2 = x1 + colWidth;
-                    y1 = (r * rowHeight);
-                    y2 = y1 + rowHeight;
-                    m_controlSubtractionBitmap.DrawRectangle(x1, y1, x2, y2, Colors.Black);
-                }
-
-            foreach(Tuple<int,int> well in VM.ControlSubtractionWellList)
-            {
-                int r = well.Item1;
-                int c = well.Item2;
-
-                x1 = (c * colWidth);
-                x2 = x1 + colWidth;
-                y1 = (r * rowHeight);
-                y2 = y1 + rowHeight;
-
-                m_controlSubtractionBitmap.FillRectangle(x1 + 2, y1 + 2, x2 - 2, y2 - 2, Colors.Red);
-            }
-
-            m_controlSubtractionBitmap.Unlock();
-
-        }
-
-
-
 
         private void DynamicRatioNumeratorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -589,18 +549,7 @@ namespace Waveguide
         }
 
 
-        private void ControlSubtractionPlateImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            WellSelectionDialog dlg = new WellSelectionDialog(VM.PlateType.Rows, VM.PlateType.Cols, "Select Wells for Control Subtraction", true,
-                VM.ControlSubtractionWellList);
-
-            dlg.ShowDialog();
-
-            DrawPlate();
-
-            VM.SetExperimentStatus();
-        }
-    
+     
 
     }
 

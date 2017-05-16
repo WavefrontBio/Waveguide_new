@@ -21,7 +21,7 @@
         <Button Grid.Row="0" Panel.ZIndex="10" HorizontalAlignment="Right" VerticalAlignment="Top" Content="Logout"
                 x:Name="LogoutPB" Click="LogoutPB_Click" FontSize="20"/>
 
-        <Custom:XamTabControl Grid.Row="0" HorizontalAlignment="Stretch" Margin="0" VerticalAlignment="Stretch" 
+        <TabControl Grid.Row="0" HorizontalAlignment="Stretch" Margin="0" VerticalAlignment="Stretch" 
                                FontSize="20"
                               x:Name="MainTabControl">
 
@@ -111,7 +111,7 @@
                 
             </TabItem>
 
-        </Custom:XamTabControl>
+        </TabControl>
         
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>

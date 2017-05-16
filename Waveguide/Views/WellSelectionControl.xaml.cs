@@ -151,21 +151,6 @@ namespace Waveguide
             m_extraColumn.Width = new GridLength((double)(m_xPixelRange % m_cols));
             ColumnButtonGrid.ColumnDefinitions.Add(m_extraColumn);
 
-
-  
-            //double rowHeight = ((double)m_yPixelRange - (double)(m_yPixelRange % (double)m_rows)) / (double)m_rows;
-            //foreach (Button b in RowButtonGrid.Children)
-            //{
-            //    b.Height = Math.Round(rowHeight);
-            //}
-
-            //double colWidth = ((double)m_xPixelRange - (double)(m_xPixelRange % (double)m_cols)) / (double)m_cols;
-            //foreach (Button b in ColumnButtonGrid.Children)
-            //{
-            //    b.Width = Math.Round(colWidth);
-            //}
-            
-
             m_xPixelRange = (int)MainGrid.ColumnDefinitions[1].ActualWidth;
             m_yPixelRange = (int)MainGrid.RowDefinitions[1].ActualHeight;
 
@@ -405,8 +390,8 @@ namespace Waveguide
         {
             bool success = true;
 
-            double colWidth = m_xPixelRange / m_cols;
-            double rowHeight = m_yPixelRange / m_rows;
+            double colWidth = (int)(m_xPixelRange / m_cols);
+            double rowHeight = (int)(m_yPixelRange / m_rows);
 
             col = (int)(x / colWidth);
             row = (int)(y / rowHeight);
@@ -439,18 +424,6 @@ namespace Waveguide
             m_extraColumn.Width = new GridLength((double)(m_xPixelRange % m_cols));
 
             DrawPlate();
-
-            //double rowHeight = ((double)m_yPixelRange - (double)(m_yPixelRange % m_rows)) / m_rows;
-            //foreach(Button b in RowButtonGrid.Children)
-            //{
-            //    b.Height = Math.Ceiling(rowHeight+1);
-            //}
-
-            //double colWidth = ((double)m_xPixelRange - (double)(m_xPixelRange % m_cols)) / m_cols;
-            //foreach (Button b in ColumnButtonGrid.Children)
-            //{
-            //    b.Width = Math.Ceiling(colWidth+1);
-            //}
 
         }
 

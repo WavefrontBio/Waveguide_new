@@ -67,7 +67,9 @@ namespace Waveguide
             foreach (Tuple<int, int> well in ev.WellList)
             {
                 VM.ControlSubtractionWellList.Add(well);
-            }            
+            }
+
+            VM.SetExperimentStatus();
         }
 
 

@@ -158,7 +158,7 @@ __global__ void compute_histogram_256_Cuda(uint32_t* hist, const uint16_t* data,
 
 }
 
-__global__ void MaskImage_Cuda(uint16_t* image, uint16_t* mask, uint16_t width, uint16_t height, float* flatFieldCorrectionArray)
+__global__ void MaskImage_Cuda(uint16_t* image, uint16_t* mask, uint16_t width, uint16_t height)
 {
 	// this function zeroes out all pixels in image that are not in the mask
 
@@ -184,16 +184,45 @@ __global__ void MaskImage_Cuda(uint16_t* image, uint16_t* mask, uint16_t width, 
 	{	
 		// this pixel is not within a mask aperture, so zero it out
 		image[n] = 0;  
-	}
-	else
-	{
-		// this pixel is within a mask aperture.  Read the mask aperture value and use that value as an index into the 
-		// flat field correction array
-
-		float ffcGain = flatFieldCorrectionArray[mask[n]-1]; // subtract 1 since the mask values are 1-based, and the ffc array is 0-based.
-		image[n] = (uint32_t)(ffcGain * ((float)image[n]));
-	}
+	}	
 }
+
+__global__ void FlattenImage_Cuda(uint16_t* image, float* Gc, float* Dc, uint16_t width, uint16_t height)
+{
+	// this function flattens the image using
+
+	// image - a greyscale image with each pixel being a uint16_t	
+	// width,height - dimensions of image in pixels
+	// Equation:
+	//              flattenedImage[n] = (inputImage[n] - Dc[n]) * Gc[n]
+	//	
+	//
+	//  C = corrected image  (Cij = the pixel at column i and row j)	
+	//  D = dark image (this is an image taken with no lighting.  it bascially gives the dark current noise)
+	//  G = gain
+	//  Dc = D corrected to binning size
+	//  Gc = G corrected to binning size
+	
+
+	// calc x,y position of pixel to operate on
+	uint32_t x = blockIdx.x * blockDim.x + threadIdx.x; // column of pixel inside panel
+	uint32_t y = blockIdx.y * blockDim.y + threadIdx.y; // row of pixel inside panel
+
+	// make sure we don't try to operate outside the image
+	if (x >= width) return;
+	if (y >= height) return;
+
+	// calculate pixel position in array
+	uint32_t n = (y * width) + x;
+
+	// adjust pixel to flatten image
+	float fval = ((float)image[n] - Dc[n]) * Gc[n];
+	if (fval < 0.0f) fval = 0.0f;
+	if (fval > 65535.0f) fval = 65535.0f;
+
+	image[n] = (uint16_t)fval;
+}
+
 
 __global__ void ConvertGrayscaleToColor_Cuda(uint8_t* color, uint16_t* gray, uint8_t* redMap, uint8_t* greenMap, uint8_t* blueMap,
 	uint16_t width, uint16_t height, uint16_t maxGrayValue, uint16_t scaleLower, uint16_t scaleUpper)
@@ -472,14 +501,24 @@ void Call_CopyRoiToFullImage(uint16_t* full, uint16_t* roi, uint16_t fullW, uint
 	CopyRoiToFullImage_Cuda<<<grid,block>>>(full, roi, fullW, fullH, roiX, roiY, roiW, roiH);
 }
 
-void Call_MaskImage(uint16_t* image, uint16_t* mask, uint16_t width, uint16_t height, float* ffcArray)
+void Call_MaskImage(uint16_t* image, uint16_t* mask, uint16_t width, uint16_t height)
 {
 	dim3 block, grid;
 	block.x = 32; block.y = 8; block.z = 1;
 	grid.x = width / block.x;
 	grid.y = height / block.y;
 	grid.z = 1;
-	MaskImage_Cuda<<<grid,block>>>(image, mask, width, height, ffcArray);
+	MaskImage_Cuda<<<grid,block>>>(image, mask, width, height);
+}
+
+void Call_FlattenImage(uint16_t* image, float* Gc, float* Dc, uint16_t width, uint16_t height)
+{
+	dim3 block, grid;
+	block.x = 32; block.y = 8; block.z = 1;
+	grid.x = width / block.x;
+	grid.y = height / block.y;
+	grid.z = 1;
+	FlattenImage_Cuda << <grid, block >> >(image, Gc, Dc, width, height);
 }
 
 void Call_CopyCudaArrayToD3D9Memory(uint8_t* pDest, uint8_t* pSource, uint16_t pitch, uint16_t width, uint16_t height)

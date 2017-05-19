@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -302,6 +303,42 @@ namespace Waveguide
     }
 
 
+    public class StringCombinerConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            string combinedString = "";
+
+            foreach(object obj in values)
+            {
+                combinedString += (string)obj + " ";
+            }
+
+            return combinedString;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            string[] splitValues = ((string)value).Split(' ');
+            return splitValues;
+        }
+    }
+
+
+    public class FilenameOnlyConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string fullPath = (string)value;
+            
+            return Path.GetFileName(fullPath);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 
 }

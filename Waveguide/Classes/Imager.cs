@@ -629,16 +629,127 @@ namespace Waveguide
 
 
 
+        public bool GetFFReferenceImagesByType(FLATFIELD_SELECT ffSelect, out ushort[] F, out ushort[] D)
+        {
+            bool success = true;
+            WaveguideDB wgDB = new WaveguideDB();
+            ReferenceImageContainer refImage;
+            F = null;
+            D = null;
+
+            switch (ffSelect)
+            {
+                case FLATFIELD_SELECT.USE_FLUOR:
+                    // this is fluorescence indicator, so get fluorescence reference images
+                    success = wgDB.GetReferenceImageByType(REFERENCE_IMAGE_TYPE.REF_FLAT_FIELD_FLUORESCENCE, out refImage);
+                    if (success)
+                    {
+                        if (refImage != null)
+                        {
+                            F = refImage.ImageData;
+                        }
+                        success = wgDB.GetReferenceImageByType(REFERENCE_IMAGE_TYPE.REF_DARK_FLUORESCENCE, out refImage);
+                        if (success)
+                        {
+                            if (refImage != null)
+                            {
+                                D = refImage.ImageData;
+                            }
+                        }
+                    }
+                    break;
+
+                case FLATFIELD_SELECT.USE_LUMI:
+                    // this is a luminescence indicator, so get luminescence reference images
+                    success = wgDB.GetReferenceImageByType(REFERENCE_IMAGE_TYPE.REF_FLAT_FIELD_LUMINESCENCE, out refImage);
+                    if (success)
+                    {
+                        if (refImage != null)
+                        {
+                            F = refImage.ImageData;
+                        }
+                        success = wgDB.GetReferenceImageByType(REFERENCE_IMAGE_TYPE.REF_DARK_LUMINESCENCE, out refImage);
+                        if (success)
+                        {
+                            if (refImage != null)
+                            {
+                                D = refImage.ImageData;
+                            }
+                        }
+                    }
+                    break;
+
+                default:
+                    F = null;
+                    D = null;
+                    break;
+            }
+
+            if (F == null || D == null) success = false;
+
+            return success;
+        }
+
+
+        public void BuildDefaultFFCRefImages(out ushort[] F, out ushort[] D, int width, int height )
+        {
+            F = new ushort[width * height];
+            D = new ushort[width * height];
+
+            for(int i = 0; i< (width*height); i++)
+            {
+                F[i] = 1000;  // just put same value in for all of F
+                D[i] = 0;
+            }
+        }
+
+
         public ITargetBlock<Tuple<ushort[], int, int>> CreateImageProcessingPipeline(TaskScheduler uiTask, CancellationToken cancelToken,
-                            AcquisitionParams acqParams, Dictionary<int, ImagingParamsStruct> imagingDictionary,                            
-                           // UInt16 lowerScaleOfColorMap, UInt16 upperScaleOfColorMap,
+                            AcquisitionParams acqParams, Dictionary<int, ImagingParamsStruct> _imagingDictionary, 
                             MaskContainer mask, bool applyMask, bool saveImages, int projectID, int plateID, int experimentID)
         {
 
             List<int> indicatorIDList = new List<int>();            
-            foreach (int key in imagingDictionary.Keys) indicatorIDList.Add(key);
+            foreach (int key in _imagingDictionary.Keys) indicatorIDList.Add(key);
             ImageFileManager imageFileManager = new ImageFileManager();
             imageFileManager.SetBasePath(GlobalVars.ImageFileSaveLocation, projectID, plateID, experimentID, indicatorIDList);
+            Dictionary<int, ImagingParamsStruct> imagingDictionary = _imagingDictionary;
+            CudaToolBox cuda = m_cudaToolBox;
+
+            // set up flat field correction arrays on GPU
+                ushort[] F;
+                ushort[] D;
+                FlatFieldCorrector ffc;
+                var firstEntry = imagingDictionary.First();
+                ImagingParamsStruct firstIps = firstEntry.Value;
+                int binning = firstIps.binning;
+                int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
+                bool success;
+
+                // FLUORESCENCE
+                // get fluor ref images
+                success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_FLUOR, out F, out D);
+                if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+
+                // build flat field corrector for fluor
+                ffc = new FlatFieldCorrector(imageSize, F, D);
+                ffc.CorrectForBinning(binning, binning);
+
+                // load fluor correction arrays to GPU
+                cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_FLUOR, ffc.Gc, ffc.Dc);
+
+                // LUMINESCENCE
+                // get lumi ref images
+                success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_LUMI, out F, out D);
+                if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+
+                // build flat field corrector for lumi
+                ffc = new FlatFieldCorrector(imageSize, F, D);
+                ffc.CorrectForBinning(binning, binning);
+
+                // load lumi correction arrays to GPU
+                cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_LUMI, ffc.Gc, ffc.Dc);
+
 
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -653,7 +764,7 @@ namespace Waveguide
                 int expIndID = inputData.Item2;  // Experiment Indicator ID
                 int sequenceNumber = inputData.Item3; // number of msecs into the experiment that image was taken
 
-                CudaToolBox cuda = m_cudaToolBox;
+                
                 Stopwatch sw = new Stopwatch();
                 long t1 = 0;
                 ushort[] maskedFullGrayImage = null;
@@ -674,6 +785,9 @@ namespace Waveguide
                         // copy image to GPU, if it's an ROI, it is padded with 0's to make a full image
                         cuda.PostRoiGrayscaleImage(grayRoiImage, acqParams.BinnedFullImageWidth, acqParams.BinnedFullImageHeight,
                                                    acqParams.BinnedRoiW, acqParams.BinnedRoiH, acqParams.BinnedRoiX, acqParams.BinnedRoiY);
+
+                        // flatten image
+                        cuda.FlattenGrayImage((int)dps.flatfieldType);
 
                         // apply mask if applyMask is true, this will zero all pixels outside of mask apertures
                         // this function also will apply a flat field correction *IF* a correction matrix has been loaded

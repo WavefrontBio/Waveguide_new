@@ -115,7 +115,7 @@ namespace Waveguide
 
                         m_imager.m_camera.CoolerON(true);
                         VM.CoolingOn = true;
-                        TempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
+                        CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
 
                         MyExperimentConfigurator.SetImager(m_imager);
                     }
@@ -242,22 +242,62 @@ namespace Waveguide
 
        
 
-        private void TempOnIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void CameraTempOnIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            VM.CoolingOn = !VM.CoolingOn;
-            m_imager.m_camera.CoolerON(VM.CoolingOn);
-            if (VM.CoolingOn)
-            {
-                TempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
-                PostMessage("Camera Cooler ON");
-            }
+            string msg;
+            if(VM.CoolingOn)
+                msg = "Turn Camera Cooler OFF?";
             else
+                msg = "Turn Camera Cooler ON?";
+
+            MessageBoxResult result = MessageBox.Show(msg, "Camera Cooler Control", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
             {
-                TempOnIndicator.Fill = new SolidColorBrush(Colors.Red);
-                PostMessage("Camera Cooler OFF");
+                VM.CoolingOn = !VM.CoolingOn;
+                m_imager.m_camera.CoolerON(VM.CoolingOn);
+                if (VM.CoolingOn)
+                {
+                    CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
+                    PostMessage("Camera Cooler ON");
+                }
+                else
+                {
+                    CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+                    PostMessage("Camera Cooler OFF");
+                }
             }
-            
         }
+
+
+        private void InsideTempOnIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            string msg;
+            if (VM.HeatingOn)
+                msg = "Turn Enclosure Heater OFF?";
+            else
+                msg = "Turn Enclosure Heater ON?";
+
+            MessageBoxResult result = MessageBox.Show(msg, "Enclosure Heater Control", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                VM.HeatingOn = !VM.HeatingOn;
+                // TODO: Turn Heater Controller On/Off
+
+                if (VM.HeatingOn)
+                {
+                    InsideTempOnIndicator.Fill = new SolidColorBrush(Colors.Red);
+                    PostMessage("Enclosure Heater ON");
+                }
+                else
+                {
+                    InsideTempOnIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+                    PostMessage("Enclosure Heater OFF");
+                }
+            }
+        } 
+
 
         private void Window_Unloaded(object sender, RoutedEventArgs e)
         {
@@ -383,6 +423,8 @@ namespace Waveguide
             csm.ShowDialog();
         }
 
+    
+
       
 
 
@@ -405,6 +447,10 @@ namespace Waveguide
         private string _cameraTempString;
         private bool _coolingOn;
 
+        private int _insideTemp;
+        private string _insideTempString;
+        private bool _heatingOn;
+
         public int CameraTemp
         {
             get { return _cameraTemp; }
@@ -421,6 +467,25 @@ namespace Waveguide
         {
             get { return _coolingOn; }
             set { _coolingOn = value; NotifyPropertyChanged("CoolingOn"); }
+        }
+
+
+        public int InsideTemp
+        {
+            get { return _insideTemp; }
+            set { _insideTemp = value; NotifyPropertyChanged("InsideTemp"); }
+        }
+
+        public string InsideTempString
+        {
+            get { return _insideTempString; }
+            set { _insideTempString = value; NotifyPropertyChanged("InsideTempString"); }
+        }
+
+        public bool HeatingOn
+        {
+            get { return _heatingOn; }
+            set { _heatingOn = value; NotifyPropertyChanged("HeatingOn"); }
         }
 
         public MainWindowViewModel()

@@ -10,6 +10,8 @@ namespace CudaToolsNet
 {
     public class CudaToolBox
     {
+        const string DLL_NAME = "CudaTools.dll";
+
         // Import the methods exported by the unmanaged D3DSurfaceManager.
         [DllImport("CudaTools.dll")]
         static extern IntPtr SetFullGrayscaleImage(IntPtr grayImage, UInt16 imageWidth, UInt16 imageHeight);
@@ -37,6 +39,20 @@ namespace CudaToolsNet
 
         [DllImport("CudaTools.dll")]
         static extern void ApplyMaskToImage();
+
+
+
+        // void SetFlatFieldCorrectionArrays(int type, float* Gc, float* Dc, int numElements)
+        [DllImport(DLL_NAME,CallingConvention=CallingConvention.StdCall,EntryPoint="SetFlatFieldCorrectionArrays")]
+        static extern void SetFlatFieldCorrectionArrays(int type, IntPtr Gc, IntPtr Dc, int numElements);
+
+        // void FlattenImage(int type)
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.StdCall, EntryPoint = "FlattenImage")]
+        static extern void FlattenImage(int type);
+
+
+
+
 
         [DllImport("CudaTools.dll")]
         static extern IntPtr PipelineFullImage(IntPtr grayImage, UInt16 imageWidth, UInt16 imageHeight, bool applyMask);
@@ -158,6 +174,46 @@ namespace CudaToolsNet
         {
             ApplyMaskToImage();
         }
+
+
+        public void SetFlatFieldCorrection(int type, float[] Gc, UInt16[] Dc)
+        {
+            // Initialize unmanaged memory to hold the arrays
+            int sizeGc = Marshal.SizeOf(Gc[0]) * Gc.Length;
+            IntPtr pntGc = Marshal.AllocHGlobal(sizeGc);
+
+            // have to copy Dc to an float[], since Marshal.Copy doesn't accept a UInt16[] as an argument
+            float[] floatDc = new float[Dc.Length];
+            for (int i = 0; i < Dc.Length; i++) floatDc[i] = (float)Dc[i]; 
+            int sizeDc = Marshal.SizeOf(floatDc[0]) * floatDc.Length;
+            IntPtr pntDc = Marshal.AllocHGlobal(sizeDc);
+
+            try
+            {
+                // Copy the array to unmanaged memory.
+                Marshal.Copy(Gc, 0, pntGc, Gc.Length);
+                Marshal.Copy(floatDc, 0, pntDc, floatDc.Length);
+
+               // Call into unmanaged DLL
+                SetFlatFieldCorrectionArrays(type, pntGc, pntDc, Gc.Length);
+
+            }
+            finally
+            {
+                // Free the unmanaged memory.
+                Marshal.FreeHGlobal(pntGc);
+                Marshal.FreeHGlobal(pntDc);                
+            }
+           
+        }
+
+     
+
+        public void FlattenGrayImage(int type)
+        {
+            FlattenImage(type);
+        }
+
 
 
         public void Set_ColorMap(byte[] redMap, byte[] greenMap, byte[] blueMap, UInt16 maxPixelValue)

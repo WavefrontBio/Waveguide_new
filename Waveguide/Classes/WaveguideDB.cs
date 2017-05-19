@@ -2189,7 +2189,8 @@ namespace Waveguide
                             cont.Description = reader.GetString(1);
                             cont.BravoMethodFile = reader.GetString(2);
                             cont.OwnerID = reader.GetInt32(3);
-                            cont.IsPublic = reader.GetBoolean(4);
+                            cont.ProjectID = reader.GetInt32(4);
+                            cont.IsPublic = reader.GetBoolean(5);
                           
                             m_methodList.Add(cont);
                         }
@@ -2233,7 +2234,8 @@ namespace Waveguide
                             cont.Description = reader.GetString(1);
                             cont.BravoMethodFile = reader.GetString(2);
                             cont.OwnerID = reader.GetInt32(3);
-                            cont.IsPublic = reader.GetBoolean(4);
+                            cont.ProjectID = reader.GetInt32(4);
+                            cont.IsPublic = reader.GetBoolean(5);
 
                             m_methodList.Add(cont);
                         }
@@ -2274,7 +2276,8 @@ namespace Waveguide
                             cont.Description = reader.GetString(1);
                             cont.BravoMethodFile = reader.GetString(2);
                             cont.OwnerID = reader.GetInt32(3);
-                            cont.IsPublic = reader.GetBoolean(4);
+                            cont.ProjectID = reader.GetInt32(4);
+                            cont.IsPublic = reader.GetBoolean(5);
 
                             m_methodList.Add(cont);
                         }
@@ -2291,6 +2294,49 @@ namespace Waveguide
             return success;
         }
 
+
+        public bool GetAllMethodsForProject(int projectID)
+        {
+            bool success = true;
+
+            using (SqlConnection con = new SqlConnection(m_connectionString))
+            {
+                con.Open();
+
+                using (SqlCommand command = new SqlCommand("SELECT * FROM Method WHERE ProjectID=@p1 AND IsPublic=1", con))
+                {
+                    command.Parameters.Add("@p1", System.Data.SqlDbType.Int).Value = projectID;
+
+                    m_methodList.Clear();
+
+                    try
+                    {
+                        SqlDataReader reader = command.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            MethodContainer cont = new MethodContainer();
+
+                            cont.MethodID = reader.GetInt32(0);
+                            cont.Description = reader.GetString(1);
+                            cont.BravoMethodFile = reader.GetString(2);
+                            cont.OwnerID = reader.GetInt32(3);
+                            cont.ProjectID = reader.GetInt32(4);
+                            cont.IsPublic = reader.GetBoolean(5);
+
+                            m_methodList.Add(cont);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lastErrMsg = e.Message;
+                        success = false;
+                        RecordError(e.Message);
+                    }
+                }
+            }
+
+            return success;
+        }
 
 
 
@@ -2319,7 +2365,8 @@ namespace Waveguide
                             method.Description = reader.GetString(1);
                             method.BravoMethodFile = reader.GetString(2);
                             method.OwnerID = reader.GetInt32(3);
-                            method.IsPublic = reader.GetBoolean(4);                          
+                            method.ProjectID = reader.GetInt32(4);
+                            method.IsPublic = reader.GetBoolean(5);                          
                         }
                     }
                     catch (Exception e)
@@ -2344,9 +2391,9 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO Method (Description,BravoMethodFile,OwnerID,IsPublic) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO Method (Description,BravoMethodFile,OwnerID,ProjectID,IsPublic) "
                                                             + "OUTPUT INSERTED.MethodID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5)"
                                                             , con))
                 {
                     try
@@ -2354,7 +2401,8 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p1", method.Description);
                         command.Parameters.AddWithValue("@p2", method.BravoMethodFile);
                         command.Parameters.AddWithValue("@p3", method.OwnerID);
-                        command.Parameters.AddWithValue("@p4", method.IsPublic);                        
+                        command.Parameters.AddWithValue("@p4", method.ProjectID);
+                        command.Parameters.AddWithValue("@p5", method.IsPublic);                        
 
                         method.MethodID = (int)command.ExecuteScalar();
                     }
@@ -2380,16 +2428,17 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("UPDATE Method SET Description=@p1,BravoMethodFile=@p2,OwnerID=@p3,IsPublic=@p4 " +
-                                                            "WHERE MethodID=@p5", con))
+                using (SqlCommand command = new SqlCommand("UPDATE Method SET Description=@p1,BravoMethodFile=@p2,OwnerID=@p3,ProjectID=@p4,IsPublic=@p5 " +
+                                                            "WHERE MethodID=@p6", con))
                 {
                     try
                     {
                         command.Parameters.AddWithValue("@p1", method.Description);
                         command.Parameters.AddWithValue("@p2", method.BravoMethodFile);
                         command.Parameters.AddWithValue("@p3", method.OwnerID);
-                        command.Parameters.AddWithValue("@p4", method.IsPublic);
-                        command.Parameters.AddWithValue("@p5", method.MethodID);                       
+                        command.Parameters.AddWithValue("@p4", method.ProjectID);
+                        command.Parameters.AddWithValue("@p5", method.IsPublic);
+                        command.Parameters.AddWithValue("@p6", method.MethodID);                       
 
                         command.ExecuteNonQuery();
                     }

@@ -348,14 +348,14 @@
                         SelectedValue="{Binding Path=Binning, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                         SelectionChanged="BinningCB_SelectionChanged"/>
 
-                <Label Grid.Row="0" Grid.Column="2" Content="Excitation Filter:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <Label Grid.Row="0" Grid.Column="2" Content="Excitation Filt:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 <ComboBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="ExcitationFilterCB" 
                           ItemsSource="{Binding Path=ExFilterList}" SelectedItem="{Binding Path=ExFilter}" Width="160"
                           DisplayMemberPath="Description"
                           IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding Path=IsManualMode}"
                           SelectionChanged="ExcitationFilterCB_SelectionChanged"/>
 
-                <Label Grid.Row="1" Grid.Column="2" Content="Emission Filter:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <Label Grid.Row="1" Grid.Column="2" Content="Emission Filt:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 <ComboBox Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="EmissionFilterCB" 
                            ItemsSource="{Binding Path=EmFilterList}" SelectedItem="{Binding Path=EmFilter}"  Width="160"
                           DisplayMemberPath="Description"
@@ -363,8 +363,15 @@
                           SelectionChanged="EmissionFilterCB_SelectionChanged"/>
 
 
+            <Label Grid.Row="2" Grid.Column="2" Content="Flat Fld Corr:" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            <ComboBox Grid.Row="2" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="FlatFieldCorrectionCB" 
+                           ItemsSource="{Binding Path=FlatFieldCorrectionItems}" SelectedItem="{Binding Path=FlatFieldSelect}"  Width="160"
+                          DisplayMemberPath="Description"
+                          IsSynchronizedWithCurrentItem="True"
+                          SelectionChanged="FlatFieldCorrectionCB_SelectionChanged"/>
 
-                <CheckBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Content="Apply Mask" HorizontalAlignment="Left" VerticalAlignment="Center"
+
+            <CheckBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Content="Apply Mask" HorizontalAlignment="Left" VerticalAlignment="Center"
                           x:Name="ApplyMaskCkBx" IsChecked="{Binding ApplyMask}" Margin="20,0,0,0" 
                        Checked="ApplyMaskCkBx_Checked" Unchecked="ApplyMaskCkBx_Unchecked"/>
 

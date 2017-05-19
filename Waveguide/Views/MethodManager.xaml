@@ -392,7 +392,11 @@
                     <igDP:FieldLayout.Fields>
                         <igDP:Field Name="MethodID" Visibility="Collapsed" />
                         <igDP:Field Name="Description" Label="Description" Width="*"/>
-                        <igDP:Field Name="BravoMethodFile" Label="Bravo Method File" Width="3*"/>
+                        <igDP:Field Name="BravoMethodFile" Label="Bravo Method File" Width="3*">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings AllowEdit="False" />
+                            </igDP:Field.Settings>
+                        </igDP:Field>
                  
                         <igDP:UnboundField Name="BrowseButton" Label="" Width="20">
                             <igDP:UnboundField.Settings>
@@ -408,6 +412,25 @@
                                                     CellValuePresenterStyle="{StaticResource IsPublicCheckBoxCellStyle}" />
                             </igDP:Field.Settings>
                         </igDP:Field>
+
+
+
+                        <igDP:Field Name="ProjectID" Label="Project">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditorType="{x:Type igEditors:XamComboEditor}" AllowEdit="True">
+                                    <igDP:FieldSettings.EditorStyle>
+                                        <Style TargetType="{x:Type igEditors:XamComboEditor}">
+                                            <Setter Property="ItemsSource" Value="{Binding DataItem.ProjectList}" />
+                                            <Setter Property="DisplayMemberPath" Value="Description" />
+                                            <Setter Property="ValuePath" Value="ProjectID"/>
+                                            <EventSetter Event="SelectedItemChanged" Handler="Project_SelectedItemChanged"/>
+                                        </Style>
+                                    </igDP:FieldSettings.EditorStyle>
+                                </igDP:FieldSettings>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+
+
                         
                         <igDP:Field Name="Indicators" Label="Indicators"/>
                         

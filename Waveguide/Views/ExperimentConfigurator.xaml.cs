@@ -92,7 +92,7 @@ namespace Waveguide
             // disable all groups below and clear combobox lists         
             if (VM.MethodList != null) VM.MethodList.Clear();
             VM.Method = null;
-            VM.ShowPublicMethods = 0;
+            VM.MethodFilter = 0;
        
             if(VM.CompoundPlateList != null) VM.CompoundPlateList.Clear();     
 
@@ -104,13 +104,8 @@ namespace Waveguide
 
             // if valid selection, enable next group and populate combobox
             if (VM.Project != null)
-            {
-                bool showPublic = false;
-                if (VM.ShowPublicMethods == 1) showPublic = true;
-
-                LoadMethods(GlobalVars.UserID, showPublic);
-
-
+            {              
+                LoadMethods(GlobalVars.UserID, VM.Project.ProjectID, VM.MethodFilter);
             }
 
             VM.SetExperimentStatus();
@@ -118,52 +113,60 @@ namespace Waveguide
         }
 
 
-        private void LoadMethods(int userID, bool publicMethods)
+        private void LoadMethods(int userID, int projectID, int methodFilter)
         {
-            // if publicMethods = false, get all the methods that belong to the given userID 
-            // if publicMethods = true, get all the public methods that don't belong to the given userID
+            bool success;
 
-
-            if (!publicMethods)
+            switch(methodFilter)
             {
-                bool success = wgDB.GetAllMethodsForUser(userID);
-
-                if (success)
-                {
-                    if (VM.MethodList != null) VM.MethodList.Clear();
-                    else VM.MethodList = new ObservableCollection<MethodContainer>();
-
-                    foreach (MethodContainer method in wgDB.m_methodList)
+                case 0:  // My Methods only (Current User's Methods only)
+                    success = wgDB.GetAllMethodsForUser(userID);
+                    if (success)
                     {
-                        VM.MethodList.Add(method);
+                        if (VM.MethodList != null) VM.MethodList.Clear();
+                        else VM.MethodList = new ObservableCollection<MethodContainer>();
+
+                        foreach (MethodContainer method in wgDB.m_methodList)
+                        {
+                            VM.MethodList.Add(method);
+                        }
                     }
-                }
-            }
-            else
-            {
-                bool success = wgDB.GetAllPublicMethods();
-
-                if (success)
-                {
-                    if (VM.MethodList != null) VM.MethodList.Clear();
-                    else VM.MethodList = new ObservableCollection<MethodContainer>();
-
-                    foreach (MethodContainer method in wgDB.m_methodList)
+                    break;
+                case 1:  // Public Methods only
+                    success = wgDB.GetAllPublicMethods();
+                    if (success)
                     {
-                        if(method.OwnerID != userID) VM.MethodList.Add(method);
+                        if (VM.MethodList != null) VM.MethodList.Clear();
+                        else VM.MethodList = new ObservableCollection<MethodContainer>();
+
+                        foreach (MethodContainer method in wgDB.m_methodList)
+                        {
+                            if(method.OwnerID != userID) VM.MethodList.Add(method);
+                        }
                     }
-                }
+                    break;
+                case 2:  // Current Project's Public Methods only 
+                    success = wgDB.GetAllMethodsForProject(projectID);
+                    if(success)
+                    {
+                        if (VM.MethodList != null) VM.MethodList.Clear();
+                        else VM.MethodList = new ObservableCollection<MethodContainer>();
+
+                        foreach (MethodContainer method in wgDB.m_methodList)
+                        {
+                            VM.MethodList.Add(method);
+                        }
+                    }
+                    break;
             }
 
         }
 
 
         private void Method_RadioButton_Checked(object sender, RoutedEventArgs e)
-        {
-            bool showPublic = false;
-            if (VM.ShowPublicMethods == 1) showPublic = true;
-
-            LoadMethods(GlobalVars.UserID, showPublic);
+        {      
+            if(VM.Project != null)
+                LoadMethods(GlobalVars.UserID, VM.Project.ProjectID, VM.MethodFilter);
         }
 
 
@@ -589,7 +592,7 @@ namespace Waveguide
 
         public bool ProjectImage { get { return _runEnabled; } set { _runEnabled = value; NotifyPropertyChanged("RunEnabled"); } }
 
-        private int _showPublicMethods;
+        private int _methodFilter;
 
         private ObservableCollection<ProjectContainer> _projectList;
         private ObservableCollection<MethodContainer> _methodList;
@@ -646,7 +649,7 @@ namespace Waveguide
         public STEP_STATUS DynamicRatioStatus { get { return _dynamicRatioStatus; } set { _dynamicRatioStatus = value; NotifyPropertyChanged("DynamicRatioStatus"); } }
 
 
-        public int ShowPublicMethods { get { return _showPublicMethods; } set { _showPublicMethods = value; NotifyPropertyChanged("ShowPublicMethods"); } }
+        public int MethodFilter { get { return _methodFilter; } set { _methodFilter = value; NotifyPropertyChanged("MethodFilter"); } }
 
         public ObservableCollection<ProjectContainer> ProjectList { get { return _projectList; } set { _projectList = value; NotifyPropertyChanged("ProjectList"); } }
         public ObservableCollection<ExperimentCompoundPlateContainer> CompoundPlateList { get { return _compoundPlateList; } set { _compoundPlateList = value; NotifyPropertyChanged("CompoundPlateList"); } }
@@ -718,7 +721,7 @@ namespace Waveguide
             ControlSubtractionStatus = STEP_STATUS.WAITING_FOR_PREDECESSOR;
             DynamicRatioStatus = STEP_STATUS.WAITING_FOR_PREDECESSOR;
 
-
+            MethodFilter = 0;
         }
 
 

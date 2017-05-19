@@ -690,5 +690,10 @@ namespace Waveguide
             dlg.ShowDialog();
         }
 
+        private void FlatFieldCorrectionCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
 	}
 }

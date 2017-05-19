@@ -27,6 +27,7 @@ namespace Waveguide
     public partial class MethodManager : UserControl
     {
         ObservableCollection<MethodContainer> methodSource = new ObservableCollection<MethodContainer>();
+        ObservableCollection<ProjectContainer> projectList;
 
         WaveguideDB wgDB;
 
@@ -94,7 +95,8 @@ namespace Waveguide
                 mc.BravoMethodFile = method.BravoMethodFile;
                 mc.IsPublic = method.IsPublic;
                 mc.MethodID = method.MethodID;
-                mc.OwnerID = method.OwnerID;               
+                mc.OwnerID = method.OwnerID;
+                mc.ProjectID = method.ProjectID;
 
                 wgDB.UpdateMethod(mc);
             }
@@ -114,6 +116,7 @@ namespace Waveguide
             mc.IsPublic = method.IsPublic;
             mc.MethodID = method.MethodID;
             mc.OwnerID = method.OwnerID;
+            mc.ProjectID = method.ProjectID;
 
             wgDB.UpdateMethod(mc);
         }
@@ -131,31 +134,24 @@ namespace Waveguide
 
             VM = new MethodManagerViewModel();
 
+         
             RefreshSignalTypeList();
             RefreshFilterList();
-
+            RefreshProjectList();
+                     
              //Initialize data in the XamDataGrid - NOTE: A blank record is added FIRST, this is key to this approach for the XamDataGrid
-            MethodItem blank = new MethodItem();
-            blank.Description = "";
-            blank.BravoMethodFile = "";
-            blank.OwnerID = GlobalVars.UserID;
-            blank.MethodID = 0;
-            blank.IsPublic = false;
+            MethodItem blank = new MethodItem(0,"","",GlobalVars.UserID,VM.ProjectList.Count > 0 ? VM.ProjectList.ElementAt(0).ProjectID:0,false,ref projectList);
+            
             VM.Methods.Add(blank);
-
+            
             // load all methods for user
             bool success = wgDB.GetAllMethodsForUser(GlobalVars.UserID);
             if (success)
             {                
                 foreach(MethodContainer mc in wgDB.m_methodList)
                 {
-                    MethodItem mi = new MethodItem();
-                    mi.Description = mc.Description;
-                    mi.BravoMethodFile = mc.BravoMethodFile;
-                    mi.OwnerID = mc.OwnerID;
-                    mi.MethodID = mc.MethodID;
-                    mi.IsPublic = mc.IsPublic;
-
+                    MethodItem mi = new MethodItem(mc,ref projectList);
+                    
                     VM.Methods.Add(mi);
 
                     // load all indicators for the method
@@ -208,12 +204,9 @@ namespace Waveguide
             }
 
 
-            
-        
-            
-            xamDataGrid.DataContext = VM;
 
-            
+            this.DataContext = VM;
+
           
         }
 
@@ -279,8 +272,22 @@ namespace Waveguide
 
 
 
+       public void RefreshProjectList()
+        {
+            VM.LoadProjectList();
+
+            projectList = new ObservableCollection<ProjectContainer>();
+
+            foreach(ProjectContainer pc in VM.ProjectList)
+            {
+                projectList.Add(pc);
+            }
+        }
         
-                
+    
+
+
+
 
         private void xamDataGrid_EditModeEnded(object sender, Infragistics.Windows.DataPresenter.Events.EditModeEndedEventArgs e)
         {
@@ -303,6 +310,7 @@ namespace Waveguide
                     mc.BravoMethodFile = mi.BravoMethodFile;
                     mc.OwnerID = mi.OwnerID;
                     mc.IsPublic = mi.IsPublic;
+                    mc.ProjectID = mi.ProjectID;
 
                     bool success = wgDB.UpdateMethod(mc);
                 }
@@ -342,6 +350,44 @@ namespace Waveguide
 
           
         }
+
+
+
+        private void Project_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            XamComboEditor xce = (XamComboEditor)sender;
+            DataRecord record = (DataRecord)xce.DataContext;
+            if (record == null) return;
+            MethodItem m = (MethodItem)record.DataItem;
+
+            if (xamDataGrid.ActiveDataItem == null) return;
+
+            if (xamDataGrid.ActiveDataItem.GetType() == typeof(MethodItem))
+            {
+                MethodItem mi = (MethodItem)xamDataGrid.ActiveDataItem;
+                
+                if (e.NewValue == null) return;
+
+                if (e.NewValue.GetType() == typeof(ProjectContainer))
+                {
+                    ProjectContainer proj = (ProjectContainer)e.NewValue;
+
+                    if (mi.MethodID != 0 && mi.MethodID == m.MethodID)  // the 2nd condition makes sure the event is for the currently active Method
+                    {
+                        MethodContainer mc = new MethodContainer();
+                        mc.BravoMethodFile = mi.BravoMethodFile;
+                        mc.Description = mi.Description;
+                        mc.IsPublic = mi.IsPublic;
+                        mc.MethodID = mi.MethodID;
+                        mc.OwnerID = mi.OwnerID;
+                        mc.ProjectID = proj.ProjectID;
+
+                        bool success = wgDB.UpdateMethod(mc);
+                    }
+                }
+            }
+        }
+
 
 
         private void ExcitationFilter_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e) 
@@ -471,6 +517,7 @@ namespace Waveguide
                     newMethod.OwnerID = mi.OwnerID;
                     newMethod.BravoMethodFile = mi.BravoMethodFile;
                     newMethod.IsPublic = mi.IsPublic;
+                    newMethod.ProjectID = mi.ProjectID;
                   
                     bool success = wgDB.InsertMethod(ref newMethod);
                     if (success)
@@ -479,13 +526,8 @@ namespace Waveguide
 
                         UnMarkAddNewRecord(methodRecord);
                         
-                        MethodItem miNew = new MethodItem();
-                        miNew.Description = "";
-                        miNew.MethodID = mi.MethodID;
-                        miNew.OwnerID = mi.OwnerID;
-                        miNew.IsPublic = false;
-                        miNew.BravoMethodFile = "";
-
+                        MethodItem miNew = new MethodItem(mi.MethodID,"","",mi.OwnerID,mi.ProjectID,false,ref projectList);
+                        
                         VM.Methods.Insert(0, miNew);
 
                         // mark the new Method as the AddRecord
@@ -706,6 +748,8 @@ namespace Waveguide
             private ObservableCollection<FilterContainer> _emissionsFilters;
             private ObservableCollection<SignalTypeContainer> _signalTypeList;
 
+            private ObservableCollection<ProjectContainer> _projectList;            
+
             public ObservableCollection<MethodItem> Methods
             {
                 get { return _methods; }
@@ -715,7 +759,7 @@ namespace Waveguide
                     NotifyPropertyChanged("Methods");
                 }
             }
-
+                        
 
             public ObservableCollection<FilterContainer> ExcitationFilters
             {
@@ -749,13 +793,45 @@ namespace Waveguide
             }
 
 
-
-            public MethodManagerViewModel()
+            public ObservableCollection<ProjectContainer> ProjectList
             {
-                _methods = new ObservableCollection<MethodItem>();              
+                get { return _projectList; }
+                set
+                {
+                    _projectList = value;
+                    NotifyPropertyChanged("ProjectList");
+                }
             }
 
 
+            public void LoadProjectList()
+            {
+                ProjectList = new ObservableCollection<ProjectContainer>();
+
+                WaveguideDB wgDB = new WaveguideDB();
+
+                ObservableCollection<ProjectContainer> projList;
+                bool success = wgDB.GetAllProjectsForUser(GlobalVars.UserID, out projList);
+
+                if (success)
+                {
+                    foreach (ProjectContainer project in projList)
+                    {
+                        ProjectList.Add(project);
+                    }
+                }
+            }
+            
+
+
+            public MethodManagerViewModel()
+            {
+                _methods = new ObservableCollection<MethodItem>();
+                LoadProjectList();
+            }
+
+
+           
 
 
             public event PropertyChangedEventHandler PropertyChanged;
@@ -772,16 +848,42 @@ namespace Waveguide
             private string _description;
             private string _bravoMethodFile;
             private int _ownerID;
+            private int _projectID;
             private bool _isPublic;
 
             private ObservableCollection<IndicatorItem> _indicators;
             private ObservableCollection<CompoundPlateItem> _compoundPlates;
-            
-            public MethodItem()
+            private ObservableCollection<ProjectContainer> _projectList;
+
+            public MethodItem(int methodID, string description, string bravoMethodFile, int ownerID, int projectID, bool isPublic,
+                ref ObservableCollection<ProjectContainer> projectList)
             {
+                _methodID = methodID;
+                _description = description;
+                _bravoMethodFile = bravoMethodFile;
+                _ownerID = ownerID;
+                _projectID = projectID;
+                _isPublic = isPublic;                     
+
                 _indicators = new ObservableCollection<IndicatorItem>();
                 _compoundPlates = new ObservableCollection<CompoundPlateItem>();
+                _projectList = projectList;
             }
+
+            public MethodItem(MethodContainer mc, ref ObservableCollection<ProjectContainer> projectList)
+            {
+                _methodID = mc.MethodID;
+                _description = mc.Description;
+                _bravoMethodFile = mc.BravoMethodFile;
+                _ownerID = mc.OwnerID;
+                _projectID = mc.ProjectID;
+                _isPublic = mc.IsPublic;
+
+                _indicators = new ObservableCollection<IndicatorItem>();
+                _compoundPlates = new ObservableCollection<CompoundPlateItem>();
+                _projectList = projectList;
+            }
+
 
             public int MethodID
             { get { return _methodID; }  set { _methodID = value; NotifyPropertyChanged("MethodID"); } }
@@ -795,6 +897,14 @@ namespace Waveguide
             public int OwnerID
             { get { return _ownerID; } set { _ownerID = value; NotifyPropertyChanged("OwnerID"); } }
 
+            public int ProjectID
+            { get { return _projectID; } 
+                set { 
+                    _projectID = value; 
+                    NotifyPropertyChanged("ProjectID"); 
+                } 
+            }
+
             public bool IsPublic
             { get { return _isPublic; } set { _isPublic = value; NotifyPropertyChanged("IsPublic"); } }
 
@@ -804,6 +914,8 @@ namespace Waveguide
             public ObservableCollection<CompoundPlateItem> CompoundPlates
             { get { return _compoundPlates; } set { _compoundPlates = value; NotifyPropertyChanged("CompoundPlates"); } }
 
+            public ObservableCollection<ProjectContainer> ProjectList
+            { get { return _projectList; } set { _projectList = value; NotifyPropertyChanged("ProjectList"); } }
 
             public event PropertyChangedEventHandler PropertyChanged;
             private void NotifyPropertyChanged(String info)
@@ -954,6 +1066,7 @@ namespace Waveguide
                 LoadSignalTypes();
             }
 
+            
 
             public ObservableCollection<FilterContainer> ExcitationFilterList
             {

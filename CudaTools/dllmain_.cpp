@@ -9,6 +9,7 @@
 #include <string>
 #include "CudaUtil.h"
 
+#include <algorithm>
 
 #define DllExport   __declspec( dllexport ) 
 
@@ -39,7 +40,13 @@ uint8_t * mp_d_blueMap;
 
 uint32_t * mp_d_maskApertureSums; // 1D array, holds the aperture pixel sums
 
-float    * mp_d_flatFieldCorrection; // 1D array, holds a "gain" value for each well.  So for a 24x16 well plate, there will be 384 values in this array.
+float    * mp_d_FFC_Fluor_Gc; // 1D binning-corrected array, that holds the "gain" value for each pixel for Fluorescent Flat Field Correction
+float	 * mp_d_FFC_Fluor_Dc; // binning-corrected "dark" array that pairs with the "gain" array above
+
+float    * mp_d_FFC_Lumi_Gc; // 1D binning-corrected array, that holds the "gain" value for each pixel for Luminescenct Flat Field Correction
+float	 * mp_d_FFC_Lumi_Dc; // binning-corrected "dark" array that pairs with the "gain" array above
+uint32_t   m_h_FFC_numElements; // this holds the size of the correction arrays (should be imageWidth * imageHeight)
+
 
 bool    m_colorMapSet;
 bool    m_maskSet;
@@ -57,7 +64,9 @@ void Call_ConvertGrayscaleToColor(uint8_t* color, uint16_t* gray, uint8_t* redMa
 void Call_CopyRoiToFullImage(uint16_t* full, uint16_t* roi, uint16_t fullW, uint16_t fullH,
 	uint16_t  roiX, uint16_t roiY, uint16_t roiW, uint16_t roiH);
 
-void Call_MaskImage(uint16_t* image, uint16_t* mask, uint16_t width, uint16_t height, float* ffcArray);
+void Call_MaskImage(uint16_t* image, uint16_t* mask, uint16_t width, uint16_t height);
+
+void Call_FlattenImage(uint16_t* image, float* Gc, float* Dc, uint16_t width, uint16_t height);
 
 void Call_CopyCudaArrayToD3D9Memory(uint8_t* pDest, uint8_t* pSource, uint16_t pitch, uint16_t width, uint16_t height);
 
@@ -104,7 +113,7 @@ extern "C" DllExport uint16_t* SetFullGrayscaleImage(uint16_t* grayImage, uint16
 		res = cudaMalloc(&mp_d_colorImage, m_imageW*m_imageH * 4);
 	}
 	
-	cudaError_t err = cudaMemcpy(mp_d_grayImage, grayImage, m_imageW*m_imageH*sizeof(uint16_t), cudaMemcpyHostToDevice);	
+	cudaError_t err = cudaMemcpy(mp_d_grayImage, grayImage, m_imageW*m_imageH*sizeof(uint16_t), cudaMemcpyHostToDevice);
 
 	return mp_d_grayImage;
 }
@@ -131,17 +140,7 @@ extern "C" DllExport uint16_t* SetRoiGrayscaleImage(uint16_t* roiImage, uint16_t
 		m_roiX = roiX;
 		m_roiY = roiY;
 		cudaMalloc(&mp_d_roiImage, m_roiW*m_roiH * sizeof(uint16_t));
-	}
-
-	int count = 0;
-	int max = 0;
-	int min = 9999999;
-	for (int i = 0; i < m_roiW*m_roiH; i++)
-	{
-		if (roiImage[i]>500) count++;
-		if (roiImage[i] > max) max = roiImage[i];
-		if (roiImage[i] < min) min = roiImage[i];
-	}
+	}		
 
 	cudaError_t errNo = cudaMemcpy(mp_d_roiImage, roiImage, m_roiW*m_roiH*sizeof(uint16_t), cudaMemcpyHostToDevice);
 
@@ -168,19 +167,6 @@ extern "C" DllExport uint16_t* SetMaskImage(uint16_t* maskImage, uint16_t maskWi
 		cudaMalloc(&mp_d_maskImage, m_maskW*m_maskH*sizeof(uint16_t));
 	}
 
-	if (mp_d_flatFieldCorrection == 0 || m_maskRows != maskRows || m_maskCols != maskCols)
-	{
-		if (mp_d_flatFieldCorrection != 0)
-		{
-			cudaFree(mp_d_flatFieldCorrection);
-		}
-		cudaMalloc(&mp_d_flatFieldCorrection, m_maskRows * m_maskCols * sizeof(float));		
-	}
-
-	// init flat field correction to perform no correction, and copy to GPU
-	float* ffcArray = (float*)malloc(m_maskRows*m_maskCols*sizeof(float));	
-	for (int i = 0; i < (m_maskRows*m_maskCols); i++) ffcArray[i] = 1.0f;
-	cudaMemcpy(mp_d_flatFieldCorrection, ffcArray, (m_maskRows*m_maskCols*sizeof(float)), cudaMemcpyHostToDevice);
 
 	// copy mask image to GPU
 	cudaMemcpy(mp_d_maskImage, maskImage, m_maskW*m_maskH*sizeof(uint16_t), cudaMemcpyHostToDevice);
@@ -236,7 +222,7 @@ extern "C" DllExport void ApplyMaskToImage()
 {
 	if (m_maskSet)
 	{
-		Call_MaskImage(mp_d_grayImage, mp_d_maskImage, m_imageW, m_imageH, mp_d_flatFieldCorrection);
+		Call_MaskImage(mp_d_grayImage, mp_d_maskImage, m_imageW, m_imageH);
 	}
 }
 
@@ -303,11 +289,19 @@ extern "C" DllExport void Init()
 	m_maxPixelValue = 65535;
 	mp_d_histogram = 0;
 	mp_d_colorHistogramImage = 0;
-	mp_d_flatFieldCorrection = 0;
+	
+	mp_d_FFC_Fluor_Gc = 0; 
+	mp_d_FFC_Fluor_Dc = 0;
+	mp_d_FFC_Lumi_Gc = 0;  
+	mp_d_FFC_Lumi_Dc = 0;  
+	m_h_FFC_numElements = 0;
+
 
 	// not sure why I have to do this, bu
 	cudaMalloc(&mp_d_grayImage, 10);
 	cudaMalloc(&mp_d_colorImage, 10);
+
+
 	
 }
 
@@ -353,9 +347,21 @@ extern "C" DllExport void Shutdown()
 		cudaFree(mp_d_maskApertureSums);
 		mp_d_maskApertureSums = 0;
 	}	
-	if (mp_d_flatFieldCorrection != 0){
-		cudaFree(mp_d_flatFieldCorrection);
-		mp_d_flatFieldCorrection = 0;
+	if (mp_d_FFC_Fluor_Gc != 0){
+		cudaFree(mp_d_FFC_Fluor_Gc);
+		mp_d_FFC_Fluor_Gc = 0;
+	}
+	if (mp_d_FFC_Fluor_Dc != 0){
+		cudaFree(mp_d_FFC_Fluor_Dc);
+		mp_d_FFC_Fluor_Dc = 0;
+	}
+	if (mp_d_FFC_Lumi_Gc != 0){
+		cudaFree(mp_d_FFC_Lumi_Gc);
+		mp_d_FFC_Lumi_Gc = 0;
+	}
+	if (mp_d_FFC_Lumi_Dc != 0){
+		cudaFree(mp_d_FFC_Lumi_Dc);
+		mp_d_FFC_Lumi_Dc = 0;
 	}
 	
 	delete mp_cuda;
@@ -461,12 +467,82 @@ extern "C" DllExport void CalculateMaskApertureSums(uint32_t* sums)
 }
 
 
-extern "C" DllExport bool SetFlatFieldArray(float* ffcArray, int numElements)
+extern "C" DllExport void SetFlatFieldCorrectionArrays(int type, float* Gc, float* Dc, int numElements)
+{	
+	// 1 = Fluor
+	// 2 = Lumi
+
+	if (type < 1 || type > 2) type = 1;	
+
+	m_h_FFC_numElements = (uint32_t)numElements;
+
+	switch (type)
+	{
+	case 1:
+		if (mp_d_FFC_Fluor_Gc != 0)
+		{
+			cudaError_t err = cudaFree(mp_d_FFC_Fluor_Gc);
+		}
+		if (mp_d_FFC_Fluor_Dc != 0)
+		{
+			cudaError_t err = cudaFree(mp_d_FFC_Fluor_Dc);
+		}
+
+		cudaMalloc(&mp_d_FFC_Fluor_Gc, numElements * sizeof(float));
+		cudaMalloc(&mp_d_FFC_Fluor_Dc, numElements * sizeof(float));
+
+		cudaMemcpy(mp_d_FFC_Fluor_Gc, Gc, numElements*sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(mp_d_FFC_Fluor_Dc, Dc, numElements*sizeof(float), cudaMemcpyHostToDevice);
+		break;
+	case 2:
+		if (mp_d_FFC_Lumi_Gc != 0)
+		{
+			cudaError_t err = cudaFree(mp_d_FFC_Fluor_Gc);
+		}
+		if (mp_d_FFC_Lumi_Dc != 0)
+		{
+			cudaError_t err = cudaFree(mp_d_FFC_Fluor_Dc);
+		}
+
+		cudaMalloc(&mp_d_FFC_Lumi_Gc, numElements * sizeof(float));
+		cudaMalloc(&mp_d_FFC_Lumi_Dc, numElements * sizeof(float));
+
+		cudaMemcpy(mp_d_FFC_Lumi_Gc, Gc, numElements*sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(mp_d_FFC_Lumi_Dc, Dc, numElements*sizeof(float), cudaMemcpyHostToDevice);
+		break;
+	}
+
+}
+
+
+extern "C" DllExport void FlattenImage(int type)
 {
-	if (!m_maskSet) return false;
-	if (mp_d_flatFieldCorrection == 0 || numElements != (m_maskRows*m_maskCols)) return false;
+	if (mp_d_grayImage == 0) return; // no image to flatten (a call to SetFullGrayscaleImage or SetRoiGrayscaleImage has not been made)
+	
+	// make sure that the flat field corrector is initialized, if not initialize it so that it has no effect on images
+	if (m_h_FFC_numElements != (m_imageW*m_imageH))
+	{
+		m_h_FFC_numElements = m_imageW*m_imageH;
+		float* gc = (float*)malloc(m_imageW*m_imageH*sizeof(float));
+		float* dc = (float*)malloc(m_imageW*m_imageH*sizeof(float));
+		for (int i = 0; i < m_h_FFC_numElements; i++)
+		{
+			gc[i] = 1.0;
+			dc[i] = 0.0;
+		}
+		SetFlatFieldCorrectionArrays(1, gc, dc, m_h_FFC_numElements);
+		SetFlatFieldCorrectionArrays(2, gc, dc, m_h_FFC_numElements);
+	}
 
-	cudaMemcpy(mp_d_flatFieldCorrection, ffcArray, numElements*sizeof(float), cudaMemcpyHostToDevice);
-
-	return true;
+	switch (type)
+	{
+	case 0: // no flattening
+		break;
+	case 1: // Fluor flattening
+		Call_FlattenImage(mp_d_grayImage, mp_d_FFC_Fluor_Gc, mp_d_FFC_Fluor_Dc, m_imageW, m_imageH);
+		break;
+	case 2: // Lumi flattening
+		Call_FlattenImage(mp_d_grayImage, mp_d_FFC_Lumi_Gc, mp_d_FFC_Lumi_Dc, m_imageW, m_imageH);
+		break;
+	}
 }

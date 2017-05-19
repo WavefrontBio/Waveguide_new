@@ -20,6 +20,8 @@
         
         <local:UsePixelMaskToStringConverter x:Key="usePixelMaskToStringConverter"/>
 
+        <local:FilenameOnlyConverter x:Key="filenameOnlyConverter"/>
+
     </UserControl.Resources>
 
     
@@ -98,20 +100,35 @@
 
                 <ComboBox Grid.Row="0" Grid.Column="0" 
                           HorizontalAlignment="Stretch" VerticalAlignment="Center"  
-                          ItemsSource="{Binding Path=MethodList}"
-                          DisplayMemberPath="Description"
+                          ItemsSource="{Binding Path=MethodList}"                         
                           Margin="20,10,20,10"  
                           x:Name="MethodComboBox"
                           SelectionChanged="MethodComboBox_SelectionChanged">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Description}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding BravoMethodFile, Converter={StaticResource filenameOnlyConverter}}" 
+                                           Margin="10,0,0,0" Foreground="Blue"/>   
+                            </Grid>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
                 </ComboBox>
 
                 <GroupBox Grid.Row="0" Grid.Column="1" Header="Show Methods that are..." BorderBrush="Black" BorderThickness="1" Margin="10,0,10,0">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20,5,20,5" Orientation="Horizontal">
                         <RadioButton Content="My Methods" Margin="20,0,20,0" Checked="Method_RadioButton_Checked"
-                                        IsChecked="{Binding Path=ShowPublicMethods, Converter={StaticResource radioBoolToIntConverter}, ConverterParameter=0}"/>
+                                        IsChecked="{Binding Path=MethodFilter, Converter={StaticResource radioBoolToIntConverter}, ConverterParameter=0}"/>
+
+                        <RadioButton Content="This Project's Methods" Margin="20,0,20,0" Checked="Method_RadioButton_Checked"
+                                        IsChecked="{Binding Path=MethodFilter, Converter={StaticResource radioBoolToIntConverter}, ConverterParameter=2}"/>
 
                         <RadioButton Content="Public Methods" Margin="20,0,20,0" Checked="Method_RadioButton_Checked"
-                                        IsChecked="{Binding Path=ShowPublicMethods, Converter={StaticResource radioBoolToIntConverter}, ConverterParameter=1}"/>
+                                        IsChecked="{Binding Path=MethodFilter, Converter={StaticResource radioBoolToIntConverter}, ConverterParameter=1}"/>
 
                     </StackPanel>
                 </GroupBox>

@@ -235,7 +235,8 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
-        <Grid Grid.Column="0">
+        <!-- LEFT Panel -->
+        <Grid Grid.Column="0" x:Name="ChartGrid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="*"/>
@@ -299,13 +300,14 @@
 
         </Grid>
 
+        <!-- Grid Splitter -->
         <GridSplitter Grid.Column="1" 
                     HorizontalAlignment="Stretch" 
                     VerticalAlignment="Stretch"              
                     Background="DarkGray"
                     Width="5"/>
-        
-        
+
+        <!-- RIGHT Panel -->
         <Grid Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -313,10 +315,12 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
+            <!-- TOP Panel -->
             <Grid Grid.Row="0" Name="AggregateGrid" SizeChanged="AggregateGrid_SizeChanged"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   />
 
+            <!-- Grid Splitter -->
             <GridSplitter Grid.Row="1"
                     HorizontalAlignment="Stretch" 
                     VerticalAlignment="Stretch"              
@@ -325,7 +329,7 @@
 
             <!-- ************************************************************* -->
             <!-- ************************************************************* -->
-            <!-- Verify DataGrid-->
+            <!-- BOTTOM Panel - Verify DataGrid -->
             <Grid Grid.Row="2" Grid.RowSpan="2" x:Name="VerifyGrid" Panel.ZIndex="1">
                  
                 <Grid.RowDefinitions>

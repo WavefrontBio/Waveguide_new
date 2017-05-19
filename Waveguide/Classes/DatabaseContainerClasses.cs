@@ -1184,6 +1184,7 @@ namespace Waveguide
         private string _description;
         private string _bravoMethodFile;
         private int _ownerID;
+        private int _projectID;
         private bool _isPublic;
 
         public int MethodID
@@ -1208,6 +1209,12 @@ namespace Waveguide
         {
             get { return _ownerID; }
             set { _ownerID = value; NotifyPropertyChanged("OwnerID"); }
+        }
+
+        public int ProjectID
+        {
+            get { return _projectID; }
+            set { _projectID = value; NotifyPropertyChanged("ProjectID"); }
         }
 
         public bool IsPublic
@@ -1503,9 +1510,9 @@ namespace Waveguide
 
     public enum FLATFIELD_SELECT
     {
-        NONE,
-        USE_FLUOR,
-        USE_LUMI
+        NONE = 0,
+        USE_FLUOR = 1,
+        USE_LUMI = 2
     };
 
 

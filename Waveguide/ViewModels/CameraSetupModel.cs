@@ -10,6 +10,17 @@ using System.Windows;
 namespace Waveguide
 {
 
+    public class FlatFieldCorrectionItem
+    {
+        public FlatFieldCorrectionItem(string desc, int val)
+        {
+            Description = desc;
+            Value = val;
+        }
+
+        public string Description { get; set;} // description of type
+        public int    Value {get; set;}        // enum value from FLATFIELD_SELECT enum
+    }
 
 	public class CameraSetupModel : INotifyPropertyChanged
 	{        
@@ -45,6 +56,7 @@ namespace Waveguide
         private ObservableCollection<Camera.HSSpeed> hsspeeds_Conv;
         public ObservableCollection<Camera.HSSpeed> hsspeeds;
         private ObservableCollection<Camera.VertClockVoltageAmplitude> vertClockVoltageAmplitudes;
+        private ObservableCollection<FlatFieldCorrectionItem> flatFieldCorrectionItems;
 
         // current camera values
         private int exposure;
@@ -54,6 +66,7 @@ namespace Waveguide
         private int cycleTime;
         private FilterContainer exFilter;
         private FilterContainer emFilter;
+        private FLATFIELD_SELECT flatFieldSelect;
         private bool applyMask;
         private CameraSettingsContainer currentCameraSettings;
 
@@ -157,7 +170,15 @@ namespace Waveguide
             minCycleTime = 1;
             maxCycleTime = 10000;
 
+            flatFieldSelect = FLATFIELD_SELECT.NONE;
+
             WellSelectionPBLabel = "";
+
+            flatFieldCorrectionItems = new ObservableCollection<FlatFieldCorrectionItem>();
+            flatFieldCorrectionItems.Add(new FlatFieldCorrectionItem("None", (int)FLATFIELD_SELECT.NONE));
+            flatFieldCorrectionItems.Add(new FlatFieldCorrectionItem("Fluorescent", (int)FLATFIELD_SELECT.USE_FLUOR));
+            flatFieldCorrectionItems.Add(new FlatFieldCorrectionItem("Luminescent", (int)FLATFIELD_SELECT.USE_LUMI));
+
 		}
 
 
@@ -520,7 +541,17 @@ namespace Waveguide
             }
         }
 
-     
+
+        public ObservableCollection<FlatFieldCorrectionItem> FlatFieldCorrectionItems
+        {
+            get { return flatFieldCorrectionItems; }
+            set
+            {
+                flatFieldCorrectionItems = value;
+                NotifyPropertyChanged("FlatFieldCorrectionItems");
+            }
+        }  
+
 
         ///////////////////////////////////////////////////////////////////////////////////
 
@@ -595,6 +626,16 @@ namespace Waveguide
             {
                 emFilter = value;
                 if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs("EmFilter"));
+            }
+        }
+
+        public FLATFIELD_SELECT FlatFieldSelect
+        {
+            get { return flatFieldSelect; }
+            set
+            {
+                flatFieldSelect = value;
+                if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs("FlatFieldSelect"));
             }
         }
 

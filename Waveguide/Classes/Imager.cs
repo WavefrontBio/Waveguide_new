@@ -539,6 +539,8 @@ namespace Waveguide
 
         public void ProcessAndDisplayImage(UInt16[] grayRoiImage, int ID, bool applyMask, UInt16 lowerScaleOfColorMap, UInt16 upperScaleOfColorMap)
         {
+            // assumes that the Flat Field correction has already been set up on the GPU
+
             ImagingParamsStruct dps;
 
             if (m_ImagingDictionary.ContainsKey(ID))
@@ -554,6 +556,9 @@ namespace Waveguide
                                                 m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight,
                                                 m_camera.m_acqParams.BinnedRoiW, m_camera.m_acqParams.BinnedRoiH, 
                                                 m_camera.m_acqParams.BinnedRoiX, m_camera.m_acqParams.BinnedRoiY);
+
+                    // flatten image
+                    m_cudaToolBox.FlattenGrayImage((int)dps.flatfieldType);
 
                     // apply mask if applyMask is true, this will zero all pixels outside of mask apertures
                     // this function also will apply a flat field correction *IF* a correction matrix has been loaded
@@ -704,6 +709,28 @@ namespace Waveguide
         }
 
 
+        public void SetupFlatFieldCorrection(FLATFIELD_SELECT type, int binning)
+        {
+            // set up flat field correction arrays on GPU
+            ushort[] F;
+            ushort[] D;
+            FlatFieldCorrector ffc;                      
+            int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
+            bool success;
+
+            // get ref images
+            success = GetFFReferenceImagesByType(type, out F, out D);
+            if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+
+            // build flat field corrector for given correction type
+            ffc = new FlatFieldCorrector(imageSize, F, D);
+            ffc.CorrectForBinning(binning, binning);
+
+            // load fluor correction arrays to GPU
+            m_cudaToolBox.SetFlatFieldCorrection((int)type, ffc.Gc, ffc.Dc);
+        }
+
+
         public ITargetBlock<Tuple<ushort[], int, int>> CreateImageProcessingPipeline(TaskScheduler uiTask, CancellationToken cancelToken,
                             AcquisitionParams acqParams, Dictionary<int, ImagingParamsStruct> _imagingDictionary, 
                             MaskContainer mask, bool applyMask, bool saveImages, int projectID, int plateID, int experimentID)
@@ -716,39 +743,45 @@ namespace Waveguide
             Dictionary<int, ImagingParamsStruct> imagingDictionary = _imagingDictionary;
             CudaToolBox cuda = m_cudaToolBox;
 
+             var firstEntry = imagingDictionary.First();
+             ImagingParamsStruct firstIps = firstEntry.Value;
+             int binning = firstIps.binning;
+
             // set up flat field correction arrays on GPU
-                ushort[] F;
-                ushort[] D;
-                FlatFieldCorrector ffc;
-                var firstEntry = imagingDictionary.First();
-                ImagingParamsStruct firstIps = firstEntry.Value;
-                int binning = firstIps.binning;
-                int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
-                bool success;
+            SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_FLUOR, binning);
+            SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_LUMI, binning);
+                //ushort[] F;
+                //ushort[] D;
+                //FlatFieldCorrector ffc;
+                //var firstEntry = imagingDictionary.First();
+                //ImagingParamsStruct firstIps = firstEntry.Value;
+                //int binning = firstIps.binning;
+                //int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
+                //bool success;
 
-                // FLUORESCENCE
-                // get fluor ref images
-                success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_FLUOR, out F, out D);
-                if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+                //// FLUORESCENCE
+                //// get fluor ref images
+                //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_FLUOR, out F, out D);
+                //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
 
-                // build flat field corrector for fluor
-                ffc = new FlatFieldCorrector(imageSize, F, D);
-                ffc.CorrectForBinning(binning, binning);
+                //// build flat field corrector for fluor
+                //ffc = new FlatFieldCorrector(imageSize, F, D);
+                //ffc.CorrectForBinning(binning, binning);
 
-                // load fluor correction arrays to GPU
-                cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_FLUOR, ffc.Gc, ffc.Dc);
+                //// load fluor correction arrays to GPU
+                //cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_FLUOR, ffc.Gc, ffc.Dc);
 
-                // LUMINESCENCE
-                // get lumi ref images
-                success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_LUMI, out F, out D);
-                if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+                //// LUMINESCENCE
+                //// get lumi ref images
+                //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_LUMI, out F, out D);
+                //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
 
-                // build flat field corrector for lumi
-                ffc = new FlatFieldCorrector(imageSize, F, D);
-                ffc.CorrectForBinning(binning, binning);
+                //// build flat field corrector for lumi
+                //ffc = new FlatFieldCorrector(imageSize, F, D);
+                //ffc.CorrectForBinning(binning, binning);
 
-                // load lumi correction arrays to GPU
-                cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_LUMI, ffc.Gc, ffc.Dc);
+                //// load lumi correction arrays to GPU
+                //cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_LUMI, ffc.Gc, ffc.Dc);
 
 
 

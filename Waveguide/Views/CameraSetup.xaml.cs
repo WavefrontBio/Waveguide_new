@@ -448,6 +448,9 @@ namespace Waveguide
             m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
 
             UpdateImagingDictionary();
+
+            m_imager.SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_FLUOR, vm.Binning);
+            m_imager.SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_LUMI,  vm.Binning);
         }
 
         private void VSSCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -70,6 +70,7 @@ namespace Waveguide
                     pixelCount++;
                 }
             }
+            if (pixelCount < 1) pixelCount = 1;
             //ulong mlong = sum / (ulong)imageSize;
             ulong mlong = sum / pixelCount;
             m = (ushort)mlong;

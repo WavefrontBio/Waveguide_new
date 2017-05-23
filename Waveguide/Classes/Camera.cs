@@ -725,6 +725,12 @@ namespace Waveguide
         }
 
 
+        public void ConfigureCamera(CameraSettingsContainer settings)
+        {
+            ConfigureCamera(settings.VSSIndex,settings.HSSIndex,settings.VertClockAmpIndex,m_cameraParams.PreAmpGainIndex,settings.UseEMAmp,
+                m_cameraParams.EMGain,settings.UseFrameTransfer);
+        }
+
         public bool ConfigureCamera()
         {
             return ConfigureCamera(m_cameraParams);
@@ -813,6 +819,9 @@ namespace Waveguide
 
             return success;
         }
+
+
+        
 
 
         public bool PrepareAcquisition()

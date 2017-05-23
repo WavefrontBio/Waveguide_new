@@ -111,13 +111,17 @@ namespace Waveguide
                     {
                         done = true;
                         m_imager.m_cameraEvent += Imager_CameraEvent;
-                        m_imager.m_temperatureEvent += Imager_TemperatureEvent;
+                        m_imager.m_cameraTemperatureEvent += Imager_TemperatureEvent;
 
                         m_imager.m_camera.CoolerON(true);
                         VM.CoolingOn = true;
                         CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
 
+                        m_imager.m_insideTemperatureEvent += m_imager_m_insideTemperatureEvent;
+
                         MyExperimentConfigurator.SetImager(m_imager);
+
+                        
                     }
                     else
                     {
@@ -142,6 +146,20 @@ namespace Waveguide
                 Close();
             }
            
+        }
+
+        void m_imager_m_insideTemperatureEvent(object sender, TemperatureEventArgs e)
+        {
+            if(e.GoodReading)
+            {
+                VM.InsideTemp = e.Temperature;
+                VM.InsideTempString = e.Temperature.ToString();
+            }
+            else
+            {
+                VM.InsideTempString = "-";
+            }
+
         }
 
 
@@ -492,6 +510,9 @@ namespace Waveguide
         {
             CameraTempString = "-";
             CoolingOn = true;
+
+            InsideTempString = "-";
+            HeatingOn = false;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

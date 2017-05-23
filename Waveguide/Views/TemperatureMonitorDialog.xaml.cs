@@ -37,7 +37,7 @@ namespace Waveguide
         {
             m_camera = camera;
 
-            m_thresholdTemperature = GlobalVars.CameraTargetTemperature + GlobalVars.MaxTemperatureThresholdDeviation;
+            m_thresholdTemperature = GlobalVars.CameraTargetTemperature + GlobalVars.MaxCameraTemperatureThresholdDeviation;
 
             InitializeComponent();
             VM = new TemperatureMonitorDialog_ViewModel();

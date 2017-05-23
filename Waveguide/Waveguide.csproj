@@ -76,6 +76,10 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Brainboxes.IO, Version=1.2.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Brainboxes.IO.1.4.0.1\lib\net40\Brainboxes.IO.dll</HintPath>
+    </Reference>
     <Reference Include="InfragisticsWPF4.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
     <Reference Include="InfragisticsWPF4.Editors.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
     <Reference Include="InfragisticsWPF4.DragDrop.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
@@ -175,9 +179,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Classes\AsyncClientSocket.cs" />
     <Compile Include="Classes\DatabaseContainerClasses.cs" />
     <Compile Include="Classes\FlatFieldCorrector.cs" />
     <Compile Include="Classes\Lambda.cs" />
+    <Compile Include="Classes\OmegaTempCtrl.cs" />
     <Compile Include="Classes\ReportWriter.cs" />
     <Compile Include="Classes\Thor.cs" />
     <Compile Include="Classes\ValidationRules.cs" />
@@ -485,6 +491,7 @@
     <None Include="app.manifest">
       <SubType>Designer</SubType>
     </None>
+    <None Include="BRAINBOXES.IO.LICENSE" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -544,6 +551,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="WG_icon1.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="BRAINBOXES.IO.README.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

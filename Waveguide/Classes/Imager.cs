@@ -17,12 +17,14 @@ using System.Windows;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Collections;
+using Brainboxes.IO;
 
 namespace Waveguide
 {
 
     public delegate void CameraEventHandler(object sender, CameraEventArgs e);
-    public delegate void TemperatureEventHandler(object sender, TemperatureEventArgs e);
+    public delegate void CameraTemperatureEventHandler(object sender, TemperatureEventArgs e);
+    public delegate void InsideTemperatureEventHandler(object sender, TemperatureEventArgs e);
     public delegate void ImagerEventHandler(object sender, ImagerEventArgs e);
  
 
@@ -77,6 +79,8 @@ namespace Waveguide
         public CudaToolBox m_cudaToolBox;
         TaskScheduler m_uiTask;
         Stopwatch m_imagingSequenceCounter;
+        OmegaTempCtrl m_omegaTempController;
+        
 
         public Lambda m_lambda;
         public Thor m_thor;
@@ -103,7 +107,10 @@ namespace Waveguide
         CancellationTokenSource m_cameraTemperatureTokenSource;
         CancellationToken m_cameraTemperatureCancelToken;
 
-        bool m_tempMonitorRunning;
+
+        bool m_cameraTempMonitorRunning;
+        bool m_insideTempMonitorRunning;
+        public bool m_insideHeatingON;
 
         // dictionary of <Experiment Indicator ID, Stucture holding details of the display panel for this Exp. Ind. ID>
         public Dictionary<int, ImagingParamsStruct> m_ImagingDictionary;
@@ -124,10 +131,16 @@ namespace Waveguide
                 m_imagerEvent(this, e);
         }
 
-        public event TemperatureEventHandler m_temperatureEvent;
-        protected virtual void OnTemperatureEvent(TemperatureEventArgs e)
+        public event CameraTemperatureEventHandler m_cameraTemperatureEvent;
+        protected virtual void OnCameraTemperatureEvent(TemperatureEventArgs e)
         {
-            m_temperatureEvent(this, e);
+            m_cameraTemperatureEvent(this, e);
+        }
+
+        public event InsideTemperatureEventHandler m_insideTemperatureEvent;
+        protected virtual void OnInsideTemperatureEvent(TemperatureEventArgs e)
+        {
+            m_insideTemperatureEvent(this, e);
         }
 
 
@@ -163,7 +176,27 @@ namespace Waveguide
             m_thor = new Thor();
 
             m_filterChangeSpeed = (byte)GlobalVars.FilterChangeSpeed;
-        
+
+            m_insideHeatingON = false;
+        }
+
+        public void SetInsideHeatingON(bool turnON)
+        {
+            m_insideHeatingON = turnON;
+
+            if (turnON)
+            {
+                m_omegaTempController.EnableOutput(1);
+            }
+            else
+            {
+                m_omegaTempController.DisableOutput(1);
+            }
+        }
+
+        public void SetInsideTemperatureTarget(int targetTemp)
+        {
+            m_omegaTempController.updateSetPoint(1, targetTemp);
         }
 
 
@@ -232,10 +265,10 @@ namespace Waveguide
             m_RangeSliderUpperSliderPosition = (UInt16)GlobalVars.MaxPixelValue;
 
             m_UseMask = true;
-            m_ROIAdjustToMask = true;
+            m_ROIAdjustToMask = false;
 
             m_kineticImagingON = false;
-            m_tempMonitorRunning = false;
+            m_cameraTempMonitorRunning = false;
 
 
 
@@ -274,21 +307,43 @@ namespace Waveguide
 
 
             // start Temperature Monitoring Task
-            if (!m_tempMonitorRunning)
+            if (!m_cameraTempMonitorRunning)
             {
                 m_cameraTemperatureTokenSource = new CancellationTokenSource();
                 m_cameraTemperatureCancelToken = m_cameraTemperatureTokenSource.Token;
 
-                var progressIndicator = new Progress<TemperatureProgressReport>(ReportTemperature);
+                var progressIndicator = new Progress<TemperatureProgressReport>(ReportCameraTemperature);
 
                 Task.Factory.StartNew(() =>
                 {
-                    TempMonitorWorker(progressIndicator);
+                    CameraTempMonitorWorker(progressIndicator);
                 }, m_cameraTemperatureCancelToken);
 
                 OnCameraEvent(new CameraEventArgs("Camera Temperature Monitoring Started", false));
             }
+
+            // start Omega Temperature Controller Task
+            if(!m_insideTempMonitorRunning)
+            {
+                m_omegaTempController = new OmegaTempCtrl(GlobalVars.TempControllerIP, 2000);
+
+                m_omegaTempController.TempEvent += m_omegaTempController_TempEvent;
+                m_omegaTempController.MessageEvent += m_omegaTempController_MessageEvent;
+
+                m_omegaTempController.Connect();
+                m_omegaTempController.StartTempUpdate(1.0);    
+            }
            
+        }
+
+        void m_omegaTempController_MessageEvent(object sender, OmegaTempCtrlMessageEventArgs e)
+        {
+            OnImagerEvent(new ImagerEventArgs("Temp Controller: " + e.Message,ImagerState.Idle));            
+        }
+
+        void m_omegaTempController_TempEvent(object sender, OmegaTempCtrlTempEventArgs e)
+        {
+            OnInsideTemperatureEvent(new TemperatureEventArgs(true,(int) e.Temperature));
         }
 
         public void SetupCamera(bool AllowCameraConfiguration, bool isManualMode)
@@ -323,13 +378,14 @@ namespace Waveguide
                 m_cudaToolBox.Set_MaskImage(m_mask.PixelMaskImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                             m_camera.m_acqParams.BinnedFullImageHeight, (UInt16)mask.Rows, (UInt16)mask.Cols);
 
-                SetROI();
+                SetROI(m_ROIAdjustToMask);
             }
         }
         
-        public void SetROI()
+        public void SetROI(bool setRoiAroundMask)
         {
-            
+            m_ROIAdjustToMask = setRoiAroundMask;
+
             if (m_ROIAdjustToMask)
             {
                 int roix = 0, roiy = 0, roiw = 0, roih = 0;
@@ -342,6 +398,13 @@ namespace Waveguide
                 m_camera.m_acqParams.RoiY = roiy;
                 m_camera.m_acqParams.RoiW = roiw;
                 m_camera.m_acqParams.RoiH = roih;
+            }
+            else
+            {             
+                m_camera.m_acqParams.RoiX = 0;
+                m_camera.m_acqParams.RoiY = 0;
+                m_camera.m_acqParams.RoiW = GlobalVars.PixelWidth;
+                m_camera.m_acqParams.RoiH = GlobalVars.PixelHeight;
             }
         }
 
@@ -996,9 +1059,9 @@ namespace Waveguide
         ////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////
 
-        private void TempMonitorWorker(IProgress<TemperatureProgressReport> progress)  // this is run on a separate Task
+        private void CameraTempMonitorWorker(IProgress<TemperatureProgressReport> progress)  // this is run on a separate Task
         {
-            m_tempMonitorRunning = true;
+            m_cameraTempMonitorRunning = true;
             int t = 0;
             while (true)
             {
@@ -1029,13 +1092,13 @@ namespace Waveguide
                 }
                 Thread.Sleep(1000);
             }
-            m_tempMonitorRunning = false;
+            m_cameraTempMonitorRunning = false;
         }
 
 
-        private void ReportTemperature(TemperatureProgressReport progress)
+        private void ReportCameraTemperature(TemperatureProgressReport progress)
         {
-            OnTemperatureEvent(new TemperatureEventArgs(progress.GoodReading, progress.Temperature));
+            OnCameraTemperatureEvent(new TemperatureEventArgs(progress.GoodReading, progress.Temperature));
         }
 
 
@@ -1043,12 +1106,6 @@ namespace Waveguide
         ////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
 
 
 

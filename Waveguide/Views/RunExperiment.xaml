@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Waveguide"
         Title="RunExperiment" Height="900" Width="1600" Loaded="Window_Loaded"
-        Icon="/Images/WG_icon1.ico">
+        Icon="/Images/WG_icon1.ico"
+        WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
         
@@ -26,6 +27,7 @@
         
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="60"/>
@@ -51,31 +53,47 @@
                 <TextBlock Grid.Row="1" Grid.Column="0"
                            HorizontalAlignment="Center" VerticalAlignment="Stretch"
                            
-                       Text="{Binding Path=TemperatureText}"
-                       x:Name="TemperatureDisplay"
+                       Text="{Binding Path=CameraTemperatureText}"
+                       x:Name="CameraTemperatureDisplay"
                        FontSize="32"
                        FontWeight="Bold"
                        />
 
 
-            <Label Grid.Row="0" Grid.Column="1" Content="System Messages"
+            <Label Grid.Row="0" Grid.Column="1" Content="Inside Temp"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"                       
+                       FontSize="18" FontWeight="Bold"                       
+                       />
+
+            <TextBlock Grid.Row="1" Grid.Column="1"
+                           HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                           
+                       Text="{Binding Path=InsideTemperatureText}"
+                       x:Name="InsideTemperatureDisplay"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       />
+
+
+            <Label Grid.Row="0" Grid.Column="2" Content="System Messages"
                        HorizontalAlignment="Left" Margin="50,0,0,0"
                        VerticalAlignment="Center"
                        FontSize="18" FontWeight="Bold"                       
                        />
 
-            <TextBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" MinWidth="500"
+            <TextBox Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch" MinWidth="500"
                      x:Name="MessageDisplay"
                      IsReadOnly="True"
                      />
 
             
-            <Image Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <Image Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"
                    x:Name="EnclosureCameraPB" Source="/Images/eye.png" MouseLeftButtonUp="EnclosureCameraPB_MouseLeftButtonUp"
                    />
             
 
-            <Label Grid.Row="0" Grid.Column="3" Content="Pause"
+            <Label Grid.Row="0" Grid.Column="4" Content="Pause"
                        HorizontalAlignment="Center" 
                        VerticalAlignment="Center"
                        FontSize="18" FontWeight="Bold"
@@ -83,7 +101,7 @@
                        Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Hidden}"
                        />
             
-            <TextBlock Grid.Row="1" Grid.Column="3"
+            <TextBlock Grid.Row="1" Grid.Column="4"
                        HorizontalAlignment="Center" VerticalAlignment="Stretch"
                        Text="{Binding Path=DelayText}"
                        Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Hidden}"
@@ -93,7 +111,7 @@
                        />
 
 
-            <Button Grid.Row="0" Grid.Column="4" Grid.RowSpan="2"
+            <Button Grid.Row="0" Grid.Column="5" Grid.RowSpan="2"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
                     x:Name="ResetPB" Width="80" Height="60"
                     Content="Reset" FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
@@ -127,7 +145,7 @@
             </Button>
 
 
-            <Image Grid.Row="0" Grid.Column="5" Grid.RowSpan="2" x:Name="RunStateImage" RenderTransformOrigin="0.5,0.5">
+            <Image Grid.Row="0" Grid.Column="6" Grid.RowSpan="2" x:Name="RunStateImage" RenderTransformOrigin="0.5,0.5">
                 <Image.RenderTransform>
                     <RotateTransform Angle="0"/>
                 </Image.RenderTransform>
@@ -174,7 +192,7 @@
 
   
 
-            <Button Grid.Row="0" Grid.Column="6" Grid.RowSpan="2"
+            <Button Grid.Row="0" Grid.Column="7" Grid.RowSpan="2"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
                     x:Name="RunPB" Width="80" Height="60"
                     FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"

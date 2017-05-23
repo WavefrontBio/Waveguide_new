@@ -232,9 +232,13 @@ namespace Waveguide
             InitAggregateChart();
             DrawGridLines();
 
-            VM.TemperatureTarget = GlobalVars.CameraTargetTemperature;
+            VM.CameraTemperatureTarget = GlobalVars.CameraTargetTemperature;
             VM.CycleTime = GlobalVars.CameraDefaultCycleTime;
-            VM.TemperatureReady = false;
+            VM.CameraTemperatureReady = false;
+
+            VM.InsideTemperatureTarget = 10;
+            VM.InsideTemperatureReady = false;
+                    
 
         }
 
@@ -294,6 +298,11 @@ namespace Waveguide
         {
             m_imager = imager;
             m_mask = mask;
+
+            if(m_imager != null)
+            {
+                VM.InsideHeaterEnabled = m_imager.m_insideHeatingON;
+            }
         }
 
 
@@ -2247,15 +2256,27 @@ namespace Waveguide
         }
 
 
-        private void TemperatureEdit_ValueChanged(object sender, EventArgs e)
+        private void CameraTemperatureEdit_ValueChanged(object sender, EventArgs e)
         {
-            GlobalVars.CameraTargetTemperature = VM.TemperatureTarget;
+            GlobalVars.CameraTargetTemperature = VM.CameraTemperatureTarget;
 
             if (m_imager != null)
-                m_imager.m_camera.SetCoolerTemp(VM.TemperatureTarget);
+                m_imager.m_camera.SetCoolerTemp(VM.CameraTemperatureTarget);
 
-            VM.EvalTemperature();
+            VM.EvalCameraTemperature();
         }
+
+
+        private void InsideTemperatureEdit_ValueChanged(object sender, EventArgs e)
+        {
+            GlobalVars.InsideTargetTemperature = VM.InsideTemperatureTarget;
+
+            if (m_imager != null)
+                m_imager.SetInsideTemperatureTarget(VM.InsideTemperatureTarget);
+
+            VM.EvalInsideTemperature();
+        }
+
 
         private void Binning_1x1_RadioButton_Checked(object sender, RoutedEventArgs e)
         {
@@ -2278,13 +2299,7 @@ namespace Waveguide
             VM.HorzBinning = 4;
         }
 
-        private void Binning_8x8_RadioButton_Checked(object sender, RoutedEventArgs e)
-        {
-            if (VM == null) return;
-            VM.VertBinning = 8;
-            VM.HorzBinning = 8;
-        }
-
+   
 
         private void VerifyPB_Click(object sender, RoutedEventArgs e)
         {
@@ -2320,20 +2335,97 @@ namespace Waveguide
                 }
             }
 
-            
+
             dlg.Title = indicator.Description;
             dlg.CameraSetupControl.vm.Exposure = indicator.Exposure;
             dlg.CameraSetupControl.vm.EMGain = indicator.Gain;
             dlg.CameraSetupControl.vm.EmFilter = emFilt;
             dlg.CameraSetupControl.vm.ExFilter = exFilt;
-          
-                     
-            dlg.ShowDialog();
-            
-            indicator.Exposure = dlg.CameraSetupControl.vm.Exposure;
-            indicator.Gain = dlg.CameraSetupControl.vm.EMGain;            
-             
+            dlg.CameraSetupControl.vm.CycleTime = indicator.CycleTime;
 
+            foreach(FlatFieldCorrectionItem ffci in dlg.CameraSetupControl.vm.FlatFieldCorrectionItems)
+            {
+                if (ffci.FlatField_Select == indicator.FlatFieldCorrection)
+                    dlg.CameraSetupControl.vm.FlatFieldSelect = ffci;
+            }
+            
+            foreach(FilterContainer fc in dlg.CameraSetupControl.vm.EmFilterList)
+            {
+                if (fc.PositionNumber == indicator.EmissionFilterPos)
+                    dlg.CameraSetupControl.vm.EmFilter = fc;
+            }
+
+            foreach (FilterContainer fc in dlg.CameraSetupControl.vm.ExFilterList)
+            {
+                if (fc.PositionNumber == indicator.ExcitationFilterPos)
+                    dlg.CameraSetupControl.vm.ExFilter = fc;
+            }
+
+
+            if (VM.CurrentCameraSettings == null)
+            {
+                CameraSettingsContainer cameraSettings;
+                success = wgDB.GetCameraSettingsDefault(out cameraSettings);
+                if(success)
+                {
+                    dlg.CameraSetupControl.vm.CurrentCameraSettings = cameraSettings;
+                }
+                else
+                {
+                    dlg.CameraSetupControl.vm.CurrentCameraSettings = dlg.CameraSetupControl.vm.CameraSettingsList[0];
+                }
+            }
+            else
+                dlg.CameraSetupControl.vm.CurrentCameraSettings = VM.CurrentCameraSettings;
+
+            foreach(CameraSettingsContainer csc in dlg.CameraSetupControl.vm.CameraSettingsList)
+            {
+                if (csc.CameraSettingID == dlg.CameraSetupControl.vm.CurrentCameraSettings.CameraSettingID)
+                    dlg.CameraSetupControl.CameraSettingsCB.SelectedItem = dlg.CameraSetupControl.vm.CurrentCameraSettings;
+            }
+
+
+            dlg.QuitPB.Content = "Done";
+
+            dlg.CameraSetupControl.CameraSettingsCB.IsEnabled = true;
+            dlg.CameraSetupControl.StartVideoPB.Visibility = System.Windows.Visibility.Hidden;
+            dlg.CameraSetupControl.SaveImagePB.Visibility = System.Windows.Visibility.Hidden;           
+
+
+            dlg.ShowDialog();
+
+            indicator.Exposure = dlg.CameraSetupControl.vm.Exposure;
+            indicator.Gain = dlg.CameraSetupControl.vm.EMGain;
+            indicator.CycleTime = dlg.CameraSetupControl.vm.CycleTime;
+            indicator.FlatFieldCorrection = dlg.CameraSetupControl.vm.FlatFieldSelect.FlatField_Select;
+            VM.CurrentCameraSettings = dlg.CameraSetupControl.vm.CurrentCameraSettings;
+
+
+            if(m_imager.m_ImagingDictionary.ContainsKey(indicator.ExperimentIndicatorID))
+            {
+                ImagingParamsStruct ips = m_imager.m_ImagingDictionary[indicator.ExperimentIndicatorID];
+                ips.exposure = indicator.Exposure;
+                ips.gain = indicator.Gain;
+                ips.binning = dlg.CameraSetupControl.vm.Binning;
+                ips.cycleTime = indicator.CycleTime;
+                ips.flatfieldType = indicator.FlatFieldCorrection;
+            }
+
+
+            switch(dlg.CameraSetupControl.vm.Binning)
+            {
+                case 1:
+                    Binning_1x1_RadioButton.IsChecked = true;
+                    break;
+                case 2:
+                    Binning_2x2_RadioButton.IsChecked = true;
+                    break;
+                case 4:
+                    Binning_4x4_RadioButton.IsChecked = true;
+                    break;                
+            }
+
+         
             // if the binning was changed, un-verify all other indicators
             if (VM.HorzBinning != previousBinning) // binning was changed
             {
@@ -2343,19 +2435,23 @@ namespace Waveguide
                 }
             }
 
-
             indicator.Verified = true;
 
             VM.EvalRunStatus();
+
         
         }
 
+             
 
 
         private void CompoundPlateDataGrid_CellUpdated(object sender, Infragistics.Windows.DataPresenter.Events.CellUpdatedEventArgs e)
         {
             VM.EvalRunStatus();
         }
+
+   
+     
 
 
 
@@ -2374,7 +2470,25 @@ namespace Waveguide
     public class ViewModel_ChartArray : IDataErrorInfo, INotifyPropertyChanged
     {
         public enum RUN_STATUS { NEEDS_INPUT, READY_TO_RUN, RUNNING, RUN_FINISHED };
-                
+
+
+        private CameraSettingsContainer _currentCameraSettings;
+        public CameraSettingsContainer CurrentCameraSettings
+        {
+            get
+            {
+                return this._currentCameraSettings;
+            }
+
+            set
+            {
+                if (value != this._currentCameraSettings)
+                {
+                    this._currentCameraSettings = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
         
 
 
@@ -2396,6 +2510,61 @@ namespace Waveguide
             }
         }
 
+
+        private bool _showVerifyPanel;
+        public bool ShowVerifyPanel
+        {
+            get
+            {
+                return this._showVerifyPanel;
+            }
+
+            set
+            {
+                if (value != this._showVerifyPanel)
+                {
+                    this._showVerifyPanel = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+
+        private ExperimentIndicatorContainer _experimentIndicatorUnderVerification;
+        public ExperimentIndicatorContainer ExperimentIndicatorUnderVerification
+        {
+            get
+            {
+                return this._experimentIndicatorUnderVerification;
+            }
+
+            set
+            {
+                if (value != this._experimentIndicatorUnderVerification)
+                {
+                    this._experimentIndicatorUnderVerification = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+        private int _activeBinning;
+        public int ActiveBinning
+        {
+            get
+            {
+                return this._activeBinning;
+            }
+
+            set
+            {
+                if (value != this._activeBinning)
+                {
+                    this._activeBinning = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
 
         private PlateContainer _experimentPlate;
         public PlateContainer ExperimentPlate
@@ -2474,64 +2643,142 @@ namespace Waveguide
         }
 
 
-        private int _temperatureTarget;
-        public int TemperatureTarget
+        private int _cameraTemperatureTarget;
+        public int CameraTemperatureTarget
         {
             get
             {
-                return this._temperatureTarget;
+                return this._cameraTemperatureTarget;
             }
 
             set
             {
-                if (value != this._temperatureTarget)
+                if (value != this._cameraTemperatureTarget)
                 {
-                    this._temperatureTarget = value;
+                    this._cameraTemperatureTarget = value;
                     NotifyPropertyChanged();
                 }                
             }
         }
 
 
-        private int _temperatureActual;
-        public int TemperatureActual
+        private int _cameraTemperatureActual;
+        public int CameraTemperatureActual
         {
             get
             {
-                return this._temperatureActual;
+                return this._cameraTemperatureActual;
             }
 
             set
             {
-                if (value != this._temperatureActual)
+                if (value != this._cameraTemperatureActual)
                 {
-                    this._temperatureActual = value;
+                    this._cameraTemperatureActual = value;
                     NotifyPropertyChanged();
                 }
 
-                EvalTemperature();
+                EvalCameraTemperature();
             }
         }
 
 
-        private bool _temperatureReady;
-        public bool TemperatureReady
+        private bool _cameraTemperatureReady;
+        public bool CameraTemperatureReady
         {
             get
             {
-                return this._temperatureReady;
+                return this._cameraTemperatureReady;
             }
 
             set
             {
-                if (value != this._temperatureReady)
+                if (value != this._cameraTemperatureReady)
                 {
-                    this._temperatureReady = value;
+                    this._cameraTemperatureReady = value;
                     NotifyPropertyChanged();
                 }
             }
         }
 
+
+
+        private int _insideTemperatureTarget;
+        public int InsideTemperatureTarget
+        {
+            get
+            {
+                return this._insideTemperatureTarget;
+            }
+
+            set
+            {
+                if (value != this._insideTemperatureTarget)
+                {
+                    this._insideTemperatureTarget = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+
+        private int _insideTemperatureActual;
+        public int InsideTemperatureActual
+        {
+            get
+            {
+                return this._insideTemperatureActual;
+            }
+
+            set
+            {
+                if (value != this._insideTemperatureActual)
+                {
+                    this._insideTemperatureActual = value;
+                    NotifyPropertyChanged();
+                }
+
+                EvalInsideTemperature();
+            }
+        }
+
+
+        private bool _insideTemperatureReady;
+        public bool InsideTemperatureReady
+        {
+            get
+            {
+                return this._insideTemperatureReady;
+            }
+
+            set
+            {
+                if (value != this._insideTemperatureReady)
+                {
+                    this._insideTemperatureReady = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+
+        private bool _insideHeaterEnabled;
+        public bool InsideHeaterEnabled
+        {
+            get
+            {
+                return this._insideHeaterEnabled;
+            }
+
+            set
+            {
+                if (value != this._insideHeaterEnabled)
+                {
+                    this._insideHeaterEnabled = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
 
 
         private int _vertBinning;
@@ -2669,6 +2916,8 @@ namespace Waveguide
         {
             _overlay = BitmapFactory.New(800, 450);
             _gridLines = BitmapFactory.New(800, 450);
+
+            InsideHeaterEnabled = false;
         }
 
 
@@ -2726,18 +2975,30 @@ namespace Waveguide
         }
 
 
-        public void EvalTemperature()
+        public void EvalCameraTemperature()
         {
-            int deviation = TemperatureActual - (TemperatureTarget + GlobalVars.MaxTemperatureThresholdDeviation);
+            int deviation = CameraTemperatureActual - (CameraTemperatureTarget + GlobalVars.MaxCameraTemperatureThresholdDeviation);
 
             if (deviation <= 0)
-                TemperatureReady = true;
+                CameraTemperatureReady = true;
             else
-                TemperatureReady = false;
+                CameraTemperatureReady = false;
 
             EvalRunStatus();
         }
 
+
+        public void EvalInsideTemperature()
+        {
+            int deviation = InsideTemperatureActual - (InsideTemperatureTarget + GlobalVars.MaxInsideTemperatureThresholdDeviation);
+
+            if (deviation <= 0 || InsideHeaterEnabled)
+                InsideTemperatureReady = true;
+            else
+                InsideTemperatureReady = false;
+
+            EvalRunStatus();
+        }
 
 
         public void EvalRunStatus()
@@ -2759,7 +3020,7 @@ namespace Waveguide
                     if (!cp.BarcodeValid) allCompoundPlatesVerified = false;
                 }
 
-                if (allIndicatorsVerified && allCompoundPlatesVerified && TemperatureReady) Status = RUN_STATUS.READY_TO_RUN;
+                if (allIndicatorsVerified && allCompoundPlatesVerified && CameraTemperatureReady && InsideTemperatureReady) Status = RUN_STATUS.READY_TO_RUN;
                 else Status = RUN_STATUS.NEEDS_INPUT;
             }
             else

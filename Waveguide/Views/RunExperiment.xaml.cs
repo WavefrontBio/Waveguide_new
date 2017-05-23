@@ -148,7 +148,11 @@ namespace Waveguide
             }
 
             m_imager.m_cameraEvent += m_imager_cameraEvent;
-            m_imager.m_temperatureEvent += m_imager_temperatureEvent;
+            m_imager.m_cameraTemperatureEvent += m_imager_temperatureEvent;
+
+
+            m_imager.m_imagerEvent += m_imager_m_imagerEvent;
+            m_imager.m_insideTemperatureEvent += m_imager_m_insideTemperatureEvent;
 
 
             m_vworks.PostVWorksCommandEvent += m_vworks_PostVWorksCommandEvent;
@@ -164,6 +168,22 @@ namespace Waveguide
             // catch close event caused by clicking X button
             this.Closing += new System.ComponentModel.CancelEventHandler(Window_Closing);                   
 
+        }
+
+        void m_imager_m_imagerEvent(object sender, ImagerEventArgs e)
+        {
+            PostMessage(e.Message);
+        }
+
+        void m_imager_m_insideTemperatureEvent(object sender, TemperatureEventArgs e)
+        {
+            if (e.GoodReading)
+            {
+                VM.InsideTemperatureText = e.Temperature.ToString();
+
+                ChartArrayControl.VM.InsideTemperatureActual = e.Temperature;
+            }
+            throw new NotImplementedException();
         }
 
 
@@ -240,9 +260,9 @@ namespace Waveguide
         {
             if (e.GoodReading)
             {
-                VM.TemperatureText = e.Temperature.ToString();
+                VM.CameraTemperatureText = e.Temperature.ToString();
 
-                ChartArrayControl.VM.TemperatureActual = e.Temperature;
+                ChartArrayControl.VM.CameraTemperatureActual = e.Temperature;
             }
         }
 
@@ -987,7 +1007,8 @@ namespace Waveguide
         private string _messageString;
         private string _delayText;
         private bool _delayHeaderVisible;
-        private string _temperatureText;
+        private string _cameraTemperatureText;
+        private string _insideTemperatureText;
         private UserContainer _user;
         private ProjectContainer _project;        
         private MethodContainer _method;
@@ -1054,7 +1075,8 @@ namespace Waveguide
         public string MessageText { get { return _messageString; } set { _messageString = value; NotifyPropertyChanged("MessageText"); } }
         public string DelayText { get { return _delayText; } set { _delayText = value; NotifyPropertyChanged("DelayText"); } }
         public bool DelayHeaderVisible { get { return _delayHeaderVisible; } set { _delayHeaderVisible = value; NotifyPropertyChanged("DelayHeaderVisible"); } }
-        public string TemperatureText { get { return _temperatureText; } set { _temperatureText = value; NotifyPropertyChanged("TemperatureText"); } }
+        public string CameraTemperatureText { get { return _cameraTemperatureText; } set { _cameraTemperatureText = value; NotifyPropertyChanged("CameraTemperatureText"); } }
+        public string InsideTemperatureText { get { return _insideTemperatureText; } set { _insideTemperatureText = value; NotifyPropertyChanged("InsideTemperatureText"); } }
 
         public UserContainer User { get { return _user; } set { _user = value; NotifyPropertyChanged("User"); } }
         public ProjectContainer Project { get { return _project; } set { _project = value; NotifyPropertyChanged("Project"); } }        
@@ -1066,7 +1088,8 @@ namespace Waveguide
         {
             DelayText = "";
             DelayHeaderVisible = false;
-            TemperatureText = "--";           
+            CameraTemperatureText = "--";
+            InsideTemperatureText = "--";
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

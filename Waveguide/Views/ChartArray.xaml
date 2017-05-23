@@ -300,6 +300,8 @@
 
         </Grid>
 
+   
+
         <!-- Grid Splitter -->
         <GridSplitter Grid.Column="1" 
                     HorizontalAlignment="Stretch" 
@@ -330,7 +332,7 @@
             <!-- ************************************************************* -->
             <!-- ************************************************************* -->
             <!-- BOTTOM Panel - Verify DataGrid -->
-            <Grid Grid.Row="2" Grid.RowSpan="2" x:Name="VerifyGrid" Panel.ZIndex="1">
+            <Grid Grid.Row="2" Grid.RowSpan="2" Panel.ZIndex="1">
                  
                 <Grid.RowDefinitions>
                     <RowDefinition Height="70"/>
@@ -340,7 +342,7 @@
 
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="140"/>
                 </Grid.ColumnDefinitions>
                 
                 <Grid.Style>
@@ -521,7 +523,19 @@
                                     </igDP:Field.Settings>
                                 </igDP:Field>
 
-                                <igDP:Field Name="Exposure" Label="Exposure (msecs)" Width="Auto">
+                                <igDP:Field Name="Exposure" Label="Exposure" Width="Auto">
+                                    <igDP:Field.Settings>
+                                        <igDP:FieldSettings EditAsType="{x:Type sys:Int32}" LabelTextAlignment="Center">
+                                            <igDP:FieldSettings.EditorStyle>
+                                                <Style TargetType="{x:Type igEditors:XamNumericEditor}" >
+                                                    <Setter Property="Mask" Value="nnnnn" />
+                                                </Style>
+                                            </igDP:FieldSettings.EditorStyle>
+                                        </igDP:FieldSettings>
+                                    </igDP:Field.Settings>
+                                </igDP:Field>
+
+                                <igDP:Field Name="CycleTime" Label="Cycle Tm" Width="Auto">
                                     <igDP:Field.Settings>
                                         <igDP:FieldSettings EditAsType="{x:Type sys:Int32}" LabelTextAlignment="Center">
                                             <igDP:FieldSettings.EditorStyle>
@@ -545,12 +559,6 @@
                                     </igDP:Field.Settings>
                                 </igDP:Field>
 
-                                <!--<igDP:Field Name="UsePixelMask" Label="Pixel Mask">
-                                    <igDP:Field.Settings>
-                                        <igDP:FieldSettings AllowEdit="False" LabelTextAlignment="Center"/>
-                                    </igDP:Field.Settings>
-                                </igDP:Field>-->
-
                                 <igDP:Field Name="FlatFieldCorrection" Label="Flat Field">
                                     <igDP:Field.Settings>
                                         <igDP:FieldSettings AllowEdit="False" LabelTextAlignment="Center"/>
@@ -558,9 +566,9 @@
                                 </igDP:Field>
                                 
 
-                                <igDP:UnboundField Name="VerifyIndicator" Label="Verify" Column="5" Height="45">
+                                <igDP:UnboundField Name="VerifyIndicator" Label="Verify" Column="5" Height="45" Width="80">
                                     <igDP:UnboundField.Settings>
-                                        <igDP:FieldSettings CellValuePresenterStyle="{StaticResource OptimizeButtonTemplate}" CellHeight="12" CellWidth="50" LabelTextAlignment="Center">
+                                        <igDP:FieldSettings CellValuePresenterStyle="{StaticResource OptimizeButtonTemplate}" CellHeight="12" CellWidth="30" LabelTextAlignment="Center">
                                         </igDP:FieldSettings>
                                     </igDP:UnboundField.Settings>
                                 </igDP:UnboundField>
@@ -624,16 +632,17 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     
-                        <TextBlock Grid.Row="0" Grid.Column="0" 
+                        <!--<TextBlock Grid.Row="0" Grid.Column="0" 
                             HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="5">
                             Cycle Time<LineBreak/>(msecs)
                         </TextBlock>
@@ -641,46 +650,79 @@
                     <ig:XamNumericInput Grid.Row="1" Grid.Column="0" SpinButtonDisplayMode="Always" SpinIncrement="10" Mask="nnnnn" 
                                             Value="{Binding Path=CycleTime, Mode=TwoWay}" ValueType="sys:Int32"
                                             Width="80" Height="35" x:Name="CycleTimeEdit"
-                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>-->
 
-                    <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,20,0,0">
-                            Camera Temp<LineBreak/>(degs C)
-                        </TextBlock>
+                    <GroupBox Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Header="Camera (degs C)" Margin="3">
+                        <StackPanel Orientation="Horizontal">
+                            
+                            <ig:XamNumericInput SpinButtonDisplayMode="Always" SpinIncrement="10"  
+                                Value="{Binding Path=CameraTemperatureTarget, Mode=TwoWay}" ValueType="sys:Int32"
+                                Width="50" Height="35" x:Name="CameraTemperatureEdit" Mask="[number:-90-25]"
+                                HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                ValueChanged="CameraTemperatureEdit_ValueChanged"/>
+                            
+                            <Image Height="32" Width="32" HorizontalAlignment="Left">
+                                <Image.Style>
+                                    <Style TargetType="{x:Type Image}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=CameraTemperatureReady}" Value="False">
+                                                <Setter Property="Source" Value="/Images/red_arrow_left_small.png"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=CameraTemperatureReady}" Value="True">
+                                                <Setter Property="Source" Value="/Images/green_check.png"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+                            
+                        </StackPanel>
+                    </GroupBox>
 
-                    <ig:XamNumericInput Grid.Row="3" Grid.Column="0" SpinButtonDisplayMode="Always" SpinIncrement="10"  
-                                            Value="{Binding Path=TemperatureTarget, Mode=TwoWay}" ValueType="sys:Int32"
-                                            Width="80" Height="35" x:Name="TemperatureEdit" Mask="[number:-90-25]"
-                                            HorizontalAlignment="Center" VerticalAlignment="Center" 
-                                        ValueChanged="TemperatureEdit_ValueChanged"/>
-                   
 
-                    <GroupBox Grid.Row="0" Grid.Column="1" Grid.RowSpan="3"
+                    <GroupBox Grid.Row="2" Grid.Column="0" Grid.RowSpan="2" Header="Inside (degs C)" Margin="3">
+                        <StackPanel Orientation="Horizontal">
+                            
+                            <ig:XamNumericInput SpinButtonDisplayMode="Always" SpinIncrement="1"  
+                                Value="{Binding Path=InsideTemperatureTarget, Mode=TwoWay}" ValueType="sys:Int32"
+                                Width="50" Height="35" x:Name="InsideTemperatureEdit" Mask="[number:10-40]"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"  HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                ValueChanged="InsideTemperatureEdit_ValueChanged"/>
+
+                            <Image Height="32" Width="32" HorizontalAlignment="Left">
+                                <Image.Style>
+                                    <Style TargetType="{x:Type Image}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=InsideTemperatureReady}" Value="False">
+                                                <Setter Property="Source" Value="/Images/red_arrow_left_small.png"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=InsideTemperatureReady}" Value="True">
+                                                <Setter Property="Source" Value="/Images/green_check.png"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+
+                        </StackPanel>                        
+                    </GroupBox>
+
+
+                    <GroupBox Grid.Row="4" Grid.Column="0" Grid.RowSpan="3"
                               Header="Binning" FontSize="14" 
-                              BorderBrush="Black" BorderThickness="1" Margin="15,0,5,0"
+                              BorderBrush="Black" BorderThickness="1" Margin="3"
                               IsEnabled="False" VerticalAlignment="Top">
                         <StackPanel Orientation="Vertical">
-                            <RadioButton Content="1 x 1" x:Name="Binning_1x1_RadioButton" Margin="2" IsChecked="True" Checked="Binning_1x1_RadioButton_Checked"/>
-                            <RadioButton Content="2 x 2" x:Name="Binning_2x2_RadioButton" Margin="2" Checked="Binning_2x2_RadioButton_Checked"/>
-                            <RadioButton Content="4 x 4" x:Name="Binning_4x4_RadioButton" Margin="2" Checked="Binning_4x4_RadioButton_Checked"/>
-                            <RadioButton Content="8 x 8" x:Name="Binning_8x8_RadioButton" Margin="2" Checked="Binning_8x8_RadioButton_Checked"/>
+                            <RadioButton Content="1 x 1" x:Name="Binning_1x1_RadioButton" Margin="2" HorizontalAlignment="Center" IsChecked="True" Checked="Binning_1x1_RadioButton_Checked"/>
+                            <RadioButton Content="2 x 2" x:Name="Binning_2x2_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_2x2_RadioButton_Checked"/>
+                            <RadioButton Content="4 x 4" x:Name="Binning_4x4_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_4x4_RadioButton_Checked"/>
                         </StackPanel>
 
                     </GroupBox>
 
-                    <Image Grid.Column="1" Grid.Row="3" Height="32" Width="32" HorizontalAlignment="Left">
-                        <Image.Style>
-                            <Style TargetType="{x:Type Image}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Path=TemperatureReady}" Value="False">
-                                        <Setter Property="Source" Value="/Images/red_arrow_left_small.png"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=TemperatureReady}" Value="True">
-                                        <Setter Property="Source" Value="/Images/green_check.png"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Image.Style>
-                    </Image>
+
+                    
+
 
 
                 </Grid>

@@ -75,6 +75,13 @@ namespace Waveguide
             set { _cameraDefaultCycleTime = value; }
         }
 
+        private static int _insideTargetTemperature;
+        public static int InsideTargetTemperature
+        {
+            get { return _insideTargetTemperature; }
+            set { _insideTargetTemperature = value; }
+        }
+
         private static byte _filterChangeSpeed;
         public static byte FilterChangeSpeed
         {
@@ -154,11 +161,18 @@ namespace Waveguide
             set { _upDownSignalOptimizePercentCountThreshold = value; }
         }
 
-        private static int _maxTemperatureThresholdDeviation;
-        public static int MaxTemperatureThresholdDeviation
+        private static int _maxCameraTemperatureThresholdDeviation;
+        public static int MaxCameraTemperatureThresholdDeviation
         {
-            get { return _maxTemperatureThresholdDeviation; }
-            set { _maxTemperatureThresholdDeviation = value; }
+            get { return _maxCameraTemperatureThresholdDeviation; }
+            set { _maxCameraTemperatureThresholdDeviation = value; }
+        }
+
+        private static int _maxInsideTemperatureThresholdDeviation;
+        public static int MaxInsideTemperatureThresholdDeviation
+        {
+            get { return _maxInsideTemperatureThresholdDeviation; }
+            set { _maxInsideTemperatureThresholdDeviation = value; }
         }
 
         private static string _enclosureCameraIPAddress;
@@ -242,6 +256,14 @@ namespace Waveguide
         {
             get { return _dbPassword; }
             set { _dbPassword = value; }
+        }
+
+
+        private static string _tempControllerIP;
+        public static string TempControllerIP
+        {
+            get { return _tempControllerIP; }
+            set { _tempControllerIP = value; }
         }
 
         public static void LoadConfiguration()
@@ -367,8 +389,11 @@ namespace Waveguide
                             case "UpDownSignalOptimizePercentCountThreshold":
                                 UpDownSignalOptimizePercentCountThreshold = Convert.ToInt32(appSettings[key]);
                                 break;
-                            case "MaxTemperatureThresholdDeviation":
-                                MaxTemperatureThresholdDeviation = Convert.ToInt32(appSettings[key]);
+                            case "MaxCameraTemperatureThresholdDeviation":
+                                MaxCameraTemperatureThresholdDeviation = Convert.ToInt32(appSettings[key]);
+                                break;
+                            case "MaxInsideTemperatureThresholdDeviation":
+                                MaxInsideTemperatureThresholdDeviation = Convert.ToInt32(appSettings[key]);
                                 break;
                             case "EnclosureCameraIPAddress":
                                 EnclosureCameraIPAddress = appSettings[key];
@@ -387,6 +412,9 @@ namespace Waveguide
                                 break;
                             case "DefaultPixelMaskThresholdPercent":
                                 DefaultPixelMaskThresholdPercent = Convert.ToDouble(appSettings[key]);
+                                break;
+                            case "TemperatureController_IP":
+                                TempControllerIP = appSettings[key];
                                 break;
                         }
                     }

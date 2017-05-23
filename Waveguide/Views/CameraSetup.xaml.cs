@@ -90,11 +90,9 @@ namespace Waveguide
                 ips.ImageControl = ImageDisplayControl;
                 ips.indicatorName = "Setup";
 
-                m_imager.m_ImagingDictionary.Add(m_ID, ips); // Not sure if this is right
+                m_imager.m_ImagingDictionary[m_ID] = ips;
 
                 m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
-
-
             }
             else
             {
@@ -185,6 +183,8 @@ namespace Waveguide
             m_lowerSliderValue = (UInt16)(e.Minimum/100.0f * (double)GlobalVars.MaxPixelValue);
             m_upperSliderValue = (UInt16)(e.Maximum / 100.0f * (double)GlobalVars.MaxPixelValue);
 
+            if (m_imager == null) return;
+
             m_imager.m_RangeSliderLowerSliderPosition = m_lowerSliderValue;
             m_imager.m_RangeSliderUpperSliderPosition = m_upperSliderValue;
 
@@ -249,6 +249,10 @@ namespace Waveguide
                         StartVideoPB.IsEnabled = true;
                         StartVideoPB.Content = "Start Video";
                         OptimizePB.Content = "Optimize";
+                        SaveImagePB.IsEnabled = true;
+                        FlatFieldCorrectionCB.IsEnabled = true;
+                        WellSelectionPB.IsEnabled = true;
+
 
                         m_imager.m_kineticImagingON = false;
 
@@ -294,6 +298,8 @@ namespace Waveguide
 
         private void TakePicturePB_Click(object sender, RoutedEventArgs e)
         {
+            if (m_imager == null) return;
+
             UInt16[] grayRoiImage;
             int exposure = Convert.ToInt32(Exposure.Text);
                                                  
@@ -307,6 +313,8 @@ namespace Waveguide
 
         private void StartVideoPB_Click(object sender, RoutedEventArgs e)
         {
+            if (m_imager == null) return;
+
             if (!m_imager.m_kineticImagingON)
             {
                 TakePicturePB.IsEnabled = false;
@@ -322,6 +330,9 @@ namespace Waveguide
                 SignalTypeGroupBox.IsEnabled = false;
                 CameraSettingsCB.IsEnabled = false;
                 StartVideoPB.Content = "Stop Video";
+                SaveImagePB.IsEnabled = false;
+                FlatFieldCorrectionCB.IsEnabled = false;
+                WellSelectionPB.IsEnabled = false;
 
                 ImagingParamsStruct ips;
                 if(m_imager.m_ImagingDictionary.ContainsKey(m_ID))
@@ -343,6 +354,8 @@ namespace Waveguide
 
         private void OptimizePB_Click(object sender, RoutedEventArgs e)
         {
+            if (m_imager == null) return;
+
             if (!vm.IsOptimizing)
             {
                 m_spinner = new WPFTools.SpinnerDotCircle();
@@ -364,6 +377,9 @@ namespace Waveguide
                 SignalTypeGroupBox.IsEnabled = false;
                 CameraSettingsCB.IsEnabled = false;
                 OptimizePB.Content = "Abort";
+                SaveImagePB.IsEnabled = false;
+                FlatFieldCorrectionCB.IsEnabled = false;
+                WellSelectionPB.IsEnabled = false;
                                
                 m_imager.StartOptimization(m_ID, vm.CurrentCameraSettings); // vm.IsIncreasingSignal, vm.Exposure);
 
@@ -379,6 +395,8 @@ namespace Waveguide
 
         private void CalculateTimings()
         {
+            if (m_imager == null) return;
+
             bool success;
             m_camera.SetCameraBinning(vm.Binning, vm.Binning); m_camera.PrepareAcquisition();          
             success = m_camera.ConfigureCamera(vm.VSSIndex, vm.HSSIndex, vm.VertClockAmpIndex, vm.PreAmpGainIndex, vm.UseEMAmp, vm.EMGain, vm.UseFrameTransfer);
@@ -414,6 +432,8 @@ namespace Waveguide
 
         private void ExcitationFilterCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (m_imager == null) return;
+
             // Move Excitation Filter
             if (sender != null)
             {
@@ -428,6 +448,8 @@ namespace Waveguide
 
         private void EmissionFilterCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (m_imager == null) return;
+
             // Move Emission Filter
             if (sender != null)
             {
@@ -442,6 +464,8 @@ namespace Waveguide
 
         private void BinningCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (m_imager == null) return;
+
             m_camera.m_acqParams.HBin = vm.Binning;
             m_camera.m_acqParams.VBin = vm.Binning;
 
@@ -524,6 +548,8 @@ namespace Waveguide
 
         private void ApplyMaskCkBx_Checked(object sender, RoutedEventArgs e)
         {
+            if (m_imager == null) return;
+
             m_imager.m_UseMask = vm.ApplyMask;
 
             m_imager.UpdateMask(m_imager.m_mask);
@@ -531,6 +557,8 @@ namespace Waveguide
 
         private void ApplyMaskCkBx_Unchecked(object sender, RoutedEventArgs e)
         {
+            if (m_imager == null) return;
+
             m_imager.m_UseMask = vm.ApplyMask;
 
             m_imager.UpdateMask(m_imager.m_mask);
@@ -540,6 +568,8 @@ namespace Waveguide
 
         private void UpdateImagingDictionary()
         {
+            if (m_imager == null) return;
+
             ImagingParamsStruct ips;
             if (m_imager.m_ImagingDictionary.ContainsKey(m_ID))
             {
@@ -606,6 +636,8 @@ namespace Waveguide
 
         private void CameraSettingsCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            var selection = vm.CurrentCameraSettings;
+
             if (DescriptionTextBox != null)
             {
                 //CameraSettingIDTextBlock.GetBindingExpression(TextBlock.TextProperty).UpdateTarget();
@@ -630,7 +662,10 @@ namespace Waveguide
         }
 
         private void WellSelectionPB_Click(object sender, RoutedEventArgs e)
-        {            
+        {
+
+            if (m_imager == null) return;
+
             ObservableCollection<Tuple<int,int>> wellList;
 
             ImagingParamsStruct ips;
@@ -695,7 +730,13 @@ namespace Waveguide
 
         private void FlatFieldCorrectionCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            ImagingParamsStruct ips;
+            if (m_imager.m_ImagingDictionary.ContainsKey(m_ID))
+            {
+                ips = m_imager.m_ImagingDictionary[m_ID];
+                
+                ips.flatfieldType = vm.FlatFieldSelect.FlatField_Select;
+            }
         }
 
 	}

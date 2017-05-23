@@ -1536,6 +1536,7 @@ namespace Waveguide
         private bool _verified;
         private int _flatFieldRefImageID;
         private int _darkFieldRefImageID;
+        private int _cycleTime;
 
         
 
@@ -1627,6 +1628,12 @@ namespace Waveguide
         {
             get { return _darkFieldRefImageID; }
             set { _darkFieldRefImageID = value; NotifyPropertyChanged("DarkFieldRefImageID"); }
+        }
+
+        public int CycleTime
+        {
+            get { return _cycleTime; }
+            set { _cycleTime = value; NotifyPropertyChanged("CycleTime"); }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

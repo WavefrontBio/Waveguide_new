@@ -1,0 +1,48 @@
+﻿This is the .NET API code package for communication with 
+Brainboxes Ethernet-attached data acquisition and control devices, and is 
+provided by Brainboxes Limited.  Examples in other programming languages are 
+also available.
+
+This is free and unencumbered software released into the public domain.
+
+BUILDING/Executing
+* To add this dll to your visual studio project, right click on the project and click "Add Reference"
+* Click Browse (on left hand side), then 'Browse' button at bottom of window
+* Browse to the folder where this readme file is located
+* Select the 'Brainboxes.IO.dll' file and click 'Add'
+* The Brainboxes.IO API will now be available in your project
+
+* Alternatively this dll can be downloaded from Nuget using the Nuget package manager or by visiting https://www.nuget.org/packages/Brainboxes.IO
+
+TESTING
+Tested with:
+Visual Studio:
+ * Microsoft Visual Studio 2015 v 14.0.203017 in Windows 8.1 Enterprise
+ * Microsoft Visual Studio 2010 v 10.0.40219.1 SP1Rel in Windows XP Professional SP3
+ * Microsoft Visual Studio 2012 v 11.0.60610.01 Update 3 in Windows 7 Enterprise SP1
+ * Microsoft Visual Studio 2012 v 11.51106.01 Update 1 in Windows 8 Enterprise
+Stand-alone installer:
+ * Windows 8.1 Enterprise
+ * Windows 7 Enterprise SP1
+ * Windows XP Pro SP3
+ * Windows 2000
+
+CHANGELOG
+1.2.4.0 28/10/15
+* Bug with ED-527 event handling reported by Frank Guchelaar and fixed
+1.2.1.0 20/09/15
+ * Nuget release including Ethernet to Serial devices
+1.1.12.0 07/09/15
+ * Improved handling of IsAvailable for when a route to the device cannot be found, improved handling of IsConnected to determine if the connection is still open
+1.1.11.0 28/08/15
+ * Corrected ISerialProtocol to implement IClonable so that assigning a protocol to a multi-port product was handled correctly
+1.1.9.0 02/03/15 - beta
+ * Added IsAvailable property to Device and Connection and a call back to be notified on change of device status
+ * Added factory method to Connection (Connection.Create)
+ * Change constructor for TCPConnection to include ConnectionTimeout parameter
+1.0.5.0 22/12/14
+ * Added counter functionality to API for IOLines and change handlers
+1.0.4.0
+ * Changed handling of network and serial streams, by wrapping them into a BBStream to make them work in a consistent way, stream is now flushed before every sendcommand
+ * Fixed issue with Timeout not being correctly set
+ * Fixed FactoryRest and Restart command

@@ -387,7 +387,9 @@
                 <GroupBox Header="Camera Setting" Grid.Row="2" Grid.Column="4" Grid.RowSpan="2">
             
                     <ComboBox HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="CameraSettingsCB" 
-                          ItemsSource="{Binding Path=CameraSettingsList}" SelectedItem="{Binding Path=CurrentCameraSettings}"  Width="145"
+                          ItemsSource="{Binding Path=CameraSettingsList}" 
+                          SelectedItem="{Binding Path=CurrentCameraSettings, UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" 
+                          Width="145"
                           DisplayMemberPath="Description"
                           IsSynchronizedWithCurrentItem="True" IsEnabled="{Binding Path=IsManualMode}"
                           SelectionChanged="CameraSettingsCB_SelectionChanged"/>

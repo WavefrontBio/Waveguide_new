@@ -71,9 +71,8 @@ namespace Waveguide
         }
 
 
-        public void Init(MainWindowViewModel mainWindowVM, Imager imager)
-        {
-            m_mainWindowVM = mainWindowVM;
+        public void Init(Imager imager)
+        {          
             m_imager = imager;
         }
 
@@ -433,12 +432,12 @@ namespace Waveguide
            
 
 
-            m_mainWindowVM.RunExperimentControl.Configure(VM.Project, VM.Method, VM.PlateType, VM.Mask,
-                                 VM.IndicatorList, VM.CompoundPlateList,
-                                 VM.ControlSubtractionWellList,
-                                 VM.NumFoFrames,
-                                 VM.DynamicRatioNumeratorIndicator,
-                                 VM.DynamicRatioDenominatorIndicator);
+            //m_mainWindowVM.RunExperimentControl.Configure(VM.Project, VM.Method, VM.PlateType, VM.Mask,
+            //                     VM.IndicatorList, VM.CompoundPlateList,
+            //                     VM.ControlSubtractionWellList,
+            //                     VM.NumFoFrames,
+            //                     VM.DynamicRatioNumeratorIndicator,
+            //                     VM.DynamicRatioDenominatorIndicator);
 
             m_mainWindowVM.ShowRunExperimentPanel = true;
 

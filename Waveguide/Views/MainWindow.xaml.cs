@@ -93,8 +93,7 @@ namespace Waveguide
             m_splash = new SplashScreen("/Images/WG_Loading.png");
             m_splash.Show(false);
 
-            VM.RunExperimentControl = MyRunExperimentControl;
-
+       
             bool admin = IsAdministrator();
             //if (admin) { MessageBox.Show("You ARE an administrator"); }
             //else { MessageBox.Show("You ARE NOT an administrator"); } 
@@ -130,12 +129,19 @@ namespace Waveguide
                         m_imager.m_ethernetIO.m_doorStatusEvent += m_ethernetIO_m_doorStatusEvent;
                         m_imager.m_ethernetIO.m_ioMessageEvent += m_ethernetIO_m_ioMessageEvent;
 
-                        MyExperimentConfigurator.Init(VM,m_imager);
+                        MyExperimentConfigurator.Init(m_imager);
 
                         m_vworksReady = StartVWorks();
 
                         if (m_vworksReady)
-                            MyRunExperimentControl.Init(VM, m_imager, m_uiTask, m_vworks);
+                        {
+
+                            MyChartArrayControl.VM.StatusChange += VM_StatusChange;
+
+
+                            //MyRunExperimentControl.Init(VM, m_imager, m_uiTask, m_vworks);
+                            //MyRunExperimentControl.m_MessageEvent += MyRunExperimentControl_m_MessageEvent;
+                        }
                         
                     }
                     else
@@ -162,6 +168,24 @@ namespace Waveguide
             }
             
         }
+
+        void VM_StatusChange(ViewModel_ChartArray VM_ChartArray, ChartArrayViewModel_EventArgs e)
+        {
+            VM.ExperimentRunStatus = e.RunStatus;
+        }
+
+        void MyRunExperimentControl_m_MessageEvent(object sender, RunExperimentControl_MessageEventArgs e)
+        {
+            PostMessage(e.Message);
+        }
+
+        void Configure_ChartArray()
+        {
+            MyChartArrayControl.VM.IndicatorList = GlobalVars.ExperimentParams.indicatorList;
+            MyChartArrayControl.VM.CompoundPlateList = GlobalVars.ExperimentParams.compoundPlateList;
+            MyChartArrayControl.Configure(m_imager, GlobalVars.ExperimentParams.mask);
+        }
+
 
         public bool StartVWorks()
         {
@@ -311,73 +335,52 @@ namespace Waveguide
 
         private void CameraTempOnIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            string msg;
-            if(VM.CoolingOn)
-                msg = "Turn Camera Cooler OFF?";
-            else
-                msg = "Turn Camera Cooler ON?";
+            CameraCoolerOnOffPopup.IsOpen = true;
+            //string msg;
+            //if (VM.CoolingOn)
+            //    msg = "Turn Camera Cooler OFF?";
+            //else
+            //    msg = "Turn Camera Cooler ON?";
 
-            MessageBoxResult result = MessageBox.Show(msg, "Camera Cooler Control", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            //MessageBoxResult result = MessageBox.Show(msg, "Camera Cooler Control", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-            if (result == MessageBoxResult.Yes)
-            {
-                VM.CoolingOn = !VM.CoolingOn;
-                m_imager.m_camera.CoolerON(VM.CoolingOn);
-                if (VM.CoolingOn)
-                {
-                    CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
-                    PostMessage("Camera Cooler ON");
-                }
-                else
-                {
-                    CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Transparent);
-                    PostMessage("Camera Cooler OFF");
-                }
-            }
+            //if (result == MessageBoxResult.Yes)
+            //{
+            //    VM.CoolingOn = !VM.CoolingOn;
+            //    m_imager.m_camera.CoolerON(VM.CoolingOn);
+            //    if (VM.CoolingOn)
+            //    {
+            //        CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
+            //        PostMessage("Camera Cooler ON");
+            //    }
+            //    else
+            //    {
+            //        CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+            //        PostMessage("Camera Cooler OFF");
+            //    }
+            //}
         }
 
 
         private void InsideTempOnIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            string msg;
-            if (VM.HeatingOn)
-                msg = "Turn Enclosure Heater OFF?";
-            else
-                msg = "Turn Enclosure Heater ON?";
-
-            MessageBoxResult result = MessageBox.Show(msg, "Enclosure Heater Control", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                VM.HeatingOn = !VM.HeatingOn;
-                // TODO: Turn Heater Controller On/Off
-
-                if (VM.HeatingOn)
-                {
-                    InsideTempOnIndicator.Fill = new SolidColorBrush(Colors.Red);
-                    PostMessage("Enclosure Heater ON");
-                }
-                else
-                {
-                    InsideTempOnIndicator.Fill = new SolidColorBrush(Colors.Transparent);
-                    PostMessage("Enclosure Heater OFF");
-                }
-            }
+            HeaterOnOffPopup.IsOpen = true;           
         }
 
 
         private void DoorLockedIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if(m_imager != null)
-            {
-                if(m_imager.m_ethernetIO != null)
-                {
-                    if(GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
-                        m_imager.m_ethernetIO.SetOutputON(0, true);
-                    else
-                        m_imager.m_ethernetIO.SetOutputON(0, false);
-                }
-            }
+            DoorLockPopup.IsOpen = true;
+            //if(m_imager != null)
+            //{
+            //    if(m_imager.m_ethernetIO != null)
+            //    {
+            //        if(GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
+            //            m_imager.m_ethernetIO.SetOutputON(0, true);
+            //        else
+            //            m_imager.m_ethernetIO.SetOutputON(0, false);
+            //    }
+            //}
         }
 
 
@@ -513,11 +516,86 @@ namespace Waveguide
 
         }
 
-     
+
+
     
 
-      
+        private void HeaterOnPB_Click(object sender, RoutedEventArgs e)
+        {
+            InsideTempOnIndicator.Fill = new SolidColorBrush(Colors.Red);
+            PostMessage("Enclosure Heater ON");
+            VM.HeatingOn = true;
+            HeaterOnOffPopup.IsOpen = false;
 
+            // TODO: Turn Heater ON
+        }
+
+        private void HeaterOffPB_Click(object sender, RoutedEventArgs e)
+        {
+            InsideTempOnIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+            PostMessage("Enclosure Heater OFF");
+            VM.HeatingOn = false;
+            HeaterOnOffPopup.IsOpen = false;
+
+            // TODO: Turn Heater OFF
+        }
+
+
+        private void CameraCoolerOnPB_Click(object sender, RoutedEventArgs e)
+        {
+            VM.CoolingOn = true;
+            m_imager.m_camera.CoolerON(VM.CoolingOn);
+            CameraCoolerOnOffPopup.IsOpen = false;
+            CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Blue);
+            PostMessage("Camera Cooler ON");
+        }
+
+        private void CameraCoolerOffPB_Click(object sender, RoutedEventArgs e)
+        {
+            VM.CoolingOn = false;
+            m_imager.m_camera.CoolerON(VM.CoolingOn);
+            CameraCoolerOnOffPopup.IsOpen = false;
+            CameraTempOnIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+            PostMessage("Camera Cooler OFF");
+        }
+
+        private void DoorLockOnPB_Click(object sender, RoutedEventArgs e)
+        {
+            DoorLockPopup.IsOpen = false;            
+
+            if (m_imager != null)
+            {
+                if (m_imager.m_ethernetIO != null)
+                {
+                    VM.DoorStatus = DOOR_STATUS.LOCKED;
+                    DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Red);
+                    PostMessage("Door Locked");
+
+                    if (GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
+                        m_imager.m_ethernetIO.SetOutputON(0, true);
+                   
+                }
+            }
+        }
+
+        private void DoorLockOffPB_Click(object sender, RoutedEventArgs e)
+        {
+            DoorLockPopup.IsOpen = false;           
+
+            if (m_imager != null)
+            {
+                if (m_imager.m_ethernetIO != null)
+                {
+                    VM.DoorStatus = DOOR_STATUS.CLOSED;
+                    DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+                    PostMessage("Door Unlocked");
+                                        
+                    m_imager.m_ethernetIO.SetOutputON(0, false);
+                }
+            }
+        }
+
+         
 
 
     }
@@ -530,17 +608,18 @@ namespace Waveguide
     // //////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////
 
-
     public enum DOOR_STATUS
     {
         OPEN,
         CLOSED,
         LOCKED
     }
+   
 
 
     public class MainWindowViewModel : INotifyPropertyChanged
-    {
+    {      
+
         private int _cameraTemp;
         private string _cameraTempString;
         private int _cameraTargetTemp;
@@ -555,17 +634,34 @@ namespace Waveguide
 
         private DOOR_STATUS _doorStatus;
 
-        private RunExperimentControl _runExperimentControl;
+        private bool _showHeaterOnOffPopup;
+
+     
         private bool _showRunExperimentPanel;
 
-        public RunExperimentControl RunExperimentControl
+        private ViewModel_ChartArray.RUN_STATUS _experimentRunStatus;
+
+
+        public ViewModel_ChartArray.RUN_STATUS ExperimentRunStatus
         {
-            get { return _runExperimentControl; }
+            get { return _experimentRunStatus; }
             set
             {
-                _runExperimentControl = value; NotifyPropertyChanged("RunExperimentControl");
+                _experimentRunStatus = value; NotifyPropertyChanged("ExperimentRunStatus");
             }
         }
+
+
+        public bool ShowHeaterOnOffPopup
+        {
+            get { return _showHeaterOnOffPopup; }
+            set
+            {
+                _showHeaterOnOffPopup = value; NotifyPropertyChanged("ShowHeaterOnOffPopup");
+            }
+        }
+
+
 
         public bool ShowRunExperimentPanel
         {
@@ -710,6 +806,10 @@ namespace Waveguide
             InsideTempReady = false;
 
             ShowRunExperimentPanel = false;
+
+            ShowHeaterOnOffPopup = false;
+
+            ExperimentRunStatus = ViewModel_ChartArray.RUN_STATUS.NEEDS_INPUT;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

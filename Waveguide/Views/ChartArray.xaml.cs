@@ -3031,7 +3031,8 @@ namespace Waveguide
 
             ChartArrayViewModel_EventArgs e = new ChartArrayViewModel_EventArgs();
             e.RunStatus = Status;
-            StatusChange(this, e);
+            if(StatusChange != null)
+                StatusChange(this, e);
         }
 
         public void SetRunStatus(RUN_STATUS runStatus)

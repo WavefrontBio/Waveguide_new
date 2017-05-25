@@ -11,7 +11,25 @@ namespace Waveguide
 {
     public class GlobalVars
     {
+
+        // constructor
+        public GlobalVars()
+        {
+            _experimentParams = new Waveguide.ExperimentParams();
+            _experimentParams.compoundPlateList = new System.Collections.ObjectModel.ObservableCollection<ExperimentCompoundPlateContainer>();
+            _experimentParams.controlSubtractionWellList = new System.Collections.ObjectModel.ObservableCollection<Tuple<int, int>>();
+            _experimentParams.indicatorList = new System.Collections.ObjectModel.ObservableCollection<ExperimentIndicatorContainer>();            
+        }
+
       
+        private static ExperimentParams _experimentParams;
+        public  static ExperimentParams ExperimentParams
+        {
+            get { return _experimentParams; }
+            set { _experimentParams = value; }
+        }
+
+
         public enum USER_ROLE_ENUM
         {
             ADMIN,

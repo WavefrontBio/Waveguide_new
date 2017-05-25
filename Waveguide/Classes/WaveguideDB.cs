@@ -4582,9 +4582,10 @@ namespace Waveguide
                             cont.MaskID = reader.GetInt32(6);
                             cont.Exposure = reader.GetInt32(7);
                             cont.Gain = reader.GetInt32(8);
-                            cont.Description = reader.GetString(9);
-                            cont.SignalType = (SIGNAL_TYPE)reader.GetInt32(10);
-                            cont.FlatFieldCorrection = (FLATFIELD_SELECT)reader.GetInt32(11);
+                            cont.PreAmpGain = reader.GetInt32(9);
+                            cont.Description = reader.GetString(10);
+                            cont.SignalType = (SIGNAL_TYPE)reader.GetInt32(11);
+                            cont.FlatFieldCorrection = (FLATFIELD_SELECT)reader.GetInt32(12);
 
                             m_expIndicatorList.Add(cont);
                         }
@@ -4633,9 +4634,10 @@ namespace Waveguide
                             cont.MaskID = reader.GetInt32(6);
                             cont.Exposure = reader.GetInt32(7);
                             cont.Gain = reader.GetInt32(8);
-                            cont.Description = reader.GetString(9);
-                            cont.SignalType = (SIGNAL_TYPE)reader.GetInt32(10);
-                            cont.FlatFieldCorrection = (FLATFIELD_SELECT)reader.GetInt32(11);
+                            cont.PreAmpGain = reader.GetInt32(9);
+                            cont.Description = reader.GetString(10);
+                            cont.SignalType = (SIGNAL_TYPE)reader.GetInt32(11);
+                            cont.FlatFieldCorrection = (FLATFIELD_SELECT)reader.GetInt32(12);
 
                             expIndicatorList.Add(cont);
                         }
@@ -4684,9 +4686,10 @@ namespace Waveguide
                             indicator.MaskID = reader.GetInt32(6);
                             indicator.Exposure = reader.GetInt32(7);
                             indicator.Gain = reader.GetInt32(8);
-                            indicator.Description = reader.GetString(9);
-                            indicator.SignalType = (SIGNAL_TYPE)reader.GetInt32(10);
-                            indicator.FlatFieldCorrection = (FLATFIELD_SELECT)reader.GetInt32(11);
+                            indicator.PreAmpGain = reader.GetInt32(9);
+                            indicator.Description = reader.GetString(10);
+                            indicator.SignalType = (SIGNAL_TYPE)reader.GetInt32(11);
+                            indicator.FlatFieldCorrection = (FLATFIELD_SELECT)reader.GetInt32(12);
                         }
                     }
                     catch (Exception e)
@@ -4711,9 +4714,9 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO ExperimentIndicator (ExperimentID,ExcitationFilterDesc,EmissionFilterDesc,ExcitationFilterPos,EmissionFilterPos,MaskID,Exposure,Gain,Description,SignalType,FlatFieldCorrection) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO ExperimentIndicator (ExperimentID,ExcitationFilterDesc,EmissionFilterDesc,ExcitationFilterPos,EmissionFilterPos,MaskID,Exposure,Gain,PreAmpGain,Description,SignalType,FlatFieldCorrection) "
                                                             + "OUTPUT INSERTED.ExperimentIndicatorID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,@p12)"
                                                             , con))
                 {
                     try
@@ -4726,9 +4729,10 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p6", indicator.MaskID);
                         command.Parameters.AddWithValue("@p7", indicator.Exposure);
                         command.Parameters.AddWithValue("@p8", indicator.Gain);
-                        command.Parameters.AddWithValue("@p9", indicator.Description);
-                        command.Parameters.AddWithValue("@p10", (int)indicator.SignalType);
-                        command.Parameters.AddWithValue("@p11", (int)indicator.FlatFieldCorrection);
+                        command.Parameters.AddWithValue("@p9", indicator.PreAmpGain);
+                        command.Parameters.AddWithValue("@p10", indicator.Description);
+                        command.Parameters.AddWithValue("@p11", (int)indicator.SignalType);
+                        command.Parameters.AddWithValue("@p12", (int)indicator.FlatFieldCorrection);
 
                         indicator.ExperimentIndicatorID = (int)command.ExecuteScalar();
                     }
@@ -4755,8 +4759,8 @@ namespace Waveguide
                 con.Open();
 
                 using (SqlCommand command = new SqlCommand("UPDATE ExperimentIndicator SET ExperimentID=@p1,ExcitationFilterDesc=@p2,EmissionFilterDesc=@p3,ExcitationFilterPos=@p4," +
-                                                           "EmissionFilterPos=@p5,MaskID=@p6,Exposure=@p7,Gain=@p8,Description=@p9,SignalType=@p10,FlatFieldCorrection=@p11 " +
-                                                            "WHERE ExperimentIndicatorID=@p12", con))
+                                                           "EmissionFilterPos=@p5,MaskID=@p6,Exposure=@p7,Gain=@p8,PreAmpGain=@p9,Description=@p10,SignalType=@p11,FlatFieldCorrection=@p12 " +
+                                                            "WHERE ExperimentIndicatorID=@p13", con))
                 {
                     try
                     {
@@ -4768,10 +4772,11 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p6", indicator.MaskID);
                         command.Parameters.AddWithValue("@p7", indicator.Exposure);
                         command.Parameters.AddWithValue("@p8", indicator.Gain);
-                        command.Parameters.AddWithValue("@p9", indicator.Description);
-                        command.Parameters.AddWithValue("@p10", (int)indicator.SignalType);
-                        command.Parameters.AddWithValue("@p11", (int)indicator.FlatFieldCorrection);
-                        command.Parameters.AddWithValue("@p12", indicator.ExperimentIndicatorID);                        
+                        command.Parameters.AddWithValue("@p9", indicator.PreAmpGain);
+                        command.Parameters.AddWithValue("@p10", indicator.Description);
+                        command.Parameters.AddWithValue("@p11", (int)indicator.SignalType);
+                        command.Parameters.AddWithValue("@p12", (int)indicator.FlatFieldCorrection);
+                        command.Parameters.AddWithValue("@p13", indicator.ExperimentIndicatorID);                        
 
                         command.ExecuteNonQuery();
                     }

@@ -79,7 +79,8 @@ namespace Waveguide
         public CudaToolBox m_cudaToolBox;
         TaskScheduler m_uiTask;
         Stopwatch m_imagingSequenceCounter;
-        OmegaTempCtrl m_omegaTempController;
+        public OmegaTempCtrl m_omegaTempController;
+        public EthernetIO m_ethernetIO;
         
 
         public Lambda m_lambda;
@@ -186,11 +187,11 @@ namespace Waveguide
 
             if (turnON)
             {
-                m_omegaTempController.EnableOutput(1);
+                m_omegaTempController.EnableHeater(true);
             }
             else
             {
-                m_omegaTempController.DisableOutput(1);
+                m_omegaTempController.EnableHeater(false);
             }
         }
 
@@ -333,7 +334,10 @@ namespace Waveguide
                 m_omegaTempController.Connect();
                 m_omegaTempController.StartTempUpdate(1.0);    
             }
-           
+
+            m_ethernetIO = new EthernetIO(GlobalVars.EthernetIOModuleIP);
+            
+
         }
 
         void m_omegaTempController_MessageEvent(object sender, OmegaTempCtrlMessageEventArgs e)

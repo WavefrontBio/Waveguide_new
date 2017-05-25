@@ -30,7 +30,7 @@ namespace Waveguide
 
         Imager m_imager;
 
-        VWorks m_vworks;
+        MainWindowViewModel m_mainWindowVM;
 
 
         public ExperimentConfigurator()
@@ -42,9 +42,7 @@ namespace Waveguide
             VM = new ExperimentConfiguratorViewModel();
 
             m_imager = null;
-
-            m_vworks = null;
-
+      
             this.DataContext = VM;
 
             PlateTypeContainer ptc;
@@ -73,8 +71,9 @@ namespace Waveguide
         }
 
 
-        public void SetImager(Imager imager)
+        public void Init(MainWindowViewModel mainWindowVM, Imager imager)
         {
+            m_mainWindowVM = mainWindowVM;
             m_imager = imager;
         }
 
@@ -217,16 +216,20 @@ namespace Waveguide
                             ExperimentIndicatorContainer expIndicator = new ExperimentIndicatorContainer();
                             expIndicator.Description = indicator.Description;
                             expIndicator.EmissionFilterPos = indicator.EmissionsFilterPosition;
-                            expIndicator.ExcitationFilterPos = indicator.ExcitationFilterPosition;
-                            expIndicator.ExperimentID = 0;
-                            expIndicator.ExperimentIndicatorID = 0;
-                            expIndicator.Exposure = 100; // just something default
-                            expIndicator.Gain = 1;  // just something default
-                            expIndicator.MaskID = 0;
-                            expIndicator.Verified = false;                     
-                            expIndicator.FlatFieldRefImageID = 0;
-                            expIndicator.DarkFieldRefImageID = 0;
-                            
+                            expIndicator.ExcitationFilterPos = indicator.ExcitationFilterPosition;                          
+                            expIndicator.ExperimentID = 0; // defined when experiment launched
+                            expIndicator.ExperimentIndicatorID = 0; // defined when experiment launched
+                            expIndicator.Exposure = 1; // default
+                            expIndicator.Gain = 1;  // default
+                            expIndicator.PreAmpGain = 1; // default
+                            expIndicator.MaskID = 0; // not defined at this point.  Assigned when Mask is selected.
+                            expIndicator.Verified = false;
+                            expIndicator.FlatFieldRefImageID = 0;  // defined at Indicator Verify
+                            expIndicator.DarkFieldRefImageID = 0;  // defined at Indicator Verify
+                            expIndicator.FlatFieldCorrection = FLATFIELD_SELECT.NONE; // default
+                            expIndicator.CycleTime = GlobalVars.CameraDefaultCycleTime;
+                            expIndicator.SignalType = indicator.SignalType;
+
 
                             FilterContainer filter;
                             success = wgDB.GetExcitationFilterAtPosition(indicator.ExcitationFilterPosition, out filter);
@@ -267,35 +270,43 @@ namespace Waveguide
             // get selection
             VM.Mask = (MaskContainer)MaskComboBox.SelectedItem;
 
-            if (VM.Mask != null)
-            {
-                // populate ROI pixel coordinates    
-                VM.RoiX = 1;
-                VM.RoiY = 1;
+            //if (VM.Mask != null)
+            //{
+            //    // populate ROI pixel coordinates    
+            //    VM.RoiX = 1;
+            //    VM.RoiY = 1;
 
-                if(m_imager != null)
-                {                                    
-                    VM.RoiW = m_imager.m_camera.XPixels;
-                    VM.RoiH = m_imager.m_camera.YPixels;
-                }
-                else
-                {
-                    VM.RoiW = 1024;
-                    VM.RoiH = 1024;
-                }
+            //    if(m_imager != null)
+            //    {                                    
+            //        VM.RoiW = m_imager.m_camera.XPixels;
+            //        VM.RoiH = m_imager.m_camera.YPixels;
+            //    }
+            //    else
+            //    {
+            //        VM.RoiW = 1024;
+            //        VM.RoiH = 1024;
+            //    }
 
-                // populate ROI mask coordinates
-                VM.RoiMaskStartRow = 0;
-                VM.RoiMaskEndRow = VM.Mask.Rows - 1;
-                VM.RoiMaskStartCol = 0;
-                VM.RoiMaskEndCol = VM.Mask.Cols - 1;        
-            }
+            //    // populate ROI mask coordinates
+            //    VM.RoiMaskStartRow = 0;
+            //    VM.RoiMaskEndRow = VM.Mask.Rows - 1;
+            //    VM.RoiMaskStartCol = 0;
+            //    VM.RoiMaskEndCol = VM.Mask.Cols - 1;        
+            //}
 
             VM.SetExperimentStatus();
 
 
             if (VM.Mask != null)
+            {
                 WellSelection.Init(VM.Mask.Rows, VM.Mask.Cols);
+
+                if(VM.IndicatorList != null)
+                    foreach(ExperimentIndicatorContainer expInd in VM.IndicatorList)
+                    {
+                        expInd.MaskID = VM.Mask.MaskID;
+                    }
+            }
            
 
         }
@@ -386,7 +397,7 @@ namespace Waveguide
         {
             bool success;
 
-            List<ExperimentIndicatorContainer> expIndicatorList = new List<ExperimentIndicatorContainer>();
+            //List<ExperimentIndicatorContainer> expIndicatorList = new List<ExperimentIndicatorContainer>();
             
             // project, should already exist, so VM.Project should hold a valid project record
             ProjectContainer project = VM.Project;
@@ -419,45 +430,18 @@ namespace Waveguide
 // *************************************************************************************
 // *************************************************************************************
 
-            
-
-            TaskScheduler uiTask = TaskScheduler.FromCurrentSynchronizationContext();
-
-            //if (m_vworks == null)
-            //{
-            //    m_vworks = new VWorks();
-            //}
-
-            
-
-            RunExperiment runDlg = new RunExperiment(m_imager, uiTask);
+           
 
 
-            if (runDlg.m_ReadyToRun)
-            {
-                runDlg.Configure(VM.Project, VM.Method, VM.PlateType, VM.Mask,
+            m_mainWindowVM.RunExperimentControl.Configure(VM.Project, VM.Method, VM.PlateType, VM.Mask,
                                  VM.IndicatorList, VM.CompoundPlateList,
                                  VM.ControlSubtractionWellList,
                                  VM.NumFoFrames,
                                  VM.DynamicRatioNumeratorIndicator,
-                                 VM.DynamicRatioDenominatorIndicator,
-                                 VM.RoiX, VM.RoiY, VM.RoiW, VM.RoiH,
-                                 VM.RoiMaskStartRow, VM.RoiMaskEndRow, VM.RoiMaskStartCol, VM.RoiMaskEndCol);
+                                 VM.DynamicRatioDenominatorIndicator);
 
+            m_mainWindowVM.ShowRunExperimentPanel = true;
 
-
-                runDlg.ShowDialog();
-
-                if (!runDlg.m_ReadyToRun) MessageBox.Show("Run Error", "VWorks failed to load!", MessageBoxButton.OK, MessageBoxImage.Error);
-
-
-                // reset experiment configurator
-                ResetExperimentConfigurator();
-
-
-                // make sure that VWorks is killed
-                Kill_VWorks_Process();
-            }
 
         } // END StartExperimentPB_Click()
 
@@ -601,18 +585,7 @@ namespace Waveguide
         private ObservableCollection<ExperimentCompoundPlateContainer> _compoundPlateList;
         private ObservableCollection<PlateTypeContainer> _plateTypeList;
 
-        private int _cycleTime;
-        private int _temperature;
-        private int _vertBinning;
-        private int _horzBinning;
-        private int _roiX;  // pixel coordinates
-        private int _roiY;
-        private int _roiW;
-        private int _roiH;
-        private int _roiMaskStartRow;
-        private int _roiMaskEndRow;
-        private int _roiMaskStartCol;
-        private int _roiMaskEndCol;
+ 
 
         private int _numFoFrames;
         private ObservableCollection<Tuple<int, int>> _controlSubtractionWellList;
@@ -659,18 +632,6 @@ namespace Waveguide
         public ObservableCollection<PlateTypeContainer> PlateTypeList { get { return _plateTypeList; } set { _plateTypeList = value; NotifyPropertyChanged("PlateTypeList"); } }
 
 
-        public int CycleTime { get { return _cycleTime; } set { _cycleTime = value; NotifyPropertyChanged("CycleTime"); } }
-        public int Temperature { get { return _temperature; } set { _temperature = value; NotifyPropertyChanged("Temperature"); } }
-        public int VertBinning { get { return _vertBinning; } set { _vertBinning = value; NotifyPropertyChanged("VertBinning"); } }
-        public int HorzBinning { get { return _horzBinning; } set { _horzBinning = value; NotifyPropertyChanged("HorzBinning"); } }
-        public int RoiX { get { return _roiX; } set { _roiX = value; NotifyPropertyChanged("RoiX"); } }
-        public int RoiY { get { return _roiY; } set { _roiY = value; NotifyPropertyChanged("RoiY"); } }
-        public int RoiW { get { return _roiW; } set { _roiW = value; NotifyPropertyChanged("RoiW"); } }
-        public int RoiH { get { return _roiH; } set { _roiH = value; NotifyPropertyChanged("RoiH"); } }
-        public int RoiMaskStartRow { get { return _roiMaskStartRow; } set { _roiMaskStartRow = value; NotifyPropertyChanged("RoiMaskStartRow"); } }
-        public int RoiMaskEndRow { get { return _roiMaskEndRow; } set { _roiMaskEndRow = value; NotifyPropertyChanged("RoiMaskEndRow"); } }
-        public int RoiMaskStartCol { get { return _roiMaskStartCol; } set { _roiMaskStartCol = value; NotifyPropertyChanged("RoiMaskStartCol"); } }
-        public int RoiMaskEndCol { get { return _roiMaskEndCol; } set { _roiMaskEndCol = value; NotifyPropertyChanged("RoiMaskEndCol"); } }
 
         public int NumFoFrames { get { return _numFoFrames; } set { _numFoFrames = value; NotifyPropertyChanged("NumFoFrames"); } }
         public ObservableCollection<Tuple<int, int>> ControlSubtractionWellList { get { return _controlSubtractionWellList; } set { _controlSubtractionWellList = value; NotifyPropertyChanged("ControlSubtractionWellList"); } }
@@ -688,19 +649,6 @@ namespace Waveguide
             RuntimeAnalysisEnabled = false;
             RunEnabled = false;
 
-            CycleTime = GlobalVars.CameraDefaultCycleTime;
-            Temperature = GlobalVars.CameraTargetTemperature;
-            VertBinning = 1;
-            HorzBinning = 1;
-            RoiX = 0;
-            RoiY = 0;
-            RoiW = 0;
-            RoiH = 0;
-
-            RoiMaskStartRow = 0;
-            RoiMaskEndRow = 0;
-            RoiMaskStartCol = 0;
-            RoiMaskEndCol = 0;
 
             NumFoFrames = 5;
 
@@ -723,70 +671,6 @@ namespace Waveguide
 
             MethodFilter = 0;
         }
-
-
-        //public ImagingParameters BuildImagingParameters()
-        //{
-        //    ImagingParameters iParams = new ImagingParameters();
-
-        //    iParams.maxPixelValue = GlobalVars.MaxPixelValue;
-        //    iParams.imageWidth = GlobalVars.PixelWidth / HorzBinning;
-        //    iParams.imageHeight = GlobalVars.PixelHeight / VertBinning;
-        //    iParams.Image_StartCol = RoiX;
-        //    iParams.Image_EndCol = RoiX + RoiW - 1;
-        //    iParams.Image_StartRow = RoiY;
-        //    iParams.Image_EndRow = RoiY + RoiH - 1;
-        //    iParams.BravoMethodFilename = Method.BravoMethodFile;
-        //    iParams.CameraTemperature = GlobalVars.CameraTargetTemperature;
-        //    iParams.HorzBinning = HorzBinning;
-        //    iParams.VertBinning = VertBinning;
-        //    iParams.EmissionFilterChangeSpeed = GlobalVars.FilterChangeSpeed;
-        //    iParams.ExcitationFilterChangeSpeed = GlobalVars.FilterChangeSpeed;
-        //    iParams.LightIntensity = 100;
-        //    iParams.NumImages = 1000000; // artificial limit on number of images
-        //    iParams.NumIndicators = IndicatorList.Count;
-        //    iParams.SyncExcitationFilterWithImaging = true;
-
-        //    iParams.CycleTime = new int[IndicatorList.Count];
-        //    iParams.EmissionFilter = new byte[IndicatorList.Count];
-        //    iParams.ExcitationFilter = new byte[IndicatorList.Count];
-        //    iParams.Exposure = new float[IndicatorList.Count];
-        //    iParams.Gain = new int[IndicatorList.Count];
-        //    iParams.ExperimentIndicatorID = new int[IndicatorList.Count];
-        //    iParams.IndicatorName = new string[IndicatorList.Count];
-        //    iParams.LampShutterIsOpen = new bool[IndicatorList.Count];
-
-        //    iParams.PixelMask = new PixelMaskContainer[IndicatorList.Count];
-
-        //    int i = 0;
-        //    foreach (ExperimentIndicatorContainer ind in IndicatorList)
-        //    {
-        //        iParams.CycleTime[i] = CycleTime;
-        //        iParams.EmissionFilter[i] = (byte)ind.EmissionFilterPos;
-        //        iParams.ExcitationFilter[i] = (byte)ind.ExcitationFilterPos;
-        //        iParams.Exposure[i] = (float)ind.Exposure / 1000;
-        //        iParams.Gain[i] = ind.Gain;
-        //        iParams.ExperimentIndicatorID[i] = 0; // created by the RunExperiment object when the experiment is run                
-        //        iParams.IndicatorName[i] = ind.Description;
-        //        iParams.LampShutterIsOpen[i] = true;
-        //        iParams.ExperimentIndicatorID[i] = ind.ExperimentIndicatorID;
-        //        iParams.FlatFieldSelect[i] = ind.FlatFieldCorrection;
-
-        //        iParams.PixelMask[i] = new PixelMaskContainer(iParams.imageWidth, iParams.imageHeight);
-
-        //        if (ind.UsePixelMask)
-        //        {
-        //            for (int j = 0; j < ind.PixelMask.MaskData.Length; j++)
-        //            {
-        //                iParams.PixelMask[i].MaskData[j] = ind.PixelMask.MaskData[j];
-        //            }
-        //        }
-
-        //        i++;
-        //    }
-
-        //    return iParams;
-        //}
 
 
 

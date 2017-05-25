@@ -90,8 +90,8 @@ namespace Waveguide
 
 
             // create default image
-            int width = 1024;
-            int height = 1024;
+            int width = GlobalVars.PixelWidth;
+            int height = GlobalVars.PixelHeight;
             
             int numbytes = width * height;
             ushort[] defaultImage = new ushort[numbytes];

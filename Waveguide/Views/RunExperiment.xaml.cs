@@ -182,8 +182,7 @@ namespace Waveguide
                 VM.InsideTemperatureText = e.Temperature.ToString();
 
                 ChartArrayControl.VM.InsideTemperatureActual = e.Temperature;
-            }
-            throw new NotImplementedException();
+            }            
         }
 
 
@@ -282,9 +281,7 @@ namespace Waveguide
                               ObservableCollection<Tuple<int,int>> controlSubtractionWellList,
                               int numFoFrames,
                               ExperimentIndicatorContainer dynamicRatioNumerator,
-                              ExperimentIndicatorContainer dynamicRatioDenominator,
-                              int RoiX, int RoiY, int RoiW, int RoiH, 
-                              int RoiMaskStartRow, int RoiMaskEndRow, int RoiMaskStartCol, int RoiMaskEndCol )
+                              ExperimentIndicatorContainer dynamicRatioDenominator )
         {
             VM.Project = project;
             VM.Method = method;
@@ -298,20 +295,9 @@ namespace Waveguide
             m_dynamicRatioNumerator = dynamicRatioNumerator;
             m_dynamicRatioDenominator = dynamicRatioDenominator;
 
-            VM.RoiX = RoiX; VM.RoiY = RoiY; VM.RoiW = RoiW; VM.RoiH = RoiH;
-            VM.RoiMaskStartRow = RoiMaskStartRow;
-            VM.RoiMaskEndRow = RoiMaskEndRow;
-            VM.RoiMaskStartCol = RoiMaskStartCol; 
-            VM.RoiMaskEndCol = RoiMaskEndCol;            
-
             m_vworksProtocolFilename = VM.Method.BravoMethodFile;
 
             ChartArrayControl.Configure(m_imager, VM.Mask);
-
-            //ChartArrayControl.BuildChartArray(VM.Mask.Rows, VM.Mask.Cols, 
-            //                                  ChartArrayControl.VM.IndicatorList, 
-            //                                  ChartArrayControl.VM.CompoundPlateList);
-
         }
 
 
@@ -732,14 +718,14 @@ namespace Waveguide
 
             experiment.Description = DateTime.Now.ToString() + "/" + VM.Project.Description + "/" + VM.Method.Description + "/" + 
                                      VM.User.Lastname + ", " + VM.User.Firstname;
-            experiment.HorzBinning = ChartArrayControl.VM.HorzBinning;
-            experiment.VertBinning = ChartArrayControl.VM.VertBinning;
+            experiment.HorzBinning = m_imager.m_camera.m_acqParams.HBin;
+            experiment.VertBinning = m_imager.m_camera.m_acqParams.VBin;
             experiment.MethodID = VM.Method.MethodID;
             experiment.PlateID = ChartArrayControl.VM.ExperimentPlate.PlateID;
-            experiment.ROI_Height = VM.RoiH;
-            experiment.ROI_Width = VM.RoiW;
-            experiment.ROI_Origin_X = VM.RoiX;
-            experiment.ROI_Origin_Y = VM.RoiY;
+            experiment.ROI_Height = m_imager.m_camera.m_acqParams.RoiH;
+            experiment.ROI_Width = m_imager.m_camera.m_acqParams.RoiW;
+            experiment.ROI_Origin_X = m_imager.m_camera.m_acqParams.RoiX;
+            experiment.ROI_Origin_Y = m_imager.m_camera.m_acqParams.RoiY;
             experiment.TimeStamp = DateTime.Now;
 
             bool success = m_wgDB.InsertExperiment(ref experiment);
@@ -1015,55 +1001,55 @@ namespace Waveguide
         private MaskContainer _mask;
         private PlateTypeContainer _plateType;
 
-        private int _roiX;  // pixel coordinates for ROI
-        private int _roiY;
-        private int _roiW;
-        private int _roiH;
-        private int _roiMaskStartRow; // mask apertures inside ROI
-        private int _roiMaskEndRow;
-        private int _roiMaskStartCol;
-        private int _roiMaskEndCol;
+        //private int _roiX;  // pixel coordinates for ROI
+        //private int _roiY;
+        //private int _roiW;
+        //private int _roiH;
+        //private int _roiMaskStartRow; // mask apertures inside ROI
+        //private int _roiMaskEndRow;
+        //private int _roiMaskStartCol;
+        //private int _roiMaskEndCol;
 
-        public int RoiX
-        {
-            get { return this._roiX; }
-            set { if (value != this._roiX) { this._roiX = value; NotifyPropertyChanged("RoiX"); } }
-        }
-        public int RoiY
-        {
-            get { return this._roiY; }
-            set { if (value != this._roiY) { this._roiY = value; NotifyPropertyChanged("RoiY"); } }
-        }
-        public int RoiW
-        {
-            get { return this._roiW; }
-            set { if (value != this._roiW) { this._roiW = value; NotifyPropertyChanged("RoiW"); } }
-        }
-        public int RoiH
-        {
-            get { return this._roiH; }
-            set { if (value != this._roiH) { this._roiH = value; NotifyPropertyChanged("RoiH"); } }
-        }
-        public int RoiMaskStartRow
-        {
-            get { return this._roiMaskStartRow; }
-            set { if (value != this._roiMaskStartRow) { this._roiMaskStartRow = value; NotifyPropertyChanged("RoiMaskStartRow"); } }
-        }
-        public int RoiMaskEndRow
-        {
-            get { return this._roiMaskEndRow; }
-            set { if (value != this._roiMaskEndRow) { this._roiMaskEndRow = value; NotifyPropertyChanged("RoiMaskEndRow"); } }
-        }
-        public int RoiMaskStartCol
-        {
-            get { return this._roiMaskStartCol; }
-            set { if (value != this._roiMaskStartCol) { this._roiMaskStartCol = value; NotifyPropertyChanged("RoiMaskStartCol"); } }
-        }
-        public int RoiMaskEndCol
-        {
-            get { return this._roiMaskEndCol; }
-            set { if (value != this._roiMaskEndCol) { this._roiMaskEndCol = value; NotifyPropertyChanged("RoiMaskEndCol"); } }
-        }
+        //public int RoiX
+        //{
+        //    get { return this._roiX; }
+        //    set { if (value != this._roiX) { this._roiX = value; NotifyPropertyChanged("RoiX"); } }
+        //}
+        //public int RoiY
+        //{
+        //    get { return this._roiY; }
+        //    set { if (value != this._roiY) { this._roiY = value; NotifyPropertyChanged("RoiY"); } }
+        //}
+        //public int RoiW
+        //{
+        //    get { return this._roiW; }
+        //    set { if (value != this._roiW) { this._roiW = value; NotifyPropertyChanged("RoiW"); } }
+        //}
+        //public int RoiH
+        //{
+        //    get { return this._roiH; }
+        //    set { if (value != this._roiH) { this._roiH = value; NotifyPropertyChanged("RoiH"); } }
+        //}
+        //public int RoiMaskStartRow
+        //{
+        //    get { return this._roiMaskStartRow; }
+        //    set { if (value != this._roiMaskStartRow) { this._roiMaskStartRow = value; NotifyPropertyChanged("RoiMaskStartRow"); } }
+        //}
+        //public int RoiMaskEndRow
+        //{
+        //    get { return this._roiMaskEndRow; }
+        //    set { if (value != this._roiMaskEndRow) { this._roiMaskEndRow = value; NotifyPropertyChanged("RoiMaskEndRow"); } }
+        //}
+        //public int RoiMaskStartCol
+        //{
+        //    get { return this._roiMaskStartCol; }
+        //    set { if (value != this._roiMaskStartCol) { this._roiMaskStartCol = value; NotifyPropertyChanged("RoiMaskStartCol"); } }
+        //}
+        //public int RoiMaskEndCol
+        //{
+        //    get { return this._roiMaskEndCol; }
+        //    set { if (value != this._roiMaskEndCol) { this._roiMaskEndCol = value; NotifyPropertyChanged("RoiMaskEndCol"); } }
+        //}
 
         public RUN_STATE RunState { 
             get { return _runState; }

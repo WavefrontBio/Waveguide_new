@@ -30,9 +30,12 @@ namespace Waveguide
 
         Imager m_imager;
         MainWindowViewModel VM;
+        VWorks m_vworks;
         WaveguideDB m_wgDB;
         EnclosureCameraViewer m_enclosureCameraViewer;
         SplashScreen m_splash;
+        bool m_vworksReady;
+        TaskScheduler m_uiTask;
 
         public MainWindow()
         {          
@@ -69,6 +72,8 @@ namespace Waveguide
            
         
             m_imager = null;
+            m_vworks = null;
+            m_vworksReady = false;
 
             this.Title = "Waveguide     " + GlobalVars.UserDisplayName + "  (" + GlobalVars.UserRole.ToString() + ")";
             
@@ -79,6 +84,8 @@ namespace Waveguide
 
             // catch close event caused by clicking X button
             this.Closing += new System.ComponentModel.CancelEventHandler(Window_Closing);
+
+            m_uiTask = TaskScheduler.FromCurrentSynchronizationContext();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -86,6 +93,7 @@ namespace Waveguide
             m_splash = new SplashScreen("/Images/WG_Loading.png");
             m_splash.Show(false);
 
+            VM.RunExperimentControl = MyRunExperimentControl;
 
             bool admin = IsAdministrator();
             //if (admin) { MessageBox.Show("You ARE an administrator"); }
@@ -119,8 +127,15 @@ namespace Waveguide
 
                         m_imager.m_insideTemperatureEvent += m_imager_m_insideTemperatureEvent;
 
-                        MyExperimentConfigurator.SetImager(m_imager);
+                        m_imager.m_ethernetIO.m_doorStatusEvent += m_ethernetIO_m_doorStatusEvent;
+                        m_imager.m_ethernetIO.m_ioMessageEvent += m_ethernetIO_m_ioMessageEvent;
 
+                        MyExperimentConfigurator.Init(VM,m_imager);
+
+                        m_vworksReady = StartVWorks();
+
+                        if (m_vworksReady)
+                            MyRunExperimentControl.Init(VM, m_imager, m_uiTask, m_vworks);
                         
                     }
                     else
@@ -145,7 +160,41 @@ namespace Waveguide
                 MessageBox.Show("MS SQL Server Service could not be started.", "MS SQL Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Close();
             }
-           
+            
+        }
+
+        public bool StartVWorks()
+        {
+            bool success = true;
+            m_vworks = new VWorks();
+
+            if(!m_vworks.m_vworksOK)
+            {
+                PostMessage("VWorks Failed to Start!");
+                success = false;                
+            }
+            else if(!m_vworks.VWorks_CreatedSuccessfully())
+            {
+                PostMessage("VWorks Creation Failure!");
+                success = false;
+            }
+            
+            return success;
+        }
+
+
+        void m_ethernetIO_m_ioMessageEvent(object sender, IOMessageEventArgs e)
+        {
+            PostMessage(e.Message);
+        }
+
+        void m_ethernetIO_m_doorStatusEvent(object sender, DoorStatusEventArgs e)
+        {
+            VM.DoorStatus = e.DoorStatus;
+            if(VM.DoorStatus == DOOR_STATUS.LOCKED)
+                DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Red);
+            else
+                DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Transparent);
         }
 
         void m_imager_m_insideTemperatureEvent(object sender, TemperatureEventArgs e)
@@ -314,7 +363,25 @@ namespace Waveguide
                     PostMessage("Enclosure Heater OFF");
                 }
             }
-        } 
+        }
+
+
+        private void DoorLockedIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if(m_imager != null)
+            {
+                if(m_imager.m_ethernetIO != null)
+                {
+                    if(GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
+                        m_imager.m_ethernetIO.SetOutputON(0, true);
+                    else
+                        m_imager.m_ethernetIO.SetOutputON(0, false);
+                }
+            }
+        }
+
+
+
 
 
         private void Window_Unloaded(object sender, RoutedEventArgs e)
@@ -441,6 +508,12 @@ namespace Waveguide
             csm.ShowDialog();
         }
 
+        private void ShowRunExperimentPanel_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+     
     
 
       
@@ -458,21 +531,65 @@ namespace Waveguide
     // //////////////////////////////////////////////////////////////////////
 
 
+    public enum DOOR_STATUS
+    {
+        OPEN,
+        CLOSED,
+        LOCKED
+    }
+
 
     public class MainWindowViewModel : INotifyPropertyChanged
     {
         private int _cameraTemp;
         private string _cameraTempString;
+        private int _cameraTargetTemp;
         private bool _coolingOn;
+        private bool _cameraTempReady;
 
         private int _insideTemp;
         private string _insideTempString;
+        private int _insideTargetTemp;
         private bool _heatingOn;
+        private bool _insideTempReady;
+
+        private DOOR_STATUS _doorStatus;
+
+        private RunExperimentControl _runExperimentControl;
+        private bool _showRunExperimentPanel;
+
+        public RunExperimentControl RunExperimentControl
+        {
+            get { return _runExperimentControl; }
+            set
+            {
+                _runExperimentControl = value; NotifyPropertyChanged("RunExperimentControl");
+            }
+        }
+
+        public bool ShowRunExperimentPanel
+        {
+            get { return _showRunExperimentPanel; }
+            set
+            {
+                _showRunExperimentPanel = value; NotifyPropertyChanged("ShowRunExperimentPanel");             
+            }
+        }
 
         public int CameraTemp
         {
             get { return _cameraTemp; }
-            set { _cameraTemp = value; NotifyPropertyChanged("CameraTemp"); }
+            set { _cameraTemp = value; NotifyPropertyChanged("CameraTemp"); CameraTempString = _cameraTemp.ToString();
+            CheckCameraTemperature();
+            }
+        }
+
+        public int CameraTargetTemp
+        {
+            get { return _cameraTargetTemp; }
+            set { _cameraTargetTemp = value; NotifyPropertyChanged("CameraTargetTemp");
+            CheckCameraTemperature();
+            }
         }
 
         public string CameraTempString
@@ -484,14 +601,32 @@ namespace Waveguide
         public bool CoolingOn
         {
             get { return _coolingOn; }
-            set { _coolingOn = value; NotifyPropertyChanged("CoolingOn"); }
+            set { _coolingOn = value; NotifyPropertyChanged("CoolingOn"); CheckCameraTemperature(); }
+        }
+
+        public bool CameraTempReady
+        {
+            get { return _cameraTempReady; }
+            set { _cameraTempReady = value; NotifyPropertyChanged("CameraTempReady"); }
         }
 
 
         public int InsideTemp
         {
             get { return _insideTemp; }
-            set { _insideTemp = value; NotifyPropertyChanged("InsideTemp"); }
+            set
+            {
+                _insideTemp = value; NotifyPropertyChanged("InsideTemp"); InsideTempString = value.ToString();
+                CheckInsideTemperature();
+            }
+        }
+
+        public int InsideTargetTemp
+        {
+            get { return _insideTargetTemp; }
+            set { _insideTargetTemp = value; NotifyPropertyChanged("InsideTargetTemp"); GlobalVars.InsideTargetTemperature = value;
+            CheckInsideTemperature();
+            }
         }
 
         public string InsideTempString
@@ -503,16 +638,78 @@ namespace Waveguide
         public bool HeatingOn
         {
             get { return _heatingOn; }
-            set { _heatingOn = value; NotifyPropertyChanged("HeatingOn"); }
+            set { _heatingOn = value; NotifyPropertyChanged("HeatingOn"); CheckInsideTemperature(); }
+        }
+
+        public bool InsideTempReady
+        {
+            get { return _insideTempReady; }
+            set { _insideTempReady = value; NotifyPropertyChanged("InsideTempReady"); }
+        }
+
+
+        public DOOR_STATUS DoorStatus
+        {
+            get { return _doorStatus; }
+            set { _doorStatus = value; NotifyPropertyChanged("DoorStatus"); }
+        }
+
+
+        private void CheckCameraTemperature()
+        {
+            if(!_coolingOn)
+            {
+                CameraTempReady = true;
+                GlobalVars.CameraTempReady = true;
+            }
+            else if (_cameraTemp < (_cameraTargetTemp + GlobalVars.MaxCameraTemperatureThresholdDeviation))
+            {
+                CameraTempReady = true;
+                GlobalVars.CameraTempReady = true;
+            }
+            else
+            {
+                CameraTempReady = false;
+                GlobalVars.CameraTempReady = false;
+            }
+        }
+
+        private void CheckInsideTemperature()
+        {
+            if (!_heatingOn)
+            {
+                InsideTempReady = true;
+                GlobalVars.InsideTempReady = true;
+            }
+            else if (Math.Abs(_insideTemp - _insideTargetTemp) <= GlobalVars.MaxInsideTemperatureThresholdDeviation)
+            {
+                InsideTempReady = true;
+                GlobalVars.InsideTempReady = true;
+            }
+            else
+            {
+                InsideTempReady = false;
+                GlobalVars.InsideTempReady = false;
+            }
         }
 
         public MainWindowViewModel()
         {
+            CameraTargetTemp = GlobalVars.CameraTargetTemperature;
             CameraTempString = "-";
             CoolingOn = true;
-
+            
+            InsideTargetTemp = GlobalVars.InsideTargetTemperature;
             InsideTempString = "-";
             HeatingOn = false;
+
+            DoorStatus = DOOR_STATUS.OPEN;
+
+            CameraTempReady = false;
+
+            InsideTempReady = false;
+
+            ShowRunExperimentPanel = false;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

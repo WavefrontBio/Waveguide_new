@@ -396,10 +396,7 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         
-                        <!--<Image Grid.Row="0" MouseLeftButtonUp="ControlSubtractionPlateImage_MouseLeftButtonUp"
-                               x:Name="ControlSubtractionPlateImage" Stretch="Fill"
-                               Source="{Binding}"/>-->
-                                                   
+                                                        
                         <local:WellSelectionControl Grid.Row="0" x:Name="WellSelection" Width="500" Height="300"/>
 
                     </Grid>

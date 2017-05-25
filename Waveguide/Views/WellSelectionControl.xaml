@@ -24,12 +24,12 @@
         <Grid Grid.Row="1" Grid.Column="0" x:Name="RowButtonGrid"/>
 
                
-        <Image x:Name="PlateImage" Stretch="Fill" Source="{Binding}"
+        <Image x:Name="PlateImage" Stretch="Fill" 
                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                Grid.Row="1" Grid.Column="1"  SizeChanged="PlateImage_SizeChanged"         
                />
 
-        <Image x:Name="SelectImage" Stretch="Fill" Source="{Binding}"
+        <Image x:Name="SelectImage" Stretch="Fill"
                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                Grid.Row="1" Grid.Column="1"
                MouseDown="SelectImage_MouseDown"

@@ -2396,6 +2396,7 @@ namespace Waveguide
 
             indicator.Exposure = dlg.CameraSetupControl.vm.Exposure;
             indicator.Gain = dlg.CameraSetupControl.vm.EMGain;
+            
             indicator.CycleTime = dlg.CameraSetupControl.vm.CycleTime;
             indicator.FlatFieldCorrection = dlg.CameraSetupControl.vm.FlatFieldSelect.FlatField_Select;
             VM.CurrentCameraSettings = dlg.CameraSetupControl.vm.CurrentCameraSettings;

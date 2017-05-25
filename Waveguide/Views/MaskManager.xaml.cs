@@ -133,8 +133,8 @@ namespace Waveguide
 
 
             // TODO: these values should be retrieve from the camera or from global variables
-            int imagePixelWidth = 1024;
-            int imagePixelHeight = 1024;
+            int imagePixelWidth = GlobalVars.PixelWidth;
+            int imagePixelHeight = GlobalVars.PixelHeight;
 
             
             int[] xp;

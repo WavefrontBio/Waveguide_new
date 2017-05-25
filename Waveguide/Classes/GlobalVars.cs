@@ -61,12 +61,7 @@ namespace Waveguide
             set { _pixelHeight = value; }
         }
 
-        private static int _cameraTargetTemperature;
-        public static int CameraTargetTemperature
-        {
-            get { return _cameraTargetTemperature; }
-            set { _cameraTargetTemperature = value; }
-        }
+       
 
         private static int _cameraDefaultCycleTime;
         public static int CameraDefaultCycleTime
@@ -75,12 +70,7 @@ namespace Waveguide
             set { _cameraDefaultCycleTime = value; }
         }
 
-        private static int _insideTargetTemperature;
-        public static int InsideTargetTemperature
-        {
-            get { return _insideTargetTemperature; }
-            set { _insideTargetTemperature = value; }
-        }
+     
 
         private static byte _filterChangeSpeed;
         public static byte FilterChangeSpeed
@@ -266,6 +256,78 @@ namespace Waveguide
             set { _tempControllerIP = value; }
         }
 
+        private static string _ethernetIOModuleIP;
+        public static string EthernetIOModuleIP
+        {
+            get { return _ethernetIOModuleIP; }
+            set { _ethernetIOModuleIP = value; }
+        }
+
+        private static DOOR_STATUS _doorStatus;
+        public static DOOR_STATUS DoorStatus
+        {
+            get { return _doorStatus; }
+            set { _doorStatus = value; }
+        }
+
+
+        private static bool _cameraCoolerON;
+        public static bool CameraCoolerON
+        {
+            get { return _cameraCoolerON; }
+            set { _cameraCoolerON = value; }
+        }
+
+        private static int _cameraTemp;
+        public static int CameraTemp
+        {
+            get { return _cameraTemp; }
+            set { _cameraTemp = value; }
+        }
+
+        private static int _cameraTargetTemperature;
+        public static int CameraTargetTemperature
+        {
+            get { return _cameraTargetTemperature; }
+            set { _cameraTargetTemperature = value; }
+        }
+
+        private static bool _cameraTempReady;
+        public static bool CameraTempReady
+        {
+            get { return _cameraTempReady; }
+            set { _cameraTempReady = value; }
+        }
+
+
+        private static bool _insideHeaterON;
+        public static bool InsideHeaterON
+        {
+            get { return _insideHeaterON; }
+            set { _insideHeaterON = value; }
+        }
+
+        private static int _insideTemp;
+        public static int InsideTemp
+        {
+            get { return _insideTemp; }
+            set { _insideTemp = value; }
+        }
+
+        private static int _insideTargetTemperature;
+        public static int InsideTargetTemperature
+        {
+            get { return _insideTargetTemperature; }
+            set { _insideTargetTemperature = value; }
+        }
+
+        private static bool _insideTempReady;
+        public static bool InsideTempReady
+        {
+            get { return _insideTempReady; }
+            set { _insideTempReady = value; }
+        }
+
         public static void LoadConfiguration()
         {
             try
@@ -329,6 +391,9 @@ namespace Waveguide
                                 break;
                             case "CameraDefaultCycleTime":
                                 CameraDefaultCycleTime = Convert.ToInt32(appSettings[key]);
+                                break;
+                            case "InsideTargetTemperature":
+                                InsideTargetTemperature = Convert.ToInt32(appSettings[key]);
                                 break;
                             case "EventMarkerLatency":
                                 EventMarkerLatency = Convert.ToInt32(appSettings[key]);
@@ -416,6 +481,10 @@ namespace Waveguide
                             case "TemperatureController_IP":
                                 TempControllerIP = appSettings[key];
                                 break;
+                            case "EthernetIOModule_IP":
+                                EthernetIOModuleIP = appSettings[key];
+                                break;
+                                
                         }
                     }
 

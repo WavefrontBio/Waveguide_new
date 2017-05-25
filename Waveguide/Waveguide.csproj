@@ -181,6 +181,7 @@
     </ApplicationDefinition>
     <Compile Include="Classes\AsyncClientSocket.cs" />
     <Compile Include="Classes\DatabaseContainerClasses.cs" />
+    <Compile Include="Classes\EthernetIO.cs" />
     <Compile Include="Classes\FlatFieldCorrector.cs" />
     <Compile Include="Classes\Lambda.cs" />
     <Compile Include="Classes\OmegaTempCtrl.cs" />
@@ -284,6 +285,9 @@
     <Compile Include="Views\RunExperiment.xaml.cs">
       <DependentUpon>RunExperiment.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\RunExperimentControl.xaml.cs">
+      <DependentUpon>RunExperimentControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\SaveImageDialog.xaml.cs">
       <DependentUpon>SaveImageDialog.xaml</DependentUpon>
     </Compile>
@@ -301,9 +305,6 @@
     </Compile>
     <Compile Include="Views\UserManager.xaml.cs">
       <DependentUpon>UserManager.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Views\WellDisplayControl.xaml.cs">
-      <DependentUpon>WellDisplayControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\WellSelectionControl.xaml.cs">
       <DependentUpon>WellSelectionControl.xaml</DependentUpon>
@@ -433,6 +434,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\RunExperimentControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\SaveImageDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -456,10 +461,6 @@
     <Page Include="Views\UserManager.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Views\WellDisplayControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\WellSelectionControl.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -554,6 +555,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="BRAINBOXES.IO.README.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\doorClosed.png" />
+    <Resource Include="Images\doorLocked.png" />
+    <Resource Include="Images\doorOpen.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

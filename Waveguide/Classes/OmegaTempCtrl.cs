@@ -14,7 +14,7 @@ namespace Waveguide
     public delegate void TempCtrl_MessageEventHandler(object sender, OmegaTempCtrlMessageEventArgs e);
     public delegate void TempCtrl_TemperatureEventHandler(object sender, OmegaTempCtrlTempEventArgs e);
 
-    class OmegaTempCtrl
+    public class OmegaTempCtrl
     {
         //System.Net.Sockets.TcpClient m_client;
         float m_temp;
@@ -109,8 +109,16 @@ namespace Waveguide
             if (m_updateTimer != null) m_updateTimer.Dispose();
         }
 
+        public void EnableHeater(bool enable)
+        {
+            if (enable)
+                EnableOutput(1);
+            else
+                DisableOutput(1);
+        }
 
-        public bool EnableOutput(int outputNumber)
+
+        private bool EnableOutput(int outputNumber)
         {
             bool success = true;
 
@@ -119,10 +127,12 @@ namespace Waveguide
             if (outputNumber == 2) message[3] = 0x32;
             m_simpleClient.Send(message);
 
+            GlobalVars.InsideHeaterON = true;
+
             return success;
         }
 
-        public bool DisableOutput(int outputNumber)
+        private bool DisableOutput(int outputNumber)
         {
             bool success = true;
 
@@ -130,6 +140,8 @@ namespace Waveguide
             byte[] message = new byte[5] { 0x2a, 0x44, 0x30, 0x31, 0x0d };
             if (outputNumber == 2) message[3] = 0x32;
             m_simpleClient.Send(message);
+
+            GlobalVars.InsideHeaterON = false;
 
             return success;
         }
@@ -155,6 +167,8 @@ namespace Waveguide
 
             m_simpleClient.Send(message);
 
+            GlobalVars.InsideTargetTemperature = setpoint;
+
             return success;           
         }
 
@@ -174,6 +188,8 @@ namespace Waveguide
                     string tString = message.Substring(3, 5);
                     m_temp = (float)Convert.ToDouble(tString);
                     OnNewTemperature(new OmegaTempCtrlTempEventArgs(m_temp));
+
+                    GlobalVars.InsideTemp = (int)m_temp;
                 }
             }
         }
@@ -196,6 +212,8 @@ namespace Waveguide
                     string tString = str.Substring(3, 5);
                     m_temp = (float)Convert.ToDouble(tString);
                     OnNewTemperature(new OmegaTempCtrlTempEventArgs(m_temp));
+
+                    GlobalVars.InsideTemp = (int)m_temp;
                 }
             }
         }

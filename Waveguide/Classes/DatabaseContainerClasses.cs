@@ -1528,6 +1528,7 @@ namespace Waveguide
         private int _maskID;
         private int _exposure;
         private int _gain;
+        private int _preAmpGain;
         private string _description;
         private SIGNAL_TYPE _signalType;        
         private FLATFIELD_SELECT _flatFieldCorrection;
@@ -1592,6 +1593,12 @@ namespace Waveguide
         {
             get { return _gain; }
             set { _gain = value; NotifyPropertyChanged("Gain"); }
+        }
+
+        public int PreAmpGain
+        {
+            get { return _preAmpGain; }
+            set { _preAmpGain = value; NotifyPropertyChanged("PreAmpGain"); }
         }
 
         public string Description

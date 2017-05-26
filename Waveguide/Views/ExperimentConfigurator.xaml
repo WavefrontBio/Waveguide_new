@@ -48,13 +48,13 @@
 
         <!-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
         <!--  PROJECT  -->
-        <GroupBox Grid.Row="0" Grid.Column="1" Header="Project" FontSize="14" BorderBrush="Black" BorderThickness="1" 
-                  Margin="5" x:Name="ProjectGroup">          
+        <GroupBox Grid.Row="0" Grid.Column="1" Header="Project" FontSize="14" BorderBrush="Black" BorderThickness="1" Margin="5" x:Name="ProjectGroup">          
 
                 <ComboBox HorizontalAlignment="Stretch" VerticalAlignment="Center" ItemsSource="{Binding Path=ProjectList}"                         
                           DisplayMemberPath="Description"
                           Margin="20,10,20,10"  
                           x:Name="ProjectComboBox"
+                          SelectedItem="{Binding Path=ExpParams.project,UpdateSourceTrigger=PropertyChanged}"
                           SelectionChanged="ProjectComboBox_SelectionChanged">
                 </ComboBox>
           
@@ -103,6 +103,7 @@
                           ItemsSource="{Binding Path=MethodList}"                         
                           Margin="20,10,20,10"  
                           x:Name="MethodComboBox"
+                          SelectedItem="{Binding ExpParams.method,UpdateSourceTrigger=PropertyChanged}"
                           SelectionChanged="MethodComboBox_SelectionChanged">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
@@ -138,12 +139,10 @@
                     <!-- INDICATORS-->
                     <GroupBox Grid.Row="2" Grid.Column="0" Header="Indicators">
 
-                        <igDP:XamDataGrid 
-                             x:Name="IndicatorListDataGrid" 
-                             DataSource="{Binding Path=IndicatorList}" Margin="5" Theme="IGTheme">
-                            <!-- Row for each Indicator in the selected method, Columns: Description, Exposure  -->
+                    <igDP:XamDataGrid x:Name="IndicatorListDataGrid" DataSource="{Binding ExpParams.indicatorList,UpdateSourceTrigger=PropertyChanged}" >
 
-
+                        <!-- Row for each Indicator in the selected method, Columns: Description, Exposure  -->
+                     
                             <igDP:XamDataGrid.FieldLayoutSettings>
                                 <igDP:FieldLayoutSettings  
                             AllowAddNew="False" 
@@ -190,13 +189,11 @@
 
                     <GroupBox Grid.Row="2" Grid.Column="1" Header="Compound Plates">
 
-                        <igDP:XamDataGrid
-                            x:Name="CompoundPlateListDataGrid"                                                                                    
-                              DataSource="{Binding Path=CompoundPlateList}" Margin="5" Theme="IGTheme">
+                        <igDP:XamDataGrid x:Name="CompoundPlateListDataGrid" Margin="5" Theme="IGTheme" 
+                                          DataSource="{Binding ExpParams.compoundPlateList,UpdateSourceTrigger=PropertyChanged}">
                             <!-- Row for each CompoundPlate in the selected method, Columns: Description, Exposure  -->
-
-
-                            <igDP:XamDataGrid.FieldLayoutSettings>
+                          
+                        <igDP:XamDataGrid.FieldLayoutSettings>
                                 <igDP:FieldLayoutSettings  
                             AllowAddNew="False" 
                             AllowDelete="False"
@@ -271,9 +268,10 @@
                 <ComboBox Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"  ItemsSource="{Binding Path=PlateTypeList}"
                           DisplayMemberPath="Description"
                           Margin="20,10,20,10"  
-                          x:Name="PlateTypeComboBox"
-                          SelectedItem="{Binding Path=PlateType, Mode=TwoWay}"
+                          x:Name="PlateTypeComboBox"  
+                          SelectedItem="{Binding ExpParams.plateType,UpdateSourceTrigger=PropertyChanged}"
                           SelectionChanged="PlateTypeComboBox_SelectionChanged">
+                 
                 </ComboBox>
                 
                 <!--  MASK  -->
@@ -282,9 +280,9 @@
                 <ComboBox Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center"  ItemsSource="{Binding Path=MaskList}"
                           DisplayMemberPath="Description"
                           Margin="20,10,20,10"  
-                          x:Name="MaskComboBox"
-                          SelectedItem="{Binding Path=Mask, Mode=TwoWay}"
-                          SelectionChanged="MaskComboBox_SelectionChanged">
+                          x:Name="MaskComboBox"   
+                          SelectedItem="{Binding ExpParams.mask,UpdateSourceTrigger=PropertyChanged}"
+                          SelectionChanged="MaskComboBox_SelectionChanged">                    
                 </ComboBox>
 
             </Grid>
@@ -364,7 +362,9 @@
                                Width="60" 
                                HorizontalAlignment="Center"
                                VerticalAlignment="Top" Mask="{}{number:1-20}"
-                               Margin="3" Value="{Binding Path=NumFoFrames}"/>
+                               Value="{Binding ExpParams.numFoFrames,UpdateSourceTrigger=PropertyChanged}"
+                               Margin="3">                            
+                        </ig:XamNumericInput>
                     </Grid>
                 </GroupBox>
 
@@ -440,26 +440,28 @@
                         
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Numerator" Margin="10,10,10,0"
                                    HorizontalAlignment="Right" VerticalAlignment="Top"/>
-                        <ComboBox Grid.Row="0" Grid.Column="1" 
-                                  HorizontalAlignment="Stretch" VerticalAlignment="Top"  
-                                  ItemsSource="{Binding Path=IndicatorList}"
+                        <ComboBox Grid.Row="0" Grid.Column="1" MinWidth="150"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Top"                                   
                                   DisplayMemberPath="Description"
                                   Margin="0,10,0,0"  
                                   x:Name="DynamicRatioNumeratorComboBox"
-                                  SelectedItem="{Binding Path=DynamicRatioNumeratorIndicator, Mode=TwoWay}"
+                                  ItemsSource="{Binding ExpParams.indicatorList,UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedItem="{Binding ExpParams.dynamicRatioNumerator,UpdateSourceTrigger=PropertyChanged}"
                                   SelectionChanged="DynamicRatioNumeratorComboBox_SelectionChanged">
+                                                      
                         </ComboBox>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Denominator" Margin="10,10,10,0"
                                    HorizontalAlignment="Right" VerticalAlignment="Top"/>
-                        <ComboBox Grid.Row="1" Grid.Column="1" 
-                                  HorizontalAlignment="Stretch" VerticalAlignment="Top"  
-                                  ItemsSource="{Binding Path=IndicatorList}"
+                        <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="150"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
                                   DisplayMemberPath="Description"
                                   Margin="0,10,0,0"  
                                   x:Name="DynamicRatioDenominatorComboBox"
-                                  SelectedItem="{Binding Path=DynamicRatioDenominatorIndicator, Mode=TwoWay}"
+                                  ItemsSource="{Binding ExpParams.indicatorList,UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedItem="{Binding ExpParams.dynamicRatioDenominator,UpdateSourceTrigger=PropertyChanged}"
                                   SelectionChanged="DynamicRatioDenominatorComboBox_SelectionChanged">
+                                          
                         </ComboBox>
 
                     </Grid>

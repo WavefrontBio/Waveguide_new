@@ -286,9 +286,6 @@
     <Compile Include="Views\RunExperiment.xaml.cs">
       <DependentUpon>RunExperiment.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\RunExperimentControl.xaml.cs">
-      <DependentUpon>RunExperimentControl.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Views\SaveImageDialog.xaml.cs">
       <DependentUpon>SaveImageDialog.xaml</DependentUpon>
     </Compile>
@@ -434,10 +431,6 @@
     <Page Include="Views\RunExperiment.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Views\RunExperimentControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\SaveImageDialog.xaml">
       <Generator>MSBuild:Compile</Generator>

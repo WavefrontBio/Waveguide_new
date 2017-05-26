@@ -27,7 +27,7 @@ namespace Waveguide
     /// </summary>
     public partial class MainWindow : Window
     {
-
+        
         Imager m_imager;
         MainWindowViewModel VM;
         VWorks m_vworks;
@@ -69,7 +69,7 @@ namespace Waveguide
                     break;
             }
             
-           
+
         
             m_imager = null;
             m_vworks = null;
@@ -130,17 +130,14 @@ namespace Waveguide
                         m_imager.m_ethernetIO.m_ioMessageEvent += m_ethernetIO_m_ioMessageEvent;
 
                         MyExperimentConfigurator.Init(m_imager);
+                        MyExperimentConfigurator.StartExperimentEvent += MyExperimentConfigurator_StartExperimentEvent;
 
                         m_vworksReady = StartVWorks();
 
                         if (m_vworksReady)
                         {
-
                             MyChartArrayControl.VM.StatusChange += VM_StatusChange;
 
-
-                            //MyRunExperimentControl.Init(VM, m_imager, m_uiTask, m_vworks);
-                            //MyRunExperimentControl.m_MessageEvent += MyRunExperimentControl_m_MessageEvent;
                         }
                         
                     }
@@ -169,21 +166,23 @@ namespace Waveguide
             
         }
 
+        void MyExperimentConfigurator_StartExperimentEvent(object sender, EventArgs e)
+        {         
+            MyChartArrayControl.Configure(m_imager, VM.ExpParams.mask);
+            VM.ShowRunExperimentPanel = true;
+        }
+
         void VM_StatusChange(ViewModel_ChartArray VM_ChartArray, ChartArrayViewModel_EventArgs e)
         {
             VM.ExperimentRunStatus = e.RunStatus;
         }
 
-        void MyRunExperimentControl_m_MessageEvent(object sender, RunExperimentControl_MessageEventArgs e)
-        {
-            PostMessage(e.Message);
-        }
 
         void Configure_ChartArray()
         {
-            MyChartArrayControl.VM.IndicatorList = GlobalVars.ExperimentParams.indicatorList;
-            MyChartArrayControl.VM.CompoundPlateList = GlobalVars.ExperimentParams.compoundPlateList;
-            MyChartArrayControl.Configure(m_imager, GlobalVars.ExperimentParams.mask);
+            MyChartArrayControl.VM.IndicatorList = VM.ExpParams.indicatorList;
+            MyChartArrayControl.VM.CompoundPlateList = VM.ExpParams.compoundPlateList;
+            MyChartArrayControl.Configure(m_imager, VM.ExpParams.mask);
         }
 
 
@@ -633,13 +632,13 @@ namespace Waveguide
         private bool _insideTempReady;
 
         private DOOR_STATUS _doorStatus;
-
-        private bool _showHeaterOnOffPopup;
-
-     
+        private bool _showHeaterOnOffPopup;     
         private bool _showRunExperimentPanel;
-
         private ViewModel_ChartArray.RUN_STATUS _experimentRunStatus;
+
+        // make ExperimentParams Singleton part of view model (used to store selections made by user)
+        private ExperimentParams _expParams;
+        public ExperimentParams ExpParams { get { return _expParams; } }
 
 
         public ViewModel_ChartArray.RUN_STATUS ExperimentRunStatus
@@ -791,6 +790,8 @@ namespace Waveguide
 
         public MainWindowViewModel()
         {
+            _expParams = ExperimentParams.GetExperimentParams;
+
             CameraTargetTemp = GlobalVars.CameraTargetTemperature;
             CameraTempString = "-";
             CoolingOn = true;

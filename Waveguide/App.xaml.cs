@@ -23,7 +23,7 @@ namespace Waveguide
 
             bool m_done = false;
 
-            GlobalVars.LoadConfiguration();
+            GlobalVars.LoadConfiguration(); 
 
             while (!m_done)
             {

@@ -24,22 +24,38 @@ namespace Waveguide
     /// </summary>
     public partial class ExperimentConfigurator : UserControl
     {
+        ////////////////////////////////////////////////////////////////////////////
+        // Start Experiment Event
+        public delegate void StartExperimentEventHandler(object sender, EventArgs e);
+        public event StartExperimentEventHandler StartExperimentEvent;
+
+        protected virtual void OnStartExperiment(EventArgs e)        
+        {
+            if (StartExperimentEvent != null) StartExperimentEvent(this, e);
+        }
+
+        public void StartExperiment()
+        {
+            OnStartExperiment(null);
+        }
+
+        ////////////////////////////////////////////////////////////////////////////
+        
+
+
         WaveguideDB wgDB;
-
         ExperimentConfiguratorViewModel VM;
-
         Imager m_imager;
-
-        MainWindowViewModel m_mainWindowVM;
 
 
         public ExperimentConfigurator()
         {
+            VM = new ExperimentConfiguratorViewModel();
+
             InitializeComponent();
 
             wgDB = new WaveguideDB();
-
-            VM = new ExperimentConfiguratorViewModel();
+            
 
             m_imager = null;
       
@@ -48,23 +64,31 @@ namespace Waveguide
             PlateTypeContainer ptc;
             bool success = wgDB.GetDefaultPlateType(out ptc);
             if (success)
+            {
                 WellSelection.Init(ptc.Rows, ptc.Cols);
+                VM.ExpParams.plateType = ptc;
+                PlateTypeComboBox.SelectedItem = ptc;
+            }
             else
+            {
                 WellSelection.Init(16, 24);
+                VM.ExpParams.plateType = null;
+                VM.ExpParams.mask = null;
+            }
 
             WellSelection.NewWellSetSelected += WellSelection_NewWellSetSelected;
-            
+                                 
 
         }
 
         void WellSelection_NewWellSetSelected(object sender, EventArgs e)
         {
             WellSelectionEventArgs ev = (WellSelectionEventArgs)e;
-            VM.ControlSubtractionWellList.Clear();
+            VM.ExpParams.controlSubtractionWellList.Clear();
 
             foreach (Tuple<int, int> well in ev.WellList)
             {
-                VM.ControlSubtractionWellList.Add(well);
+                VM.ExpParams.controlSubtractionWellList.Add(well);
             }
 
             VM.SetExperimentStatus();
@@ -89,21 +113,20 @@ namespace Waveguide
         {   
             // disable all groups below and clear combobox lists         
             if (VM.MethodList != null) VM.MethodList.Clear();
-            VM.Method = null;
+            VM.ExpParams.method = null;
             VM.MethodFilter = 0;
        
-            if(VM.CompoundPlateList != null) VM.CompoundPlateList.Clear();     
+            if(VM.ExpParams.compoundPlateList != null) VM.ExpParams.compoundPlateList.Clear();
 
-            if (VM.IndicatorList != null) VM.IndicatorList.Clear();
+            if (VM.ExpParams.indicatorList != null) VM.ExpParams.indicatorList.Clear();
 
             
             // get selection
-            VM.Project = (ProjectContainer)ProjectComboBox.SelectedItem;
-
-            // if valid selection, enable next group and populate combobox
-            if (VM.Project != null)
-            {              
-                LoadMethods(GlobalVars.UserID, VM.Project.ProjectID, VM.MethodFilter);
+            VM.ExpParams.project = (ProjectContainer)ProjectComboBox.SelectedItem;
+          
+            if (VM.ExpParams.project != null)
+            {
+                LoadMethods(GlobalVars.UserID, VM.ExpParams.project.ProjectID, VM.MethodFilter);
             }
 
             VM.SetExperimentStatus();
@@ -163,33 +186,33 @@ namespace Waveguide
 
         private void Method_RadioButton_Checked(object sender, RoutedEventArgs e)
         {      
-            if(VM.Project != null)
-                LoadMethods(GlobalVars.UserID, VM.Project.ProjectID, VM.MethodFilter);
+            if(VM.ExpParams.project != null)
+                LoadMethods(GlobalVars.UserID, VM.ExpParams.project.ProjectID, VM.MethodFilter);
         }
 
 
 
 
         private void MethodComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {          
-            if (VM.CompoundPlateList != null) VM.CompoundPlateList.Clear();
-                        
-            if (VM.IndicatorList != null) VM.IndicatorList.Clear();
+        {
+            if (VM.ExpParams.compoundPlateList != null) VM.ExpParams.compoundPlateList.Clear();
+
+            if (VM.ExpParams.indicatorList != null) VM.ExpParams.indicatorList.Clear();
 
  
             // get selection
-            VM.Method = (MethodContainer)MethodComboBox.SelectedItem;
+            VM.ExpParams.method = (MethodContainer)MethodComboBox.SelectedItem;
 
-            if (VM.Method != null)
+            if (VM.ExpParams.method != null)
             {
             
                 // get all the compound plates for the Method
-                bool success = wgDB.GetAllCompoundPlatesForMethod(VM.Method.MethodID);
+                bool success = wgDB.GetAllCompoundPlatesForMethod(VM.ExpParams.method.MethodID);
 
                 if (success)
                 {
-                    if(VM.CompoundPlateList != null) VM.CompoundPlateList.Clear();
-                    else VM.CompoundPlateList = new ObservableCollection<ExperimentCompoundPlateContainer>();
+                    if (VM.ExpParams.compoundPlateList != null) VM.ExpParams.compoundPlateList.Clear();
+                    else VM.ExpParams.compoundPlateList = new ObservableCollection<ExperimentCompoundPlateContainer>();
 
                     foreach (CompoundPlateContainer cpdPlate in wgDB.m_compoundPlateList)
                     {
@@ -199,16 +222,16 @@ namespace Waveguide
                         expCpdPlate.ExperimentCompoundPlateID = 0;
                         expCpdPlate.ExperimentID = 0;
 
-                        VM.CompoundPlateList.Add(expCpdPlate);
+                        VM.ExpParams.compoundPlateList.Add(expCpdPlate);
                     }
 
                     // get all the indicators for the Method
-                    success = wgDB.GetAllIndicatorsForMethod(VM.Method.MethodID);
+                    success = wgDB.GetAllIndicatorsForMethod(VM.ExpParams.method.MethodID);
 
                     if (success)
                     {
-                        if (VM.IndicatorList != null) VM.IndicatorList.Clear();
-                        else VM.IndicatorList = new ObservableCollection<ExperimentIndicatorContainer>();
+                        if (VM.ExpParams.indicatorList != null) VM.ExpParams.indicatorList.Clear();
+                        else VM.ExpParams.indicatorList = new ObservableCollection<ExperimentIndicatorContainer>();
 
                         foreach (IndicatorContainer indicator in wgDB.m_indicatorList)
                         {
@@ -249,7 +272,7 @@ namespace Waveguide
                                 }
                             }
 
-                            VM.IndicatorList.Add(expIndicator);
+                            VM.ExpParams.indicatorList.Add(expIndicator);
                         }
                     }
                 }
@@ -267,43 +290,19 @@ namespace Waveguide
         private void MaskComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // get selection
-            VM.Mask = (MaskContainer)MaskComboBox.SelectedItem;
-
-            //if (VM.Mask != null)
-            //{
-            //    // populate ROI pixel coordinates    
-            //    VM.RoiX = 1;
-            //    VM.RoiY = 1;
-
-            //    if(m_imager != null)
-            //    {                                    
-            //        VM.RoiW = m_imager.m_camera.XPixels;
-            //        VM.RoiH = m_imager.m_camera.YPixels;
-            //    }
-            //    else
-            //    {
-            //        VM.RoiW = 1024;
-            //        VM.RoiH = 1024;
-            //    }
-
-            //    // populate ROI mask coordinates
-            //    VM.RoiMaskStartRow = 0;
-            //    VM.RoiMaskEndRow = VM.Mask.Rows - 1;
-            //    VM.RoiMaskStartCol = 0;
-            //    VM.RoiMaskEndCol = VM.Mask.Cols - 1;        
-            //}
+            VM.ExpParams.mask = (MaskContainer)MaskComboBox.SelectedItem;
 
             VM.SetExperimentStatus();
 
 
-            if (VM.Mask != null)
+            if (VM.ExpParams.mask != null)
             {
-                WellSelection.Init(VM.Mask.Rows, VM.Mask.Cols);
+                WellSelection.Init(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
 
-                if(VM.IndicatorList != null)
-                    foreach(ExperimentIndicatorContainer expInd in VM.IndicatorList)
+                if (VM.ExpParams.indicatorList != null)
+                    foreach (ExperimentIndicatorContainer expInd in VM.ExpParams.indicatorList)
                     {
-                        expInd.MaskID = VM.Mask.MaskID;
+                        expInd.MaskID = VM.ExpParams.mask.MaskID;
                     }
             }
            
@@ -343,7 +342,8 @@ namespace Waveguide
 
                     if (ptc.IsDefault)
                     {
-                        VM.PlateType = ptc;  // sets the selected item in the platetype combobox
+                        VM.ExpParams.plateType = ptc;  // sets the selected item in the platetype combobox
+                        PlateTypeComboBox.SelectedItem = ptc;
 
                         // populate MaskList with masks for given platetype
                         success = wgDB.GetAllMasksForPlateType(ptc.PlateTypeID);
@@ -357,7 +357,11 @@ namespace Waveguide
                             {
                                 VM.MaskList.Add(mc);
 
-                                if (mc.IsDefault) VM.Mask = mc;
+                                if (mc.IsDefault)
+                                {
+                                    VM.ExpParams.mask = mc;
+                                    MaskComboBox.SelectedItem = mc;
+                                }
                             }
                         }
                     }
@@ -394,53 +398,9 @@ namespace Waveguide
 
         private void StartExperimentPB_Click(object sender, RoutedEventArgs e)
         {
-            bool success;
-
-            //List<ExperimentIndicatorContainer> expIndicatorList = new List<ExperimentIndicatorContainer>();
-            
-            // project, should already exist, so VM.Project should hold a valid project record
-            ProjectContainer project = VM.Project;
-
-            // user, get from database 
-            UserContainer user;
-            success = wgDB.GetUser(GlobalVars.UserID, out user);
-            if(!success) 
-            {
-                ShowErrorDialog("Database Error: GetUser", wgDB.GetLastErrorMsg());
-                return;
-            } 
-            else if(user==null)
-            {
-                ShowErrorDialog("User with database record id: " + GlobalVars.UserID.ToString() + " does not exist", "Data Error");
-                return;
-            }
-
-            // method, this should already be populated
-            MethodContainer method = VM.Method;            
-            if(method==null)
-            {
-                ShowErrorDialog("Method not set", "Data Error");
-                return;
-            }
-
-
-
-// *************************************************************************************
-// *************************************************************************************
-// *************************************************************************************
-
            
-
-
-            //m_mainWindowVM.RunExperimentControl.Configure(VM.Project, VM.Method, VM.PlateType, VM.Mask,
-            //                     VM.IndicatorList, VM.CompoundPlateList,
-            //                     VM.ControlSubtractionWellList,
-            //                     VM.NumFoFrames,
-            //                     VM.DynamicRatioNumeratorIndicator,
-            //                     VM.DynamicRatioDenominatorIndicator);
-
-            m_mainWindowVM.ShowRunExperimentPanel = true;
-
+            // send signal to MainWindow that we're ready to run an experiment as configured (with configuration stored in ExperimentParams)
+            StartExperiment();
 
         } // END StartExperimentPB_Click()
 
@@ -471,13 +431,13 @@ namespace Waveguide
 
         private void ResetExperimentConfigurator()
         {
-            VM.CompoundPlateList.Clear();  // clear compound plate list
+            VM.ExpParams.compoundPlateList.Clear();  // clear compound plate list
 
-            VM.IndicatorList.Clear(); // clear indicator list
+            VM.ExpParams.indicatorList.Clear(); // clear indicator list
 
             MethodComboBox.SelectedIndex = -1;  // clear method combobox selection
 
-            VM.ControlSubtractionWellList.Clear();  // clear control subtraction well list
+            VM.ExpParams.controlSubtractionWellList.Clear();  // clear control subtraction well list
         }
 
 
@@ -509,13 +469,18 @@ namespace Waveguide
                     WellSelection.Init(ptc.Rows, ptc.Cols);
 
                     VM.MaskList.Clear();
-                    VM.Mask = null;
+                    VM.ExpParams.mask = null;
+                    MaskComboBox.SelectedItem = null;
 
                     foreach (MaskContainer mc in wgDB.m_maskList)
                     {
                         VM.MaskList.Add(mc);
 
-                        if (mc.IsDefault) VM.Mask = mc;
+                        if (mc.IsDefault)
+                        {
+                            VM.ExpParams.mask = mc;
+                            MaskComboBox.SelectedItem = mc;
+                        }
                     }
                 }
             }
@@ -527,12 +492,38 @@ namespace Waveguide
 
         private void DynamicRatioNumeratorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            ComboBox cbox = (ComboBox)sender;
+
+            if (cbox.SelectedItem == null)
+            {                
+                return;
+            }
+
+            if (cbox.SelectedItem.GetType() == typeof(ExperimentIndicatorContainer))
+            {
+                ExperimentIndicatorContainer eic = (ExperimentIndicatorContainer)cbox.SelectedItem;
+                VM.ExpParams.dynamicRatioNumerator = eic;
+            }
+            
             VM.SetExperimentStatus();
         }
 
 
         private void DynamicRatioDenominatorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            ComboBox cbox = (ComboBox)sender;
+
+            if (cbox.SelectedItem == null)
+            {
+                return;
+            }
+
+            if (cbox.SelectedItem.GetType() == typeof(ExperimentIndicatorContainer))
+            {
+                ExperimentIndicatorContainer eic = (ExperimentIndicatorContainer)cbox.SelectedItem;
+                VM.ExpParams.dynamicRatioDenominator = eic;
+            }
+          
             VM.SetExperimentStatus();
         }
 
@@ -541,14 +532,17 @@ namespace Waveguide
 
     }
 
-
-
-
+   
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+  
 
     public class ExperimentConfiguratorViewModel : INotifyPropertyChanged
     {
         public enum STEP_STATUS { WAITING_FOR_PREDECESSOR, NEEDS_INPUT, READY };
 
+ 
         private bool _plateEnabled;
         private bool _compoundPlateEnabled;
         private bool _methodEnabled;
@@ -558,12 +552,7 @@ namespace Waveguide
         private bool _plateBarcodeValid;
         private bool _dynamicRatioGroupEnabled;
 
-        private ProjectContainer _project;        
-        private MethodContainer _method;
-        private MaskContainer _mask;
-        private PlateTypeContainer _plateType;
-        
-
+     
         private STEP_STATUS _projectStatus;
         private STEP_STATUS _methodStatus;
         private STEP_STATUS _plateConfigStatus;
@@ -572,6 +561,9 @@ namespace Waveguide
         private STEP_STATUS _controlSubtractionStatus;
         private STEP_STATUS _dynamicRatioStatus;
 
+        // make ExperimentParams Singleton part of view model (used to store selections made by user)
+        private ExperimentParams _expParams;
+        public ExperimentParams ExpParams { get { return _expParams; } }
 
         public bool ProjectImage { get { return _runEnabled; } set { _runEnabled = value; NotifyPropertyChanged("RunEnabled"); } }
 
@@ -580,18 +572,9 @@ namespace Waveguide
         private ObservableCollection<ProjectContainer> _projectList;
         private ObservableCollection<MethodContainer> _methodList;
         private ObservableCollection<MaskContainer> _maskList;
-        private ObservableCollection<ExperimentIndicatorContainer> _indicatorList;
-        private ObservableCollection<ExperimentCompoundPlateContainer> _compoundPlateList;
         private ObservableCollection<PlateTypeContainer> _plateTypeList;
 
  
-
-        private int _numFoFrames;
-        private ObservableCollection<Tuple<int, int>> _controlSubtractionWellList;
-        private ExperimentIndicatorContainer _dynamicRatioNumeratorIndicator;
-        private ExperimentIndicatorContainer _dynamicRatioDenominatorIndicator;
-
-
         public string RedArrowFileUri;
         public string GreenCheckFileUri;
         public string BlankFileUri;
@@ -606,12 +589,6 @@ namespace Waveguide
         public bool DynamicRatioGroupEnabled { get { return _dynamicRatioGroupEnabled; } set { _dynamicRatioGroupEnabled = value; NotifyPropertyChanged("DynamicRatioGroupEnabled"); } }
 
 
-        public ProjectContainer Project { get { return _project; } set { _project = value; NotifyPropertyChanged("Project"); } }        
-        public MethodContainer Method { get { return _method; } set { _method = value; NotifyPropertyChanged("Method"); } }
-        public MaskContainer Mask { get { return _mask; } set { _mask = value; NotifyPropertyChanged("Mask"); } }
-        public PlateTypeContainer PlateType { get { return _plateType; } set { _plateType = value; NotifyPropertyChanged("PlateType"); } }
-        
-
         public STEP_STATUS ProjectStatus { get { return _projectStatus; } set { _projectStatus = value; NotifyPropertyChanged("ProjectStatus"); } }
         public STEP_STATUS MethodStatus { get { return _methodStatus; } set { _methodStatus = value; NotifyPropertyChanged("MethodStatus"); } }
         public STEP_STATUS PlateConfigStatus { get { return _plateConfigStatus; } set { _plateConfigStatus = value; NotifyPropertyChanged("PlateConfigStatus"); } }
@@ -624,23 +601,16 @@ namespace Waveguide
         public int MethodFilter { get { return _methodFilter; } set { _methodFilter = value; NotifyPropertyChanged("MethodFilter"); } }
 
         public ObservableCollection<ProjectContainer> ProjectList { get { return _projectList; } set { _projectList = value; NotifyPropertyChanged("ProjectList"); } }
-        public ObservableCollection<ExperimentCompoundPlateContainer> CompoundPlateList { get { return _compoundPlateList; } set { _compoundPlateList = value; NotifyPropertyChanged("CompoundPlateList"); } }
         public ObservableCollection<MethodContainer> MethodList { get { return _methodList; } set { _methodList = value; NotifyPropertyChanged("MethodList"); } }
         public ObservableCollection<MaskContainer> MaskList { get { return _maskList; } set { _maskList = value; NotifyPropertyChanged("MaskList"); } }
-        public ObservableCollection<ExperimentIndicatorContainer> IndicatorList { get { return _indicatorList; } set { _indicatorList = value; NotifyPropertyChanged("IndicatorList"); } }
         public ObservableCollection<PlateTypeContainer> PlateTypeList { get { return _plateTypeList; } set { _plateTypeList = value; NotifyPropertyChanged("PlateTypeList"); } }
-
-
-
-        public int NumFoFrames { get { return _numFoFrames; } set { _numFoFrames = value; NotifyPropertyChanged("NumFoFrames"); } }
-        public ObservableCollection<Tuple<int, int>> ControlSubtractionWellList { get { return _controlSubtractionWellList; } set { _controlSubtractionWellList = value; NotifyPropertyChanged("ControlSubtractionWellList"); } }
-        public ExperimentIndicatorContainer DynamicRatioNumeratorIndicator { get { return _dynamicRatioNumeratorIndicator; } set { _dynamicRatioNumeratorIndicator = value; NotifyPropertyChanged("DynamicRatioNumeratorIndicator"); } }
-        public ExperimentIndicatorContainer DynamicRatioDenominatorIndicator { get { return _dynamicRatioDenominatorIndicator; } set { _dynamicRatioDenominatorIndicator = value; NotifyPropertyChanged("DynamicRatioDenominatorIndicator"); } }
 
 
 
         public ExperimentConfiguratorViewModel()
         {
+            _expParams = ExperimentParams.GetExperimentParams;
+
             PlateEnabled = false;
             CompoundPlateEnabled = false;
             MethodEnabled = false;
@@ -648,10 +618,6 @@ namespace Waveguide
             RuntimeAnalysisEnabled = false;
             RunEnabled = false;
 
-
-            NumFoFrames = 5;
-
-            ControlSubtractionWellList = new ObservableCollection<Tuple<int, int>>();
 
             RedArrowFileUri = "pack://application:,,,/Waveguide;component/Images/red_arrow_2.png";
             GreenCheckFileUri = "pack://application:,,,/Waveguide;component/Images/green_check_1.png";
@@ -702,7 +668,7 @@ namespace Waveguide
             RunEnabled = false;
 
             // set Method Status
-            if (Project != null)
+            if (ExpParams.project != null)
             {
                 ProjectStatus = ExperimentConfiguratorViewModel.STEP_STATUS.READY;
 
@@ -710,18 +676,16 @@ namespace Waveguide
                 MethodEnabled = true;
 
                 // set Plate Status
-                if (Method != null)
+                if (ExpParams.method != null)
                 {
                     MethodStatus = ExperimentConfiguratorViewModel.STEP_STATUS.READY;
 
                     PlateConfigStatus = ExperimentConfiguratorViewModel.STEP_STATUS.NEEDS_INPUT;
                     PlateEnabled = true;
 
-                    if (PlateType != null && Mask != null)
+                    if (ExpParams.plateType != null && ExpParams.mask != null)
                     {
                         PlateConfigStatus = ExperimentConfiguratorViewModel.STEP_STATUS.READY;
-
-
 
                         RuntimeAnalysisStatus = ExperimentConfiguratorViewModel.STEP_STATUS.NEEDS_INPUT;
                         RuntimeAnalysisEnabled = true;
@@ -732,7 +696,7 @@ namespace Waveguide
                         {
                             RuntimeAnalysisStatus = ExperimentConfiguratorViewModel.STEP_STATUS.READY;
 
-                            if (IndicatorList.Count < 2) DynamicRatioGroupEnabled = false;
+                            if (ExpParams.indicatorList.Count < 2) DynamicRatioGroupEnabled = false;
                             else DynamicRatioGroupEnabled = true;
 
                             RunEnabled = true;
@@ -745,20 +709,20 @@ namespace Waveguide
 
 
                             // set status of ControlSubtraction                                    
-                            if (ControlSubtractionWellList.Count > 0)
+                            if (ExpParams.controlSubtractionWellList.Count > 0)
                                 ControlSubtractionStatus = STEP_STATUS.READY;
                             else
                                 ControlSubtractionStatus = STEP_STATUS.NEEDS_INPUT;
 
 
                             // set status of DynamicRatio
-                            if (IndicatorList.Count < 2)
+                            if (ExpParams.indicatorList.Count < 2)
                             {
                                 DynamicRatioStatus = STEP_STATUS.WAITING_FOR_PREDECESSOR;
                             }
-                            else if (DynamicRatioNumeratorIndicator == null ||
-                                DynamicRatioDenominatorIndicator == null ||
-                                DynamicRatioNumeratorIndicator == DynamicRatioDenominatorIndicator)
+                            else if (ExpParams.dynamicRatioNumerator == null ||
+                                ExpParams.dynamicRatioDenominator == null ||
+                                ExpParams.dynamicRatioNumerator == ExpParams.dynamicRatioDenominator)
                             {
                                 DynamicRatioStatus = STEP_STATUS.NEEDS_INPUT;
                             }

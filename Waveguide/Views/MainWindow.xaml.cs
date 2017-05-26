@@ -136,7 +136,7 @@ namespace Waveguide
 
                         if (m_vworksReady)
                         {
-                            MyChartArrayControl.VM.StatusChange += VM_StatusChange;
+                            MyRunExperimentControl.VM.StatusChange += VM_StatusChange;
 
                         }
                         
@@ -167,22 +167,22 @@ namespace Waveguide
         }
 
         void MyExperimentConfigurator_StartExperimentEvent(object sender, EventArgs e)
-        {         
-            MyChartArrayControl.Configure(m_imager, VM.ExpParams.mask);
+        {
+            MyRunExperimentControl.Configure(m_imager, VM.ExpParams.mask);
             VM.ShowRunExperimentPanel = true;
         }
 
-        void VM_StatusChange(ViewModel_ChartArray VM_ChartArray, ChartArrayViewModel_EventArgs e)
+        void VM_StatusChange(ViewModel_RunExperimentControl VM_RunExperimentControl, RunExperimentControlViewModel_EventArgs e)
         {
             VM.ExperimentRunStatus = e.RunStatus;
         }
 
 
-        void Configure_ChartArray()
+        void Configure_RunExperimentControl()
         {
-            MyChartArrayControl.VM.IndicatorList = VM.ExpParams.indicatorList;
-            MyChartArrayControl.VM.CompoundPlateList = VM.ExpParams.compoundPlateList;
-            MyChartArrayControl.Configure(m_imager, VM.ExpParams.mask);
+            MyRunExperimentControl.VM.IndicatorList = VM.ExpParams.indicatorList;
+            MyRunExperimentControl.VM.CompoundPlateList = VM.ExpParams.compoundPlateList;
+            MyRunExperimentControl.Configure(m_imager, VM.ExpParams.mask);
         }
 
 
@@ -634,14 +634,14 @@ namespace Waveguide
         private DOOR_STATUS _doorStatus;
         private bool _showHeaterOnOffPopup;     
         private bool _showRunExperimentPanel;
-        private ViewModel_ChartArray.RUN_STATUS _experimentRunStatus;
+        private ViewModel_RunExperimentControl.RUN_STATUS _experimentRunStatus;
 
         // make ExperimentParams Singleton part of view model (used to store selections made by user)
         private ExperimentParams _expParams;
         public ExperimentParams ExpParams { get { return _expParams; } }
 
 
-        public ViewModel_ChartArray.RUN_STATUS ExperimentRunStatus
+        public ViewModel_RunExperimentControl.RUN_STATUS ExperimentRunStatus
         {
             get { return _experimentRunStatus; }
             set
@@ -810,7 +810,7 @@ namespace Waveguide
 
             ShowHeaterOnOffPopup = false;
 
-            ExperimentRunStatus = ViewModel_ChartArray.RUN_STATUS.NEEDS_INPUT;
+            ExperimentRunStatus = ViewModel_RunExperimentControl.RUN_STATUS.NEEDS_INPUT;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

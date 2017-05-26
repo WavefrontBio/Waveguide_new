@@ -23,7 +23,7 @@
             <RowDefinition Height="100"/>
         </Grid.RowDefinitions>
         
-        <local:ChartArray x:Name="ChartArrayControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <local:RunExperimentControl x:Name="MyRunExperimentControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>

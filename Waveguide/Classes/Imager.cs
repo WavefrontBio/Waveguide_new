@@ -2265,166 +2265,6 @@ namespace Waveguide
         #endregion
 
 
-        #region Start Imaging
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-        //public async void StartImaging(ImagingParameters iParams,
-        //    Tuple<MaskContainer, ObservableCollection<Tuple<int, int>>, int, int, int> analysisParams,
-        //    CancellationToken cancelToken, TaskScheduler uiTask,
-        //    Progress<int> progress, ImageDisplay imageDisplay, WG_Color[] colorMap,
-        //    Histogram histogram, ChartArray chartArray = null)
-        //{
-        //    // the imageDisplay and chartArray parameters are a little confusing.  You either supply one or the other.  If you have a chartArray that the images
-        //    // are displayed to, then supply chartArray and set imageDisplay = null.  If you're not using a chartArray, but simply want to display to 
-        //    // and ImageDisplay, then supply an imageDisplay and set chartArray = null;
-
-
-        //    bool saveImages = false;
-        //    int imageCount = 0;
-
-
-        //    if (iParams.ExperimentIndicatorID != null)
-        //        if (iParams.ExperimentIndicatorID.Length > 0)
-        //            if (iParams.ExperimentIndicatorID[0] > 0)
-        //                saveImages = true;
-
-        //    ITargetBlock<Tuple<ushort[], int, int, int, WG_Color[]>> displayPipeline;
-
-        //    Dictionary<int, FLATFIELD_SELECT> ffcDictionary = new Dictionary<int, FLATFIELD_SELECT>();
-
-        //    if (chartArray == null && imageDisplay != null)// ImageDisplay Supplied
-        //    {
-        //        // create a hashtable for the image display
-        //        Dictionary<int, ImageDisplay> idDictionary = new Dictionary<int, ImageDisplay>();
-        //        idDictionary.Add(iParams.ExperimentIndicatorID[0], imageDisplay);
-
-        //        // create a hashtable for the flat field select                
-        //        ffcDictionary.Add(iParams.ExperimentIndicatorID[0], iParams.FlatFieldSelect[0]);
-
-        //        displayPipeline = CreateDisplayPipeline(uiTask, idDictionary, iParams.HorzBinning, iParams.VertBinning, ffcDictionary);
-        //    }
-        //    else if (chartArray != null)  // ChartArray supplied
-        //    {
-        //        Dictionary<int, ImageDisplay> idDictionary = chartArray.GetImageDisplayDictionary();
-
-        //        // create a hashtable for the flat field select                
-        //        Dictionary<int, ExperimentIndicatorContainer> expIndDictionary = chartArray.GetExperimentIndicatorDictionary();
-        //        foreach (KeyValuePair<int, ExperimentIndicatorContainer> entry in expIndDictionary)
-        //        {
-        //            int expIndID = entry.Key;
-        //            ExperimentIndicatorContainer expIndCont = entry.Value;
-        //            ffcDictionary.Add(expIndID, expIndCont.FlatFieldCorrection);
-        //        }
-
-        //        displayPipeline = CreateDisplayPipeline(uiTask, idDictionary, iParams.HorzBinning, iParams.VertBinning, ffcDictionary);
-
-        //    }
-        //    else  // neither an ImageDisplay or ChartArray were supplied
-        //        return;
-
-
-
-        //    ITargetBlock<Tuple<ushort[], int, int, int>> storagePipeline = null;
-
-        //    ITargetBlock<Tuple<ushort[], int>> histogramPipeline = null;
-
-        //    ITargetBlock<Tuple<ushort[], int, int>> analysisPipeline = null;
-
-        //    if (saveImages)
-        //    {
-        //        storagePipeline = CreateImageStoragePipeline(GlobalVars.CompressionAlgorithm, iParams.imageWidth, iParams.imageHeight);
-        //    }
-
-        //    if (chartArray != null && analysisParams != null)
-        //    {
-        //        MaskContainer mask = analysisParams.Item1;
-        //        ObservableCollection<Tuple<int, int>> controlWells = analysisParams.Item2;
-        //        int numFoFrames = analysisParams.Item3;
-        //        int dynamicRatioNumeratorID = analysisParams.Item4;
-        //        int dynamicRatioDenominatorID = analysisParams.Item5;
-
-        //        analysisPipeline = CreateAnalysisPipeline(chartArray, mask, iParams.imageWidth,
-        //            iParams.imageHeight, iParams.HorzBinning, iParams.VertBinning,
-        //            iParams.ExperimentIndicatorID, controlWells, numFoFrames,
-        //            dynamicRatioNumeratorID, dynamicRatioDenominatorID, iParams.PixelMask);
-        //    }
-
-        //    if (histogram != null)
-        //    {
-        //        histogramPipeline = CreateHistogramPipeline(uiTask, histogram, iParams.HorzBinning, iParams.VertBinning, ffcDictionary);
-        //    }
-
-        //    Task<int> ImagingTask;
-
-        //    if (iParams.NumIndicators == 1 && iParams.CycleTime[0] < 300)
-        //    {
-        //        /// Start Fast Imaging Task 
-        //        ImagingTask = Task.Factory.StartNew<int>(() => ImageReader_worker(iParams,
-        //            progress,
-        //            cancelToken,
-        //            colorMap,
-        //            displayPipeline,
-        //            storagePipeline,
-        //            histogramPipeline,
-        //            analysisPipeline),
-        //            cancelToken);
-        //    }
-        //    else
-        //    {
-
-        //        /// Start Normal Imaging Task 
-        //        ImagingTask = Task.Factory.StartNew<int>(() => ImageReader_worker(iParams,
-        //            progress,
-        //            cancelToken,
-        //            colorMap,
-        //            displayPipeline,
-        //            storagePipeline,
-        //            histogramPipeline,
-        //            analysisPipeline),
-        //            cancelToken);
-        //    }
-
-        //    try
-        //    {
-        //        imageCount = await ImagingTask;
-        //    }
-        //    catch (AggregateException aggEx)
-        //    {
-        //        StringBuilder sb = new StringBuilder();
-        //        sb.Append("Exception(s) occurred: ");
-        //        foreach (Exception ex in aggEx.InnerExceptions)
-        //        {
-        //            sb.Append(ex.Message);
-        //            sb.Append(", ");
-        //        }
-
-        //        m_imagerRunning = false;
-        //        OnCameraEvent(new CameraEventArgs(sb.ToString(), false));
-        //    }
-        //    catch (OperationCanceledException)
-        //    {
-        //        m_imagerRunning = false;
-        //        OnCameraEvent(new CameraEventArgs("Imaging Cancelled", false));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        m_imagerRunning = false;
-        //        OnCameraEvent(new CameraEventArgs(ex.Message, false));
-        //    }
-        //    finally
-        //    {
-        //        ImagingTask.Dispose();
-        //    }
-
-        //    ((IProgress<int>)progress).Report(imageCount);
-        //}
-
-
-
-        #endregion
 
 
         #region Image Storage Pipeline
@@ -2509,7 +2349,7 @@ namespace Waveguide
 
         #region Analysis Pipeline
 
-        public ITargetBlock<Tuple<ushort[], int, int>> CreateAnalysisPipeline(ChartArray chartArray,
+        public ITargetBlock<Tuple<ushort[], int, int>> CreateAnalysisPipeline(RunExperimentControl runExperimentControl,
                  MaskContainer mask, int pixelWidth, int pixelHeight, int hBinning, int vBinning,
                  int[] indicatorIdList, ObservableCollection<Tuple<int, int>> controlWells,
                  int numFoFrames, int dynamicRatioNumeratorID, int dynamicRatioDenominatorID)
@@ -2531,7 +2371,7 @@ namespace Waveguide
 
             mask.BuildPixelList(pixelWidth, pixelHeight, hBinning, vBinning);
 
-            TaskScheduler m_chartArrayTask = chartArray.GetTaskScheduler();
+            TaskScheduler m_runExperimentControlTask = runExperimentControl.GetTaskScheduler();
 
             Hashtable m_Fo_Hash = new Hashtable();
             Hashtable m_FoCount_Hash = new Hashtable();
@@ -2877,7 +2717,7 @@ namespace Waveguide
                     try
                     {
                         // send the data to be displayed
-                        chartArray.AppendNewData(ref F, ref staticRatio, ref controlSubtraction,
+                        runExperimentControl.AppendNewData(ref F, ref staticRatio, ref controlSubtraction,
                                                  ref dynamicRatio, time, expIndicatorID);
 
                         return Tuple.Create(F, staticRatio, controlSubtraction, dynamicRatio, expIndicatorID, time);
@@ -2897,7 +2737,7 @@ namespace Waveguide
                 // so that the action runs on the UI thread. 
                new ExecutionDataflowBlockOptions
                {
-                   TaskScheduler = m_chartArrayTask,
+                   TaskScheduler = m_runExperimentControlTask,
                    MaxDegreeOfParallelism = 8
                });
 

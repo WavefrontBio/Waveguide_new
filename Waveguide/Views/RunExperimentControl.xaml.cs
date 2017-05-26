@@ -1,9 +1,4 @@
-﻿//using Arction.WPF.LightningChartUltimate;
-//using Arction.WPF.LightningChartUltimate.Annotations;
-//using Arction.WPF.LightningChartUltimate.Axes;
-//using Arction.WPF.LightningChartUltimate.SeriesXY;
-//using Arction.WPF.LightningChartUltimate.Views.ViewXY;
-using Arction.Wpf.Charting;
+﻿using Arction.Wpf.Charting;
 using Arction.Wpf.Charting.Axes;
 using Arction.Wpf.Charting.SeriesXY;
 using Arction.Wpf.Charting.Annotations;
@@ -35,12 +30,9 @@ using System.Windows.Shapes;
 
 namespace Waveguide
 {
-    /// <summary>
-    /// Interaction logic for ChartArray.xaml
-    /// </summary>
-   
+     
 
-    public partial class ChartArray : UserControl
+    public partial class RunExperimentControl : UserControl
     {
 
         struct ButtonTag
@@ -76,7 +68,7 @@ namespace Waveguide
         public ColorModel m_colorModel;
         WriteableBitmap m_colorMapBitmap;
 
-        public ViewModel_ChartArray VM;
+        public ViewModel_RunExperimentControl VM;
 
         RangeClass m_range;  // limits for color model slider
 
@@ -158,12 +150,12 @@ namespace Waveguide
         Imager m_imager;
         MaskContainer m_mask;
 
-        public ChartArray()
+        public RunExperimentControl()
         {
             m_mouseDownRow = -1;
             m_mouseDownCol = -1; 
 
-            VM = new ViewModel_ChartArray();
+            VM = new ViewModel_RunExperimentControl();
 
             m_indicatorDictionary = new Dictionary<int, ExperimentIndicatorContainer>();
             m_indicatorVisibleDictionary = new Dictionary<int, bool>();
@@ -249,7 +241,7 @@ namespace Waveguide
         }
 
       
-        public void SetStatus(ViewModel_ChartArray.RUN_STATUS status)
+        public void SetStatus(ViewModel_RunExperimentControl.RUN_STATUS status)
         {
             VM.Status = status;
         }
@@ -2468,7 +2460,7 @@ namespace Waveguide
 /// </summary>
 
 
-    public class ViewModel_ChartArray : IDataErrorInfo, INotifyPropertyChanged
+    public class ViewModel_RunExperimentControl : IDataErrorInfo, INotifyPropertyChanged
     {
         public enum RUN_STATUS { NEEDS_INPUT, READY_TO_RUN, RUNNING, RUN_FINISHED };
 
@@ -2913,7 +2905,7 @@ namespace Waveguide
 
 
 
-        public ViewModel_ChartArray()
+        public ViewModel_RunExperimentControl()
         {
             _overlay = BitmapFactory.New(800, 450);
             _gridLines = BitmapFactory.New(800, 450);
@@ -3029,7 +3021,7 @@ namespace Waveguide
                 Status = RUN_STATUS.NEEDS_INPUT;
             }
 
-            ChartArrayViewModel_EventArgs e = new ChartArrayViewModel_EventArgs();
+            RunExperimentControlViewModel_EventArgs e = new RunExperimentControlViewModel_EventArgs();
             e.RunStatus = Status;
             if(StatusChange != null)
                 StatusChange(this, e);
@@ -3039,7 +3031,7 @@ namespace Waveguide
         {
             Status = runStatus;
 
-            ChartArrayViewModel_EventArgs e = new ChartArrayViewModel_EventArgs();
+            RunExperimentControlViewModel_EventArgs e = new RunExperimentControlViewModel_EventArgs();
             e.RunStatus = runStatus;
             StatusChange(this, e);
         }
@@ -3063,16 +3055,16 @@ namespace Waveguide
         // ////////////////////////////////////////////////
         // Set up the event
         public event StatusChange_EventHandler StatusChange;
-        public delegate void StatusChange_EventHandler(ViewModel_ChartArray VM_ChartArray, ChartArrayViewModel_EventArgs e);
+        public delegate void StatusChange_EventHandler(ViewModel_RunExperimentControl VM_ChartArray, RunExperimentControlViewModel_EventArgs e);
 
     }
 
 
 
-    public class ChartArrayViewModel_EventArgs : EventArgs
+    public class RunExperimentControlViewModel_EventArgs : EventArgs
     {
-        private ViewModel_ChartArray.RUN_STATUS _runStatus;
-        public ViewModel_ChartArray.RUN_STATUS RunStatus
+        private ViewModel_RunExperimentControl.RUN_STATUS _runStatus;
+        public ViewModel_RunExperimentControl.RUN_STATUS RunStatus
         {
             set { _runStatus = value; }
             get { return this._runStatus; }

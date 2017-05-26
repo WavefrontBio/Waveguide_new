@@ -198,8 +198,8 @@
     <Compile Include="Views\CameraSettingsManager.xaml.cs">
       <DependentUpon>CameraSettingsManager.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\ChartArray.xaml.cs">
-      <DependentUpon>ChartArray.xaml</DependentUpon>
+    <Compile Include="Views\RunExperimentControl.xaml.cs">
+      <DependentUpon>RunExperimentControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\ColorModelEditor.xaml.cs">
       <DependentUpon>ColorModelEditor.xaml</DependentUpon>
@@ -320,7 +320,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\ChartArray.xaml">
+    <Page Include="Views\RunExperimentControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

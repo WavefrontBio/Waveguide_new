@@ -123,7 +123,7 @@ namespace Waveguide
 
 
             // capture event from ChartArray that fires when the VM for the ChartArray has a status change
-            ChartArrayControl.VM.StatusChange += new ViewModel_ChartArray.StatusChange_EventHandler(ChartArray_StatusChanged);
+            MyRunExperimentControl.VM.StatusChange += new ViewModel_RunExperimentControl.StatusChange_EventHandler(ChartArray_StatusChanged);
 
             m_uiTask = uiTask;
 
@@ -181,25 +181,25 @@ namespace Waveguide
             {
                 VM.InsideTemperatureText = e.Temperature.ToString();
 
-                ChartArrayControl.VM.InsideTemperatureActual = e.Temperature;
+                MyRunExperimentControl.VM.InsideTemperatureActual = e.Temperature;
             }            
         }
 
 
 
-        private void ChartArray_StatusChanged(ViewModel_ChartArray caVM, ChartArrayViewModel_EventArgs e)
+        private void ChartArray_StatusChanged(ViewModel_RunExperimentControl caVM, RunExperimentControlViewModel_EventArgs e)
         {            
             switch (e.RunStatus)
             {
-                case ViewModel_ChartArray.RUN_STATUS.NEEDS_INPUT:
+                case ViewModel_RunExperimentControl.RUN_STATUS.NEEDS_INPUT:
                     VM.RunState = RunExperiment_ViewModel.RUN_STATE.NEEDS_INPUT;
                     break;
-                case ViewModel_ChartArray.RUN_STATUS.READY_TO_RUN:
+                case ViewModel_RunExperimentControl.RUN_STATUS.READY_TO_RUN:
                     VM.RunState = RunExperiment_ViewModel.RUN_STATE.READY_TO_RUN;
                     break;
-                case ViewModel_ChartArray.RUN_STATUS.RUN_FINISHED:
+                case ViewModel_RunExperimentControl.RUN_STATUS.RUN_FINISHED:
                     break;
-                case ViewModel_ChartArray.RUN_STATUS.RUNNING:
+                case ViewModel_RunExperimentControl.RUN_STATUS.RUNNING:
                     break;
             }
         }
@@ -261,7 +261,7 @@ namespace Waveguide
             {
                 VM.CameraTemperatureText = e.Temperature.ToString();
 
-                ChartArrayControl.VM.CameraTemperatureActual = e.Temperature;
+                MyRunExperimentControl.VM.CameraTemperatureActual = e.Temperature;
             }
         }
 
@@ -286,9 +286,9 @@ namespace Waveguide
             VM.Project = project;
             VM.Method = method;
             VM.PlateType = plateType;
-            VM.Mask = mask;            
-            ChartArrayControl.VM.IndicatorList = indicatorList;
-            ChartArrayControl.VM.CompoundPlateList = compoundPlateList;
+            VM.Mask = mask;
+            MyRunExperimentControl.VM.IndicatorList = indicatorList;
+            MyRunExperimentControl.VM.CompoundPlateList = compoundPlateList;
 
             m_controlSubtractionWellList = controlSubtractionWellList;
             m_numFoFrames = numFoFrames;
@@ -297,7 +297,7 @@ namespace Waveguide
 
             m_vworksProtocolFilename = VM.Method.BravoMethodFile;
 
-            ChartArrayControl.Configure(m_imager, VM.Mask);
+            MyRunExperimentControl.Configure(m_imager, VM.Mask);
         }
 
 
@@ -369,12 +369,12 @@ namespace Waveguide
                             VM.DelayHeaderVisible = false;
                             m_tokenSource.Cancel(); // make sure the imaging task stops
                             VM.RunState = RunExperiment_ViewModel.RUN_STATE.RUN_FINISHED;
-                            ChartArrayControl.SetStatus(ViewModel_ChartArray.RUN_STATUS.RUN_FINISHED);
+                            MyRunExperimentControl.SetStatus(ViewModel_RunExperimentControl.RUN_STATUS.RUN_FINISHED);
                             SetButton(VM.RunState);
 
-                            ReportDialog dlg = new ReportDialog(VM.Project, 
-                                                                ChartArrayControl.VM.Experiment, 
-                                                                ChartArrayControl.VM.IndicatorList);
+                            ReportDialog dlg = new ReportDialog(VM.Project,
+                                                                MyRunExperimentControl.VM.Experiment,
+                                                                MyRunExperimentControl.VM.IndicatorList);
                             dlg.ShowDialog();
                         }));
                      
@@ -396,10 +396,10 @@ namespace Waveguide
 
                     m_dispatcher.Invoke((Action)(() =>
                     {
-                        ChartArrayControl.AddEventMarker(sequenceNumber, desc);
+                        MyRunExperimentControl.AddEventMarker(sequenceNumber, desc);
                         eventMarker = new EventMarkerContainer();
                         eventMarker.Description = desc;
-                        eventMarker.ExperimentID = ChartArrayControl.VM.Experiment.ExperimentID;
+                        eventMarker.ExperimentID = MyRunExperimentControl.VM.Experiment.ExperimentID;
                         eventMarker.Name = name;
                         eventMarker.SequenceNumber = sequenceNumber - GlobalVars.EventMarkerLatency;
                         eventMarker.TimeStamp = DateTime.Now;
@@ -504,8 +504,8 @@ namespace Waveguide
       
         public void StartImaging(int numberOfImagesToTake)
         {
-            int experimentID =  ChartArrayControl.VM.Experiment.ExperimentID;
-            int plateID = ChartArrayControl.VM.ExperimentPlate.PlateID;
+            int experimentID = MyRunExperimentControl.VM.Experiment.ExperimentID;
+            int plateID = MyRunExperimentControl.VM.ExperimentPlate.PlateID;
             int projectID = VM.Project.ProjectID;
             m_imager.StartKineticImaging(numberOfImagesToTake, true, projectID, plateID, experimentID);
         }
@@ -565,14 +565,14 @@ namespace Waveguide
             //////////////////////////////////////////////////////////////////
             // Create ExperimentPlate, if doesn't already exist 
             bool success;
-            string barcode = ChartArrayControl.VM.ImagePlateBarcode;
+            string barcode = MyRunExperimentControl.VM.ImagePlateBarcode;
             
             if(GetExperimentPlate(barcode))
             {
                 // successfully created/retrieved ExperimentPlate, so now create Experiment
                 if(CreateExperiment())
                 {
-                    foreach(ExperimentIndicatorContainer ei in ChartArrayControl.VM.IndicatorList)
+                    foreach (ExperimentIndicatorContainer ei in MyRunExperimentControl.VM.IndicatorList)
                     {
                         ExperimentIndicatorContainer ind = new ExperimentIndicatorContainer();
                         ind.Description = ei.Description;
@@ -580,7 +580,7 @@ namespace Waveguide
                         ind.EmissionFilterPos = ei.EmissionFilterPos;
                         ind.ExcitationFilterDesc = ei.ExcitationFilterDesc;
                         ind.ExcitationFilterPos = ei.ExcitationFilterPos;
-                        ind.ExperimentID = ChartArrayControl.VM.Experiment.ExperimentID;
+                        ind.ExperimentID = MyRunExperimentControl.VM.Experiment.ExperimentID;
                         ind.Exposure = ei.Exposure;
                         ind.Gain = ei.Gain;
                         ind.MaskID = ei.MaskID;                        
@@ -602,12 +602,12 @@ namespace Waveguide
                         }
                     }
 
-                    foreach(ExperimentCompoundPlateContainer cp in ChartArrayControl.VM.CompoundPlateList)
+                    foreach (ExperimentCompoundPlateContainer cp in MyRunExperimentControl.VM.CompoundPlateList)
                     {
                         ExperimentCompoundPlateContainer comp = new ExperimentCompoundPlateContainer();
                         comp.Barcode = cp.Barcode;
                         comp.Description = cp.Description;
-                        comp.ExperimentID = ChartArrayControl.VM.Experiment.ExperimentID;
+                        comp.ExperimentID = MyRunExperimentControl.VM.Experiment.ExperimentID;
 
                         success = m_wgDB.InsertExperimentCompoundPlate(ref comp);
 
@@ -634,15 +634,15 @@ namespace Waveguide
                 return false;
             }
 
-         
 
-            ChartArrayControl.BuildChartArray(VM.Mask.Rows, VM.Mask.Cols,
-                                              ChartArrayControl.VM.IndicatorList,
-                                              ChartArrayControl.VM.CompoundPlateList);
+
+            MyRunExperimentControl.BuildChartArray(VM.Mask.Rows, VM.Mask.Cols,
+                                              MyRunExperimentControl.VM.IndicatorList,
+                                              MyRunExperimentControl.VM.CompoundPlateList);
 
             // this function builds the display grid (one display for each indicator) and it also
             // sets up the m_imager.m_ImagingDictionary
-            ChartArrayControl.BuildDisplayGrid();
+            MyRunExperimentControl.BuildDisplayGrid();
 
             // NOTE: cycle times have not been set!!!  They are currently set to 1000 msecs...hard coded...yikes!!
 
@@ -653,7 +653,7 @@ namespace Waveguide
             // find DynamicRatioNumerator and DynamicRatioDenominator record IDs
             if (m_dynamicRatioNumerator != null && m_dynamicRatioDenominator != null)
             {
-                foreach (ExperimentIndicatorContainer ind in ChartArrayControl.VM.IndicatorList)
+                foreach (ExperimentIndicatorContainer ind in MyRunExperimentControl.VM.IndicatorList)
                 {
                     if (ind.Description == m_dynamicRatioNumerator.Description) numerID = ind.ExperimentIndicatorID;
                     if (ind.Description == m_dynamicRatioDenominator.Description) denomID = ind.ExperimentIndicatorID;
@@ -690,7 +690,7 @@ namespace Waveguide
 
                 if (!success)
                 {
-                    ChartArrayControl.VM.ExperimentPlate = null;
+                    MyRunExperimentControl.VM.ExperimentPlate = null;
                     ShowErrorDialog("Database Error: InsertPlate", m_wgDB.GetLastErrorMsg());
                     return false;
                 }
@@ -698,10 +698,10 @@ namespace Waveguide
 
             if (success)
             {
-                ChartArrayControl.VM.ExperimentPlate = plate;
+                MyRunExperimentControl.VM.ExperimentPlate = plate;
             }
 
-            if (ChartArrayControl.VM.ExperimentPlate == null)
+            if (MyRunExperimentControl.VM.ExperimentPlate == null)
             {
                 ShowErrorDialog("Experiment Error", "Unable to assign Experiment Plate");
                 return false;
@@ -721,7 +721,7 @@ namespace Waveguide
             experiment.HorzBinning = m_imager.m_camera.m_acqParams.HBin;
             experiment.VertBinning = m_imager.m_camera.m_acqParams.VBin;
             experiment.MethodID = VM.Method.MethodID;
-            experiment.PlateID = ChartArrayControl.VM.ExperimentPlate.PlateID;
+            experiment.PlateID = MyRunExperimentControl.VM.ExperimentPlate.PlateID;
             experiment.ROI_Height = m_imager.m_camera.m_acqParams.RoiH;
             experiment.ROI_Width = m_imager.m_camera.m_acqParams.RoiW;
             experiment.ROI_Origin_X = m_imager.m_camera.m_acqParams.RoiX;
@@ -734,7 +734,7 @@ namespace Waveguide
             {
                 if(experiment.ExperimentID!=0)
                 {
-                    ChartArrayControl.VM.Experiment = experiment;
+                    MyRunExperimentControl.VM.Experiment = experiment;
                 }
                 else
                 {
@@ -781,7 +781,7 @@ namespace Waveguide
 
                         // RUN EXPERIMENT !!
                         VM.RunState = RunExperiment_ViewModel.RUN_STATE.RUNNING;
-                        ChartArrayControl.SetStatus(ViewModel_ChartArray.RUN_STATUS.RUNNING);
+                        MyRunExperimentControl.SetStatus(ViewModel_RunExperimentControl.RUN_STATUS.RUNNING);
                         //SetButton(VM.RunState);
 
                         PostMessage("Starting VWorks Method: " + m_vworksProtocolFilename);
@@ -792,7 +792,7 @@ namespace Waveguide
                 case RunExperiment_ViewModel.RUN_STATE.RUNNING:                                        
                     AbortExperiment();
                     VM.RunState = RunExperiment_ViewModel.RUN_STATE.RUN_ABORTED;
-                    ChartArrayControl.SetStatus(ViewModel_ChartArray.RUN_STATUS.RUN_FINISHED);
+                    MyRunExperimentControl.SetStatus(ViewModel_RunExperimentControl.RUN_STATUS.RUN_FINISHED);
                     //SetButton(VM.RunState);
                break;
 
@@ -925,7 +925,7 @@ namespace Waveguide
 
         private void ResetPB_Click(object sender, RoutedEventArgs e)
         {
-            ChartArrayControl.Reset();
+            MyRunExperimentControl.Reset();
             VM.RunState = RunExperiment_ViewModel.RUN_STATE.NEEDS_INPUT;
         }
 

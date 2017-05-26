@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Waveguide.ChartArray"
+﻿<UserControl x:Class="Waveguide.RunExperimentControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -348,16 +348,16 @@
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.NEEDS_INPUT}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.NEEDS_INPUT}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.READY_TO_RUN}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.READY_TO_RUN}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.RUNNING}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.RUNNING}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.RUN_FINISHED}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.RUN_FINISHED}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -741,16 +741,16 @@
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.NEEDS_INPUT}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.NEEDS_INPUT}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.READY_TO_RUN}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.READY_TO_RUN}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.RUNNING}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.RUNNING}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_ChartArray+RUN_STATUS.RUN_FINISHED}">
+                            <DataTrigger Binding="{Binding Path=Status}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATUS.RUN_FINISHED}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>

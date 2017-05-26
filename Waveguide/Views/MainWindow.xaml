@@ -387,7 +387,7 @@
 
                 <!-- Put the Sliding Panel contents here, inside this Border -->
                 
-                <local:ChartArray x:Name="MyChartArrayControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <local:RunExperimentControl x:Name="MyRunExperimentControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
 
             </Border>

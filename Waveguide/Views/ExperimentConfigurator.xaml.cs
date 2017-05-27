@@ -233,6 +233,7 @@ namespace Waveguide
                         if (VM.ExpParams.indicatorList != null) VM.ExpParams.indicatorList.Clear();
                         else VM.ExpParams.indicatorList = new ObservableCollection<ExperimentIndicatorContainer>();
 
+                        int i = 0;
                         foreach (IndicatorContainer indicator in wgDB.m_indicatorList)
                         {
                             ExperimentIndicatorContainer expIndicator = new ExperimentIndicatorContainer();
@@ -240,7 +241,7 @@ namespace Waveguide
                             expIndicator.EmissionFilterPos = indicator.EmissionsFilterPosition;
                             expIndicator.ExcitationFilterPos = indicator.ExcitationFilterPosition;                          
                             expIndicator.ExperimentID = 0; // defined when experiment launched
-                            expIndicator.ExperimentIndicatorID = 0; // defined when experiment launched
+                            expIndicator.ExperimentIndicatorID = i; // defined when experiment launched
                             expIndicator.Exposure = 1; // default
                             expIndicator.Gain = 1;  // default
                             expIndicator.PreAmpGain = 1; // default
@@ -273,6 +274,8 @@ namespace Waveguide
                             }
 
                             VM.ExpParams.indicatorList.Add(expIndicator);
+
+                            i++; // increment dummy ExperimentIndicatorID
                         }
                     }
                 }

@@ -97,11 +97,7 @@
                 </Grid>
             </TabItem>
             
-            
-            <TabItem Header="  Run  " x:Name="RunTab">
-                
-            </TabItem>
-
+           
         </TabControl>
         
         <Grid Grid.Row="1">

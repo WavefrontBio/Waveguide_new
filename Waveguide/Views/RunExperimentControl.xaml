@@ -17,7 +17,7 @@
 
 
     <UserControl.Resources>
-       
+
 
         <ResourceDictionary>
             <local:BoolToVisibilityConverter x:Key="BoolToVis" />
@@ -221,6 +221,11 @@
             </Style>
 
 
+
+            <DoubleAnimation x:Key="RotateAnimation" 
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)" 
+                             From="0" To="360" BeginTime="00:00:00.000" Duration="00:00:02.000" RepeatBehavior="Forever"/>
+
         </ResourceDictionary>
 
     </UserControl.Resources>
@@ -335,14 +340,14 @@
             <Grid Grid.Row="2" Grid.RowSpan="2" Panel.ZIndex="1">
                  
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="70"/>
+                    <RowDefinition Height="60"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="100"/>
                 </Grid.RowDefinitions>
 
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="140"/>
                 </Grid.ColumnDefinitions>
                 
                 <Grid.Style>
@@ -364,25 +369,26 @@
                     </Style>
                 </Grid.Style>
                 
+                <!-- Experiment Plate Barcode Entry and Binning GroupBox -->
                 <Grid Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="2,10,2,0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="60"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Image Grid.Column="2" Grid.Row="0" Height="32" Width="32" HorizontalAlignment="Left">
+                    <Image Grid.Column="2" Grid.Row="0" Height="24" Width="24" HorizontalAlignment="Left" VerticalAlignment="Center" >
                         <Image.Style>
                             <Style TargetType="{x:Type Image}">
-                                <Style.Triggers>                                    
-                                    <DataTrigger Binding="{Binding Path=PlateBarcodeValid}" Value="False">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=ExpParams.experimentPlate.BarcodeValid}" Value="False">
                                         <Setter Property="Source" Value="/Images/red_arrow_left_small.png"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=PlateBarcodeValid}" Value="True">
+                                    <DataTrigger Binding="{Binding Path=ExpParams.experimentPlate.BarcodeValid}" Value="True">
                                         <Setter Property="Source" Value="/Images/green_check.png"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -393,25 +399,38 @@
                     <Label Content="Image Plate Barcode:" Grid.Column="0" Grid.Row="0"
                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
 
-                    <TextBox Grid.Column="1" Grid.Row="0" x:Name="ImagePlateBarcodeTextBox" 
-                             Height="30" Width="150" VerticalAlignment="Center">
-                        <TextBox.Text>
-                            <Binding Path="ImagePlateBarcode" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True"
-                                 NotifyOnValidationError="True">
-                            </Binding>
-                        </TextBox.Text>
+
+                    <TextBox Grid.Column="1" Grid.Row="0" x:Name="ImagePlateBarcodeTextBox" Height="30" Width="150" VerticalAlignment="Center" 
+		                    Text="{Binding Path=ExpParams.experimentPlate.Barcode,UpdateSourceTrigger=PropertyChanged,NotifyOnValidationError=True,ValidatesOnDataErrors=True}">
+                        <TextBox.Style>
+                            <Style TargetType="{x:Type TextBox}">
+                                <Style.Triggers>
+                                    <Trigger Property="Validation.HasError" Value="True">
+                                        <Setter Property="Background" Value="#20FF0000"/>
+                                        <Setter Property="ToolTip" Value="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
                     </TextBox>
 
-                    <TextBlock Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2" Margin="2" Height="20" Foreground="Red" FontWeight="Bold"                           
-                   Text="{Binding ElementName=ImagePlateBarcodeTextBox, Path=(Validation.Errors)[0].ErrorContent}">
-                    </TextBlock>
-                </Grid>
+                    <GroupBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Header="Binning" FontSize="14" 
+                              BorderBrush="Black" BorderThickness="1" Margin="3"
+                              IsEnabled="False" >
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Content="1x1" x:Name="Binning_1x1_RadioButton" Margin="2" HorizontalAlignment="Center" IsChecked="True" Checked="Binning_1x1_RadioButton_Checked"/>
+                            <RadioButton Content="2x2" x:Name="Binning_2x2_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_2x2_RadioButton_Checked"/>
+                            <RadioButton Content="4x4" x:Name="Binning_4x4_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_4x4_RadioButton_Checked"/>
+                        </StackPanel>
+                    </GroupBox>
 
+                </Grid>
 
 
                 <igDP:XamDataGrid Grid.Column="0" Grid.Row="1" x:Name="CompoundPlateDataGrid"                                                      
                               CellUpdated="CompoundPlateDataGrid_CellUpdated"
-                              DataSource="{Binding Path=CompoundPlateList}" Margin="5" Theme="IGTheme">
+                              DataSource="{Binding Path=ExpParams.compoundPlateList}" Margin="5" Theme="IGTheme">
                     <!-- Row for each CompoundPlate in the selected method, Columns: Description, Exposure  -->
 
 
@@ -498,7 +517,7 @@
 
 
                 <igDP:XamDataGrid Grid.Column="0" Grid.Row="2" x:Name="IndicatorDataGrid" 
-                                  DataSource="{Binding Path=IndicatorList}" Margin="5" Theme="IGTheme">
+                                  DataSource="{Binding Path=ExpParams.indicatorList}" Margin="5" Theme="IGTheme">
                     <!-- Row for each Indicator in the selected method, Columns: Description, Exposure  -->
 
 
@@ -626,112 +645,173 @@
 
                 </igDP:XamDataGrid>
 
-                <Grid Grid.Column="1" Grid.Row="1" Grid.RowSpan="2">
+                
+                <Grid Grid.Column="0" Grid.Row="3" x:Name="ButtonGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+
+
+                    <Image Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            x:Name="EnclosureCameraPB" Source="/Images/eye.png" MouseLeftButtonUp="EnclosureCameraPB_MouseLeftButtonUp"/>
+
+
+                    <Label Grid.Row="0" Grid.Column="1" Content="Pause"
+                       HorizontalAlignment="Center" 
+                       VerticalAlignment="Center"
+                       FontSize="18" FontWeight="Bold"
+                       x:Name="DelayHeader"                       
+                       Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"
+                       />
 
                     
-                        <!--<TextBlock Grid.Row="0" Grid.Column="0" 
-                            HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="5">
-                            Cycle Time<LineBreak/>(msecs)
-                        </TextBlock>
-
-                    <ig:XamNumericInput Grid.Row="1" Grid.Column="0" SpinButtonDisplayMode="Always" SpinIncrement="10" Mask="nnnnn" 
-                                            Value="{Binding Path=CycleTime, Mode=TwoWay}" ValueType="sys:Int32"
-                                            Width="80" Height="35" x:Name="CycleTimeEdit"
-                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>-->
-
-                    <GroupBox Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Header="Camera (degs C)" Margin="3">
-                        <StackPanel Orientation="Horizontal">
-                            
-                            <ig:XamNumericInput SpinButtonDisplayMode="Always" SpinIncrement="10"  
-                                Value="{Binding Path=CameraTemperatureTarget, Mode=TwoWay}" ValueType="sys:Int32"
-                                Width="50" Height="35" x:Name="CameraTemperatureEdit" Mask="[number:-90-25]"
-                                HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                                ValueChanged="CameraTemperatureEdit_ValueChanged"/>
-                            
-                            <Image Height="32" Width="32" HorizontalAlignment="Left">
-                                <Image.Style>
-                                    <Style TargetType="{x:Type Image}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Path=CameraTemperatureReady}" Value="False">
-                                                <Setter Property="Source" Value="/Images/red_arrow_left_small.png"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Path=CameraTemperatureReady}" Value="True">
-                                                <Setter Property="Source" Value="/Images/green_check.png"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Image.Style>
-                            </Image>
-                            
-                        </StackPanel>
-                    </GroupBox>
+                    <TextBlock Grid.Row="1" Grid.Column="1"
+                       HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                       Text="{Binding Path=DelayText}"
+                       Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"
+                       x:Name="DelayDisplay"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       />
 
 
-                    <GroupBox Grid.Row="2" Grid.Column="0" Grid.RowSpan="2" Header="Inside (degs C)" Margin="3">
-                        <StackPanel Orientation="Horizontal">
-                            
-                            <ig:XamNumericInput SpinButtonDisplayMode="Always" SpinIncrement="1"  
-                                Value="{Binding Path=InsideTemperatureTarget, Mode=TwoWay}" ValueType="sys:Int32"
-                                Width="50" Height="35" x:Name="InsideTemperatureEdit" Mask="[number:10-40]"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"  HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                                ValueChanged="InsideTemperatureEdit_ValueChanged"/>
+                    <Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    x:Name="ResetPB" Width="80" Height="60"
+                    Content="Reset" FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                    Click="ResetPB_Click"                                       
+                    >
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
 
-                            <Image Height="32" Width="32" HorizontalAlignment="Left">
-                                <Image.Style>
-                                    <Style TargetType="{x:Type Image}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Path=InsideTemperatureReady}" Value="False">
-                                                <Setter Property="Source" Value="/Images/red_arrow_left_small.png"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Path=InsideTemperatureReady}" Value="True">
-                                                <Setter Property="Source" Value="/Images/green_check.png"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Image.Style>
-                            </Image>
-
-                        </StackPanel>                        
-                    </GroupBox>
-
-
-                    <GroupBox Grid.Row="4" Grid.Column="0" Grid.RowSpan="3"
-                              Header="Binning" FontSize="14" 
-                              BorderBrush="Black" BorderThickness="1" Margin="3"
-                              IsEnabled="False" VerticalAlignment="Top">
-                        <StackPanel Orientation="Vertical">
-                            <RadioButton Content="1 x 1" x:Name="Binning_1x1_RadioButton" Margin="2" HorizontalAlignment="Center" IsChecked="True" Checked="Binning_1x1_RadioButton_Checked"/>
-                            <RadioButton Content="2 x 2" x:Name="Binning_2x2_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_2x2_RadioButton_Checked"/>
-                            <RadioButton Content="4 x 4" x:Name="Binning_4x4_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_4x4_RadioButton_Checked"/>
-                        </StackPanel>
-
-                    </GroupBox>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
 
 
-                    
+                    <Image Grid.Row="0" Grid.Column="3" Grid.RowSpan="2" x:Name="RunStateImage" RenderTransformOrigin="0.5,0.5">
+                        <Image.RenderTransform>
+                            <RotateTransform Angle="0"/>
+                        </Image.RenderTransform>
+                        <Image.Style>
+                            <Style TargetType="{x:Type Image}">
+                                <Style.Triggers>
+
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                        <Setter Property="Source" Value="/Images/blank.png"/>
+                                    </DataTrigger>
+
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                        <Setter Property="Source" Value="/Images/refresh.png"/>
+
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard x:Name="RotateAnimation_BeginStoryboard">
+                                                <Storyboard>
+                                                    <StaticResource ResourceKey="RotateAnimation"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+
+                                    </DataTrigger>
+
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                        <Setter Property="Source" Value="/Images/red_x.png"/>
+                                        <DataTrigger.EnterActions>
+                                            <StopStoryboard BeginStoryboardName="RotateAnimation_BeginStoryboard"/>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                        <Setter Property="Source" Value="/Images/green_check.png"/>
+                                        <DataTrigger.EnterActions>
+                                            <StopStoryboard BeginStoryboardName="RotateAnimation_BeginStoryboard"/>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+
+                    </Image>
+
+
+                    <Button Grid.Row="0" Grid.Column="4" Grid.RowSpan="2"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    x:Name="RunPB" Width="80" Height="60"
+                    FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                    Click="RunPB_Click"
+                    >
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Run"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Abort"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
 
 
 
                 </Grid>
-
+                
+    
             </Grid>
             <!-- ************************************************************* -->
             <!-- ************************************************************* -->
 
-
+            <!-- RunTime Image Grid -->
             <Grid Grid.Row="2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -766,7 +846,7 @@
                     </Grid.ColumnDefinitions>
                     
                     <Grid Grid.Column="0" Name="ImageGrid"></Grid>                                      
-                    
+                   
                     <Image Grid.Column="1" Name="ColorMapImage" Stretch="Fill" Margin="3" Source="{Binding}" 
                            MouseLeftButtonUp="ColorMapImage_MouseLeftButtonUp"/>                    
                 </Grid>

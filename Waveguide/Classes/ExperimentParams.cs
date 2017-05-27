@@ -24,6 +24,8 @@ namespace Waveguide
         private ExperimentParams()
         {
             _numFoFrames = 5;
+            _experimentPlate = new PlateContainer();
+            _experiment = new ExperimentContainer();
             _compoundPlateList = new System.Collections.ObjectModel.ObservableCollection<ExperimentCompoundPlateContainer>();
             _controlSubtractionWellList = new System.Collections.ObjectModel.ObservableCollection<Tuple<int, int>>();
             _indicatorList = new System.Collections.ObjectModel.ObservableCollection<ExperimentIndicatorContainer>();
@@ -31,6 +33,12 @@ namespace Waveguide
 
         /////////////////////////////
         // Properties
+
+        private PlateContainer _experimentPlate;
+        public PlateContainer experimentPlate { get { return _experimentPlate; } set { if (value != _experimentPlate) { _experimentPlate = value; NotifyPropertyChanged("ExperimentPlate"); } } }
+
+        private ExperimentContainer _experiment;
+        public ExperimentContainer experiment { get { return _experiment; } set { if (value != _experiment) { _experiment = value; NotifyPropertyChanged("Experiment"); } } }
 
         private ProjectContainer _project;
         public  ProjectContainer project { get { return _project; } set { if (value != _project) { _project = value; NotifyPropertyChanged("project"); } } }
@@ -62,6 +70,8 @@ namespace Waveguide
         private ExperimentIndicatorContainer _dynamicRatioDenominator;
         public ExperimentIndicatorContainer dynamicRatioDenominator { get { return _dynamicRatioDenominator; } set { if (value != _dynamicRatioDenominator) { _dynamicRatioDenominator = value; NotifyPropertyChanged("dynamicRatioDenominator"); } } }
 
+        private CameraSettingsContainer _cameraSettings;
+        public CameraSettingsContainer cameraSettings { get { return _cameraSettings; } set { if (value != _cameraSettings) { _cameraSettings = value; NotifyPropertyChanged("cameraSettings"); } } }
 
 
         /////////////////////////////

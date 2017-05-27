@@ -34,6 +34,25 @@ namespace Waveguide
 
     public partial class RunExperimentControl : UserControl
     {
+        ////////////////////////////////////////////////////////////////////////////
+        // Close RunExperimentControl Panel Event
+        public delegate void CloseRunExperimentPanelEventHandler(object sender, EventArgs e);
+        public event CloseRunExperimentPanelEventHandler CloseRunExperimentPanelEvent;
+
+        protected virtual void OnCloseRunExperimentPanel(EventArgs e)
+        {
+            if (CloseRunExperimentPanelEvent != null) CloseRunExperimentPanelEvent(this, e);
+        }
+
+        public void CloseRunExperimentPanel()
+        {
+            OnCloseRunExperimentPanel(null);
+        }
+
+        ////////////////////////////////////////////////////////////////////////////
+
+
+
 
         struct ButtonTag
         {
@@ -133,9 +152,6 @@ namespace Waveguide
         public int m_rows;
         public int m_cols;
 
-        public int m_hBinning;
-        public int m_vBinning;
-
         int m_mouseDownRow, m_mouseUpRow;
         int m_mouseDownCol, m_mouseUpCol;
         Point m_mouseDownPoint, m_mouseUpPoint;
@@ -148,7 +164,6 @@ namespace Waveguide
         WaveguideDB wgDB;
 
         Imager m_imager;
-        MaskContainer m_mask;
 
         public RunExperimentControl()
         {
@@ -166,9 +181,6 @@ namespace Waveguide
             m_iChartCount = 0;
             m_iTraceCountPerChart = 0;
             m_numPoints = 0;
-
-            m_hBinning = 1;
-            m_vBinning = 1;
 
             InitializeComponent();
 
@@ -225,7 +237,7 @@ namespace Waveguide
             DrawGridLines();
 
             VM.CameraTemperatureTarget = GlobalVars.CameraTargetTemperature;
-            VM.CycleTime = GlobalVars.CameraDefaultCycleTime;
+            //VM.CycleTime = GlobalVars.CameraDefaultCycleTime;
             VM.CameraTemperatureReady = false;
 
             VM.InsideTemperatureTarget = 10;
@@ -286,29 +298,31 @@ namespace Waveguide
         }
 
 
-        public void Configure(Imager imager, MaskContainer mask)
+        public void Configure(Imager imager)
         {
             m_imager = imager;
-            m_mask = mask;
 
             if(m_imager != null)
             {
                 VM.InsideHeaterEnabled = m_imager.m_insideHeatingON;
+
+                BuildChartArray();
             }
         }
 
 
+
+        public void BuildChartArray()
+        {
+            // build the chart array using the data stored in the ExperimentParams Singleton
+            BuildChartArray(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
+        }
         
 
 
-        public void BuildChartArray(int rows, int cols, 
-            ObservableCollection<ExperimentIndicatorContainer> indicatorList, 
-            ObservableCollection<ExperimentCompoundPlateContainer> compoundPlateList)
+        public void BuildChartArray(int rows, int cols)
         {
             DisposeCharts();
-
-            VM.IndicatorList = indicatorList;
-            VM.CompoundPlateList = compoundPlateList;
             
             m_indicatorDictionary = new Dictionary<int,ExperimentIndicatorContainer>();
 
@@ -320,7 +334,7 @@ namespace Waveguide
             m_cols = cols;            
             
             int i = 0;
-            foreach(ExperimentIndicatorContainer indicator in indicatorList)
+            foreach(ExperimentIndicatorContainer indicator in VM.ExpParams.indicatorList)
             {            
                 m_indicatorDictionary.Add(indicator.ExperimentIndicatorID, indicator);
                 m_indicatorVisibleDictionary.Add(indicator.ExperimentIndicatorID, true);
@@ -362,7 +376,7 @@ namespace Waveguide
 
 
             // create the data series arrays for each indicator
-            foreach (ExperimentIndicatorContainer indicator in indicatorList)
+            foreach (ExperimentIndicatorContainer indicator in VM.ExpParams.indicatorList)
             {
                 SampleDataSeries[,] chartArrayRaw = new SampleDataSeries[m_rows, m_cols];
                 SampleDataSeries[,] chartArrayStaticRatio = new SampleDataSeries[m_rows, m_cols];
@@ -420,13 +434,9 @@ namespace Waveguide
 
 
         public void BuildDisplayGrid()
-        {
-            m_hBinning = m_imager.m_camera.m_acqParams.HBin;
-            m_vBinning = m_imager.m_camera.m_acqParams.VBin;
-            VM.HorzBinning = m_hBinning;
-            VM.VertBinning = m_vBinning;
-
-
+        {           
+            VM.Binning = m_imager.m_camera.m_acqParams.HBin;
+         
             ImageGrid.Children.Clear();
             ImageGrid.RowDefinitions.Clear();
             ImageGrid.ColumnDefinitions.Clear();
@@ -2273,22 +2283,20 @@ namespace Waveguide
         private void Binning_1x1_RadioButton_Checked(object sender, RoutedEventArgs e)
         {
             if (VM == null) return;
-            VM.VertBinning = 1;
-            VM.HorzBinning = 1;
+            VM.Binning = 1;
+            
         }
 
         private void Binning_2x2_RadioButton_Checked(object sender, RoutedEventArgs e)
         {
             if (VM == null) return;
-            VM.VertBinning = 2;
-            VM.HorzBinning = 2;
+            VM.Binning = 2;            
         }
 
         private void Binning_4x4_RadioButton_Checked(object sender, RoutedEventArgs e)
         {
             if (VM == null) return;
-            VM.VertBinning = 4;
-            VM.HorzBinning = 4;
+            VM.Binning = 4;            
         }
 
    
@@ -2420,9 +2428,9 @@ namespace Waveguide
 
          
             // if the binning was changed, un-verify all other indicators
-            if (VM.HorzBinning != previousBinning) // binning was changed
+            if (VM.Binning != previousBinning) // binning was changed
             {
-                foreach (ExperimentIndicatorContainer ind in VM.IndicatorList)
+                foreach (ExperimentIndicatorContainer ind in VM.ExpParams.indicatorList)
                 {
                     ind.Verified = false;
                 }
@@ -2443,6 +2451,71 @@ namespace Waveguide
             VM.EvalRunStatus();
         }
 
+        private void EnclosureCameraPB_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void ResetPB_Click(object sender, RoutedEventArgs e)
+        {
+            Reset();
+            VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT;
+        }
+
+        private void RunPB_Click(object sender, RoutedEventArgs e)
+        {
+            switch (VM.RunState)
+            {
+                case ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT:
+                    //Close_EnclosureCameraViewer();
+                    //Close();
+                    CloseRunExperimentPanel();
+                    break;
+
+                case ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN:
+
+                    //if (PrepForRun())
+                    //{
+                    //    m_tokenSource = new CancellationTokenSource();
+                    //    m_cancelToken = m_tokenSource.Token;
+                    //    m_progress = new Progress<int>();
+
+                    //    // RUN EXPERIMENT !!
+                    //    VM.RunState = RunExperiment_ViewModel.RUN_STATE.RUNNING;
+                    //    ChartArrayControl.SetStatus(ViewModel_ChartArray.RUN_STATUS.RUNNING);
+                    //    //SetButton(VM.RunState);
+
+                    //    PostMessage("Starting VWorks Method: " + m_vworksProtocolFilename);
+                    //    m_vworks.StartMethod(m_vworksProtocolFilename);
+                    //}
+                    break;
+
+                case ViewModel_RunExperimentControl.RUN_STATE.RUNNING:
+                    //AbortExperiment();
+                    //VM.RunState = RunExperiment_ViewModel.RUN_STATE.RUN_ABORTED;
+                    //ChartArrayControl.SetStatus(ViewModel_ChartArray.RUN_STATUS.RUN_FINISHED);                  
+                    break;
+
+                case ViewModel_RunExperimentControl.RUN_STATE.RUN_FINISHED:
+                    //Close_EnclosureCameraViewer();
+                    //Close();
+                    CloseRunExperimentPanel();
+                    break;
+
+                case ViewModel_RunExperimentControl.RUN_STATE.RUN_ABORTED:
+                    //Close_EnclosureCameraViewer();
+                    //Close();
+                    CloseRunExperimentPanel();
+                    break;
+
+                case ViewModel_RunExperimentControl.RUN_STATE.ERROR:
+                    //Close_EnclosureCameraViewer();
+                    //Close();
+                    CloseRunExperimentPanel();
+                    break;
+            }
+        }
+
    
      
 
@@ -2460,10 +2533,42 @@ namespace Waveguide
 /// </summary>
 
 
-    public class ViewModel_RunExperimentControl : IDataErrorInfo, INotifyPropertyChanged
+    public class ViewModel_RunExperimentControl : INotifyPropertyChanged
     {
         public enum RUN_STATUS { NEEDS_INPUT, READY_TO_RUN, RUNNING, RUN_FINISHED };
 
+        public enum RUN_STATE
+        {
+            NEEDS_INPUT,
+            READY_TO_RUN,
+            RUNNING,
+            RUN_FINISHED,
+            RUN_ABORTED,
+            ERROR
+        };
+
+        private RUN_STATE _runState;
+        public RUN_STATE RunState
+        {
+            get
+            {
+                return this._runState;
+            }
+
+            set
+            {
+                if (value != this._runState)
+                {
+                    this._runState = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+
+        // make ExperimentParams Singleton part of view model (used to store selections made by user)
+        private ExperimentParams _expParams;
+        public ExperimentParams ExpParams { get { return _expParams; } }
 
         private CameraSettingsContainer _currentCameraSettings;
         public CameraSettingsContainer CurrentCameraSettings
@@ -2482,8 +2587,6 @@ namespace Waveguide
                 }
             }
         }
-        
-
 
         private RUN_STATUS _status;
         public RUN_STATUS Status
@@ -2498,44 +2601,6 @@ namespace Waveguide
                 if (value != this._status)
                 {
                     this._status = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-
-        private bool _showVerifyPanel;
-        public bool ShowVerifyPanel
-        {
-            get
-            {
-                return this._showVerifyPanel;
-            }
-
-            set
-            {
-                if (value != this._showVerifyPanel)
-                {
-                    this._showVerifyPanel = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-
-        private ExperimentIndicatorContainer _experimentIndicatorUnderVerification;
-        public ExperimentIndicatorContainer ExperimentIndicatorUnderVerification
-        {
-            get
-            {
-                return this._experimentIndicatorUnderVerification;
-            }
-
-            set
-            {
-                if (value != this._experimentIndicatorUnderVerification)
-                {
-                    this._experimentIndicatorUnderVerification = value;
                     NotifyPropertyChanged();
                 }
             }
@@ -2559,83 +2624,6 @@ namespace Waveguide
             }
         }
 
-        private PlateContainer _experimentPlate;
-        public PlateContainer ExperimentPlate
-        {
-            get
-            {
-                return this._experimentPlate;
-            }
-
-            set
-            {
-                if (value != this._experimentPlate)
-                {
-                    this._experimentPlate = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-        private ExperimentContainer _experiment;
-        public ExperimentContainer Experiment
-        {
-            get
-            {
-                return this._experiment;
-            }
-
-            set
-            {
-                if (value != this._experiment)
-                {
-                    this._experiment = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-
-        private string _imagePlateBarcode;
-        public string ImagePlateBarcode
-        {
-            get
-            {
-                return this._imagePlateBarcode;
-            }
-
-            set
-            {
-                if (value != this._imagePlateBarcode)
-                {
-                    this._imagePlateBarcode = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-        
-
-
-        private int _cycleTime;
-        public int CycleTime
-        {
-            get
-            {
-                return this._cycleTime;
-            }
-
-            set
-            {
-                if (value != this._cycleTime)
-                {
-                    this._cycleTime = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-
         private int _cameraTemperatureTarget;
         public int CameraTemperatureTarget
         {
@@ -2653,7 +2641,6 @@ namespace Waveguide
                 }                
             }
         }
-
 
         private int _cameraTemperatureActual;
         public int CameraTemperatureActual
@@ -2675,7 +2662,6 @@ namespace Waveguide
             }
         }
 
-
         private bool _cameraTemperatureReady;
         public bool CameraTemperatureReady
         {
@@ -2694,8 +2680,6 @@ namespace Waveguide
             }
         }
 
-
-
         private int _insideTemperatureTarget;
         public int InsideTemperatureTarget
         {
@@ -2713,7 +2697,6 @@ namespace Waveguide
                 }
             }
         }
-
 
         private int _insideTemperatureActual;
         public int InsideTemperatureActual
@@ -2735,7 +2718,6 @@ namespace Waveguide
             }
         }
 
-
         private bool _insideTemperatureReady;
         public bool InsideTemperatureReady
         {
@@ -2753,7 +2735,6 @@ namespace Waveguide
                 }
             }
         }
-
 
         private bool _insideHeaterEnabled;
         public bool InsideHeaterEnabled
@@ -2773,85 +2754,23 @@ namespace Waveguide
             }
         }
 
-
-        private int _vertBinning;
-        public int VertBinning
+        private int _binning;
+        public int Binning
         {
             get
             {
-                return this._vertBinning;
+                return this._binning;
             }
 
             set
             {
-                if (value != this._vertBinning)
+                if (value != this._binning)
                 {
-                    this._vertBinning = value;
+                    this._binning = value;
                     NotifyPropertyChanged();
                 }
             }
         }
-
-
-        private int _horzBinning;
-        public int HorzBinning
-        {
-            get
-            {
-                return this._horzBinning;
-            }
-
-            set
-            {
-                if (value != this._horzBinning)
-                {
-                    this._horzBinning = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-
-
-        private ObservableCollection<ExperimentIndicatorContainer> _indicatorList;
-        public ObservableCollection<ExperimentIndicatorContainer> IndicatorList
-        {
-            get
-            {
-                return this._indicatorList;
-            }
-
-            set
-            {
-                if (value != this._indicatorList)
-                {
-                    this._indicatorList = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-
-        private ObservableCollection<ExperimentCompoundPlateContainer> _compoundPlateList;
-        public ObservableCollection<ExperimentCompoundPlateContainer> CompoundPlateList
-        {
-            get
-            {
-                return this._compoundPlateList;
-            }
-
-            set
-            {
-                if (value != this._compoundPlateList)
-                {
-                    this._compoundPlateList = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-
-
 
         private WriteableBitmap _overlay;
         public WriteableBitmap Overlay
@@ -2889,77 +2808,62 @@ namespace Waveguide
             }
         }
 
-
-        private bool _plateBarcodeValid;
-        public bool PlateBarcodeValid
+        private string _delayText;
+        public string DelayText
         {
-            get{ return this._plateBarcodeValid; }
-            set{
-                if (value != this._plateBarcodeValid)
+            get
+            {
+                return this._delayText;
+            }
+
+            set
+            {
+                if (value != this._delayText)
                 {
-                    this._plateBarcodeValid = value;
+                    this._delayText = value;
                     NotifyPropertyChanged();
                 }
             }
         }
 
+        private bool _delayHeaderVisible;
+        public bool DelayHeaderVisible
+        {
+            get
+            {
+                return this._delayHeaderVisible;
+            }
 
+            set
+            {
+                if (value != this._delayHeaderVisible)
+                {
+                    this._delayHeaderVisible = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
 
         public ViewModel_RunExperimentControl()
         {
+            _expParams = ExperimentParams.GetExperimentParams;
+
             _overlay = BitmapFactory.New(800, 450);
             _gridLines = BitmapFactory.New(800, 450);
 
             InsideHeaterEnabled = false;
         }
 
-
-        public string Error
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-
-        public string this[string columnName]
-        {
-            get
-            {
-                string result = null;
-                if (columnName == "ImagePlateBarcode")
-                {
-                    if (string.IsNullOrEmpty(ImagePlateBarcode))
-                    {
-                        PlateBarcodeValid = false;
-                        result = "Please enter a Barcode for the Image Plate";
-                        EvalRunStatus();
-                    }
-                    //else if (ImagePlateBarcode.Length != 8)
-                    //{
-                    //    PlateBarcodeValid = false;
-                    //    result = "Barcode must be exactly 8 characters";
-                    //    SetExperimentStatus();
-                    //}
-                    else
-                    {
-                        PlateBarcodeValid = true;
-                        EvalRunStatus();
-                    }
-                }
-                return result;
-            }
-        }
-
-
         public void Reset()
         {
-            ImagePlateBarcode = "";
+            ExpParams.experimentPlate.Barcode = "";
 
-            foreach (ExperimentIndicatorContainer ind in IndicatorList)
+            foreach (ExperimentIndicatorContainer ind in ExpParams.indicatorList)
             {
                 ind.Verified = false;
             }
 
-            foreach (ExperimentCompoundPlateContainer cp in CompoundPlateList)
+            foreach (ExperimentCompoundPlateContainer cp in ExpParams.compoundPlateList)
             {
                 cp.Barcode = "";
             }
@@ -2999,16 +2903,16 @@ namespace Waveguide
 
             if (Status == RUN_STATUS.RUN_FINISHED || Status == RUN_STATUS.RUNNING) return;
 
-            if(PlateBarcodeValid)
+            if(ExpParams.experimentPlate.BarcodeValid)
             {
                 bool allIndicatorsVerified = true;
-                foreach(ExperimentIndicatorContainer ind in IndicatorList)
+                foreach(ExperimentIndicatorContainer ind in ExpParams.indicatorList)
                 {
                     if (!ind.Verified) allIndicatorsVerified = false;
                 }
 
                 bool allCompoundPlatesVerified = true;
-                foreach(ExperimentCompoundPlateContainer cp in CompoundPlateList)
+                foreach(ExperimentCompoundPlateContainer cp in ExpParams.compoundPlateList)
                 {
                     if (!cp.BarcodeValid) allCompoundPlatesVerified = false;
                 }

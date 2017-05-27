@@ -283,9 +283,6 @@
     <Compile Include="Views\ReportDialog.xaml.cs">
       <DependentUpon>ReportDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\RunExperiment.xaml.cs">
-      <DependentUpon>RunExperiment.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Views\SaveImageDialog.xaml.cs">
       <DependentUpon>SaveImageDialog.xaml</DependentUpon>
     </Compile>
@@ -425,10 +422,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\ReportDialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Views\RunExperiment.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

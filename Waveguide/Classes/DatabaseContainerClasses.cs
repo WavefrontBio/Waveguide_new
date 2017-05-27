@@ -1356,7 +1356,7 @@ namespace Waveguide
 
     /////////////////////////////////////////////////////////
     // Plate
-    public class PlateContainer : INotifyPropertyChanged
+    public class PlateContainer : INotifyPropertyChanged, IDataErrorInfo
     {
         private int _plateID;
         private int _projectID;
@@ -1406,6 +1406,43 @@ namespace Waveguide
         {
             get { return _isPublic; }
             set { _isPublic = value; NotifyPropertyChanged("IsPublic"); }
+        }
+
+
+        // this field is not stored in database
+        private bool _barcodeValid;
+        public bool BarcodeValid
+        {
+            get { return _barcodeValid; }
+            set { _barcodeValid = value; NotifyPropertyChanged("BarcodeValid"); }
+        }
+
+        public string this[string columnName]
+        {
+            get
+            {
+                if (columnName == "Barcode")
+                {
+                    if (String.IsNullOrWhiteSpace(Barcode))
+                    {
+                        BarcodeValid = false;
+                        return "Barcode cannot be empty";
+                    }
+                    //else if (Barcode.Length != 8)
+                    //{
+                    //    BarcodeValid = false;
+                    //    return "Barcode must be exactly 8 characters";
+                    //}
+                    else BarcodeValid = true;
+                }
+
+                return String.Empty;
+            }
+        }
+
+        public string Error
+        {
+            get { return String.Empty; }
         }
         
         public event PropertyChangedEventHandler PropertyChanged;
@@ -1733,6 +1770,7 @@ namespace Waveguide
         }
 
 
+        // this field is not stored in the database
         private bool _barcodeValid;
         public bool BarcodeValid
         {

@@ -131,6 +131,7 @@ namespace Waveguide
 
                         MyExperimentConfigurator.Init(m_imager);
                         MyExperimentConfigurator.StartExperimentEvent += MyExperimentConfigurator_StartExperimentEvent;
+                        MyRunExperimentControl.CloseRunExperimentPanelEvent += MyRunExperimentControl_CloseRunExperimentPanelEvent;
 
                         m_vworksReady = StartVWorks();
 
@@ -166,9 +167,14 @@ namespace Waveguide
             
         }
 
+        void MyRunExperimentControl_CloseRunExperimentPanelEvent(object sender, EventArgs e)
+        {
+            VM.ShowRunExperimentPanel = false;
+        }
+
         void MyExperimentConfigurator_StartExperimentEvent(object sender, EventArgs e)
         {
-            MyRunExperimentControl.Configure(m_imager, VM.ExpParams.mask);
+            MyRunExperimentControl.Configure(m_imager);
             VM.ShowRunExperimentPanel = true;
         }
 
@@ -179,10 +185,8 @@ namespace Waveguide
 
 
         void Configure_RunExperimentControl()
-        {
-            MyRunExperimentControl.VM.IndicatorList = VM.ExpParams.indicatorList;
-            MyRunExperimentControl.VM.CompoundPlateList = VM.ExpParams.compoundPlateList;
-            MyRunExperimentControl.Configure(m_imager, VM.ExpParams.mask);
+        {          
+            MyRunExperimentControl.Configure(m_imager);
         }
 
 

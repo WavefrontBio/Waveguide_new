@@ -138,7 +138,7 @@
                                         <Setter Property="Source" Value="/Images/red_arrow_left_small.png"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Path=CameraTempReady}" Value="True">
-                                        <Setter Property="Source" Value="/Images/green_check.png"/>
+                                        <Setter Property="Source" Value="/Images/green_check_small.png"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

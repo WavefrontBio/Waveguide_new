@@ -164,7 +164,7 @@ namespace Waveguide
         WaveguideDB wgDB;
 
         Imager m_imager;
-
+       
         public RunExperimentControl()
         {
             m_mouseDownRow = -1;
@@ -447,12 +447,15 @@ namespace Waveguide
             RowDefinition row1= new RowDefinition();
             row1.Height = new GridLength(1, GridUnitType.Star);
 
-            ImageGrid.RowDefinitions.Add(row0);
-            ImageGrid.RowDefinitions.Add(row1);
+            ImageGrid.RowDefinitions.Add(row0);  // row for the indicator color selector(s)
+            ImageGrid.RowDefinitions.Add(row1);  // row for the image display
 
             SolidColorBrush brush = new SolidColorBrush(Colors.LightGray);
 
-            m_imager.ResetImagingDictionary();
+            //m_imager.ResetImagingDictionary();
+
+            bool createDisplayForEachIndicator = true;
+            ImageDisplay imageDisplay = null;
 
             int i = 0;
             foreach(KeyValuePair<int, ExperimentIndicatorContainer> entry in m_indicatorDictionary)
@@ -508,27 +511,43 @@ namespace Waveguide
                 ImageGrid.Children.Add(stack);
 
 
-                ImageDisplay imageDisplay = new ImageDisplay();
-                imageDisplay.Margin = new Thickness(2);
-                Grid.SetColumn(imageDisplay, i);
-                Grid.SetRow(imageDisplay, 1);
-                ImageGrid.Children.Add(imageDisplay);
+                if (createDisplayForEachIndicator || i == 0)  // createDisplayForEachIndicator == true, then create new ImageDisplay for each indicator
+                {
+                    imageDisplay = new ImageDisplay();
+                    imageDisplay.Margin = new Thickness(2);
+                    Grid.SetColumn(imageDisplay, i);
+                    Grid.SetRow(imageDisplay, 1);
 
-                ImagingParamsStruct ips = new ImagingParamsStruct();
-                ips.cycleTime = 1000; // TODO:  this needs to be set somewhere else
-                ips.emissionFilterPos = (byte)indicator.EmissionFilterPos;
-                ips.excitationFilterPos = (byte)indicator.ExcitationFilterPos;
-                ips.experimentIndicatorID = indicator.ExperimentIndicatorID;
-                ips.exposure = indicator.Exposure;
-                ips.flatfieldType = indicator.FlatFieldCorrection;
-                ips.gain = indicator.Gain;
-                ips.indicatorName = indicator.Description; 
-                ips.histBitmap = null;  // no histogram shown 
-                ips.ImageControl = imageDisplay;
-              
-                m_imager.m_ImagingDictionary.Add(indicator.ExperimentIndicatorID,ips);
+                    ImageGrid.Children.Add(imageDisplay);
+                }
+                      
+                // if displaying all indicators in same display, then we must do this
+                if(!createDisplayForEachIndicator) Grid.SetColumnSpan(imageDisplay,i+1);
 
-                // this call sets d3dImage and pSurface
+                ImagingParamsStruct ips;
+                if(m_imager.m_ImagingDictionary.TryGetValue(expIndicatorID,out ips))
+                {
+                    ips.ImageControl = imageDisplay;
+                    ips.histBitmap = null; // no histogram shown
+                    m_imager.m_ImagingDictionary[expIndicatorID] = ips;
+                }
+                else
+                {
+                    ips = new ImagingParamsStruct();
+                    ips.cycleTime = indicator.CycleTime;
+                    ips.emissionFilterPos = (byte)indicator.EmissionFilterPos;
+                    ips.excitationFilterPos = (byte)indicator.ExcitationFilterPos;
+                    ips.experimentIndicatorID = indicator.ExperimentIndicatorID;
+                    ips.exposure = indicator.Exposure;
+                    ips.flatfieldType = indicator.FlatFieldCorrection;
+                    ips.gain = indicator.Gain;
+                    ips.indicatorName = indicator.Description; 
+                    ips.histBitmap = null;  // no histogram shown 
+                    ips.ImageControl = imageDisplay;
+                    m_imager.m_ImagingDictionary.Add(indicator.ExperimentIndicatorID,ips);
+                }
+
+
                 m_imager.ConfigImageDisplaySurface(indicator.ExperimentIndicatorID,
                                                 m_imager.m_camera.m_acqParams.BinnedFullImageWidth,
                                                 m_imager.m_camera.m_acqParams.BinnedFullImageHeight,false);
@@ -2409,7 +2428,7 @@ namespace Waveguide
                 ips.gain = indicator.Gain;
                 ips.binning = dlg.CameraSetupControl.vm.Binning;
                 ips.cycleTime = indicator.CycleTime;
-                ips.flatfieldType = indicator.FlatFieldCorrection;
+                ips.flatfieldType = indicator.FlatFieldCorrection;                
             }
 
 
@@ -2516,10 +2535,309 @@ namespace Waveguide
             }
         }
 
-   
-     
 
 
+
+
+        private bool PrepForRun()
+        {
+
+            //////////////////////////////////////////////////////////////////
+            // Create ExperimentPlate, if doesn't already exist 
+            bool success;
+            string barcode = VM.ExpParams.experimentPlate.Barcode;
+
+            if (GetExperimentPlate(barcode))
+            {
+                // successfully created/retrieved ExperimentPlate, so now create Experiment
+                if (CreateExperiment())
+                {
+                    foreach (ExperimentIndicatorContainer ei in VM.ExpParams.indicatorList)
+                    {
+                        ExperimentIndicatorContainer ind = new ExperimentIndicatorContainer();
+                        ind.Description = ei.Description;
+                        ind.EmissionFilterDesc = ei.EmissionFilterDesc;
+                        ind.EmissionFilterPos = ei.EmissionFilterPos;
+                        ind.ExcitationFilterDesc = ei.ExcitationFilterDesc;
+                        ind.ExcitationFilterPos = ei.ExcitationFilterPos;
+                        ind.ExperimentID = VM.ExpParams.experiment.ExperimentID;
+                        ind.Exposure = ei.Exposure;
+                        ind.Gain = ei.Gain;
+                        ind.MaskID = ei.MaskID;
+                        ind.SignalType = ei.SignalType;
+                        ind.FlatFieldCorrection = ei.FlatFieldCorrection;
+
+                        success = wgDB.InsertExperimentIndicator(ref ind);
+
+                        if (success)
+                        {
+                            ei.ExperimentIndicatorID = ind.ExperimentIndicatorID;
+                        }
+                        else
+                        {
+                            ei.ExperimentIndicatorID = 0;
+                            ShowErrorDialog("Database Error", "Failed to Insert ExperimentIndicator: " +
+                                wgDB.GetLastErrorMsg());
+                            return false;
+                        }
+                    }
+
+                    foreach (ExperimentCompoundPlateContainer cp in VM.ExpParams.compoundPlateList)
+                    {
+                        ExperimentCompoundPlateContainer comp = new ExperimentCompoundPlateContainer();
+                        comp.Barcode = cp.Barcode;
+                        comp.Description = cp.Description;
+                        comp.ExperimentID = VM.ExpParams.experiment.ExperimentID;
+
+                        success = wgDB.InsertExperimentCompoundPlate(ref comp);
+
+                        if (success)
+                        {
+                            cp.ExperimentCompoundPlateID = comp.ExperimentCompoundPlateID;
+                        }
+                        else
+                        {
+                            cp.ExperimentCompoundPlateID = 0;
+                            ShowErrorDialog("Database Error", "Failed to Insert ExperimentCompoundPlate: " +
+                                wgDB.GetLastErrorMsg());
+                            return false;
+                        }
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+
+            // BuildImagingDictionary();  // I think this is already built during the Verify process
+
+            BuildChartArray(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
+            
+            BuildDisplayGrid();
+
+            //Dictionary<int, ImageDisplay> idDictionary = ChartArrayControl.GetImageDisplayDictionary();
+
+            // prepare flat field correction for each indicator
+            Dictionary<int, FLATFIELD_SELECT> ffcDictionary = new Dictionary<int, FLATFIELD_SELECT>();
+            foreach (ExperimentIndicatorContainer ei in VM.ExpParams.indicatorList)
+            {
+                ffcDictionary.Add(ei.ExperimentIndicatorID, ei.FlatFieldCorrection);
+            }
+
+                   
+
+
+            //m_displayPipeline = m_imager.CreateDisplayPipeline(m_uiTask, idDictionary, m_iParams.HorzBinning, m_iParams.VertBinning, ffcDictionary);
+
+
+            //// m_storagePipeline = m_imager.CreateImageStoragePipeline(GlobalVars.CompressionAlgorithm, m_iParams.imageWidth, m_iParams.imageHeight);
+
+           
+
+            //m_analysisPipeline = m_imager.CreateAnalysisPipeline(ChartArrayControl, VM.Mask, m_iParams.imageWidth,
+            //        m_iParams.imageHeight, m_iParams.HorzBinning, m_iParams.VertBinning,
+            //        m_iParams.ExperimentIndicatorID, m_controlSubtractionWellList, m_numFoFrames,
+            //        numerID, denomID, m_iParams.PixelMask);
+
+
+            //if (m_histogram != null)
+            //{
+            //    m_histogramPipeline = m_imager.CreateHistogramPipeline(m_uiTask, m_histogram, m_iParams.HorzBinning, m_iParams.VertBinning, ffcDictionary);
+            //}
+
+            return true;
+
+        }
+
+
+
+
+
+        //public void BuildImagingDictionary()
+        //{
+        //    m_imager.m_ImagingDictionary = new Dictionary<int, ImagingParamsStruct>();
+
+            
+        //    foreach(ExperimentIndicatorContainer expInd in VM.ExpParams.indicatorList)
+        //    {
+        //        ImagingParamsStruct ips = new ImagingParamsStruct();
+
+        //        ips.binning = VM.Binning;
+        //        ips.cycleTime = expInd.CycleTime;
+        //        ips.emissionFilterPos = (byte)expInd.EmissionFilterPos;
+        //        ips.excitationFilterPos = (byte)expInd.ExcitationFilterPos;
+        //        ips.experimentIndicatorID = expInd.ExperimentIndicatorID;
+        //        ips.exposure = expInd.Exposure;
+        //        ips.flatfieldType = expInd.FlatFieldCorrection;
+        //        ips.gain = expInd.Gain;
+        //        ips.histBitmap = null;
+        //        ips.ImageControl = null;
+        //        ips.indicatorName = expInd.Description;
+        //        ips.optimizeWellList = 
+        //    }
+
+            
+        //    iParams.maxPixelValue = GlobalVars.MaxPixelValue;
+        //    iParams.imageWidth = GlobalVars.PixelWidth / ChartArrayControl.VM.HorzBinning;
+        //    iParams.imageHeight = GlobalVars.PixelHeight / ChartArrayControl.VM.VertBinning;
+        //    iParams.Image_StartCol = VM.RoiX;
+        //    iParams.Image_EndCol = VM.RoiX + VM.RoiW - 1;
+        //    iParams.Image_StartRow = VM.RoiY;
+        //    iParams.Image_EndRow = VM.RoiY + VM.RoiH - 1;
+        //    iParams.BravoMethodFilename = VM.Method.BravoMethodFile;
+        //    iParams.CameraTemperature = GlobalVars.CameraTargetTemperature;
+        //    iParams.HorzBinning = ChartArrayControl.VM.HorzBinning;
+        //    iParams.VertBinning = ChartArrayControl.VM.VertBinning;
+        //    iParams.EmissionFilterChangeSpeed = GlobalVars.FilterChangeSpeed;
+        //    iParams.ExcitationFilterChangeSpeed = GlobalVars.FilterChangeSpeed;
+        //    iParams.LightIntensity = 100;
+        //    iParams.NumImages = 1000000; // artificial limit on number of images
+        //    iParams.NumIndicators = ChartArrayControl.VM.IndicatorList.Count;
+        //    iParams.SyncExcitationFilterWithImaging = true;
+
+        //    iParams.CycleTime = new int[ChartArrayControl.VM.IndicatorList.Count];
+        //    iParams.EmissionFilter = new byte[ChartArrayControl.VM.IndicatorList.Count];
+        //    iParams.ExcitationFilter = new byte[ChartArrayControl.VM.IndicatorList.Count];
+        //    iParams.Exposure = new float[ChartArrayControl.VM.IndicatorList.Count];
+        //    iParams.Gain = new int[ChartArrayControl.VM.IndicatorList.Count];
+        //    iParams.ExperimentIndicatorID = new int[ChartArrayControl.VM.IndicatorList.Count];
+        //    iParams.IndicatorName = new string[ChartArrayControl.VM.IndicatorList.Count];
+        //    iParams.LampShutterIsOpen = new bool[ChartArrayControl.VM.IndicatorList.Count];
+
+        //    iParams.PixelMask = new PixelMaskContainer[ChartArrayControl.VM.IndicatorList.Count];
+
+        //    int i = 0;
+        //    foreach (ExperimentIndicatorContainer ind in ChartArrayControl.VM.IndicatorList)
+        //    {
+        //        iParams.CycleTime[i] = ChartArrayControl.VM.CycleTime;
+        //        iParams.EmissionFilter[i] = (byte)ind.EmissionFilterPos;
+        //        iParams.ExcitationFilter[i] = (byte)ind.ExcitationFilterPos;
+        //        iParams.Exposure[i] = (float)ind.Exposure / 1000;
+        //        iParams.Gain[i] = ind.Gain;
+        //        iParams.ExperimentIndicatorID[i] = 0; // created by the RunExperiment object when the experiment is run
+        //        iParams.IndicatorName[i] = ind.Description;
+        //        iParams.LampShutterIsOpen[i] = true;
+        //        iParams.ExperimentIndicatorID[i] = ind.ExperimentIndicatorID;
+
+        //        iParams.PixelMask[i] = new PixelMaskContainer(iParams.imageWidth, iParams.imageHeight);
+
+        //        if (ind.UsePixelMask)
+        //        {
+        //            for (int j = 0; j < ind.PixelMask.MaskData.Length; j++)
+        //            {
+        //                iParams.PixelMask[i].MaskData[j] = ind.PixelMask.MaskData[j];
+        //            }
+        //        }
+
+        //        i++;
+        //    }
+
+        //    return iParams;
+        //}
+
+
+
+
+        private bool CreateExperiment()
+        {
+            // experiment, create new
+            ExperimentContainer experiment = new ExperimentContainer();
+
+            experiment.Description = DateTime.Now.ToString() + "/" + VM.ExpParams.project.Description + "/" + VM.ExpParams.method.Description + "/" +
+                                     VM.ExpParams.user.Lastname + ", " + VM.ExpParams.user.Firstname;
+            experiment.HorzBinning = VM.Binning;
+            experiment.VertBinning = VM.Binning;
+            experiment.MethodID = VM.ExpParams.method.MethodID;
+            experiment.PlateID = VM.ExpParams.experimentPlate.PlateID;
+            experiment.ROI_Height = m_imager.m_camera.m_acqParams.RoiH;
+            experiment.ROI_Width = m_imager.m_camera.m_acqParams.RoiW;
+            experiment.ROI_Origin_X = m_imager.m_camera.m_acqParams.RoiX;
+            experiment.ROI_Origin_Y = m_imager.m_camera.m_acqParams.RoiY;
+            experiment.TimeStamp = DateTime.Now;
+
+            bool success = wgDB.InsertExperiment(ref experiment);
+
+            if (success)
+            {
+                if (experiment.ExperimentID != 0)
+                {
+                    VM.ExpParams.experiment = experiment;
+                }
+                else
+                {
+                    ShowErrorDialog("Datebase Error: InsertExperiment", wgDB.GetLastErrorMsg());
+                    return false;
+                }
+            }
+            else
+            {
+                ShowErrorDialog("Datebase Error: InsertExperiment", wgDB.GetLastErrorMsg());
+                return false;
+            }
+
+            return true;
+        }
+
+
+
+
+        private bool GetExperimentPlate(string barcode)
+        {
+            // plate, may or may not already exist in database, so check first to see if it exists, and if not create it
+            PlateContainer plate;
+            bool success = wgDB.GetPlateByBarcode(barcode, out plate);
+            if (!success)
+            {
+                ShowErrorDialog("Database Error: GetPlateByBarcode", wgDB.GetLastErrorMsg());
+                return false;
+            }
+            if (plate == null)  // plate does not exist, so create it
+            {
+                plate = new PlateContainer();
+                plate.Barcode = barcode;
+                plate.BarcodeValid = true;
+                plate.Description = DateTime.Now.ToString() + "/" +
+                    VM.ExpParams.project.Description + "/" + VM.ExpParams.method.Description + "/" + VM.ExpParams.user.Lastname + ", " + VM.ExpParams.user.Firstname;
+                plate.IsPublic = false;
+                plate.OwnerID = VM.ExpParams.user.UserID;
+                plate.PlateTypeID = VM.ExpParams.plateType.PlateTypeID;
+                plate.ProjectID = VM.ExpParams.project.ProjectID;                
+                success = wgDB.InsertPlate(ref plate); // this sets plate.PlateID
+
+                if (!success)
+                {                   
+                    ShowErrorDialog("Database Error: InsertPlate", wgDB.GetLastErrorMsg());
+                    return false;
+                }
+            }
+
+            if (success)
+            {
+                VM.ExpParams.experimentPlate = plate;
+            }
+
+            if (VM.ExpParams.experimentPlate == null)
+            {
+                ShowErrorDialog("Experiment Error", "Unable to assign Experiment Plate");
+                return false;
+            }
+
+            return true;
+        }
+
+
+        private void ShowErrorDialog(string title, string errMsg)
+        {
+            // this is just a convenience function
+
+            MessageBox.Show(errMsg, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
 
     }
 

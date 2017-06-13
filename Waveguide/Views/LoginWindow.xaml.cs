@@ -58,6 +58,9 @@ namespace Waveguide
                             GlobalVars.UserDisplayName = user.Firstname + " " + user.Lastname;
                             GlobalVars.UserRole = user.Role;
 
+                            ExperimentParams expParams = ExperimentParams.GetExperimentParams; 
+                            expParams.user = user;
+
                             LoginSuccess = true;
 
                             Close();

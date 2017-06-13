@@ -560,13 +560,8 @@ namespace Waveguide
        
 
         public void ResetImagingDictionary()
-        {
-            foreach(int id in m_ImagingDictionary.Keys)
-            {
-                m_cudaToolBox.Remove_D3dSurface(id);                
-            }
+        {          
             m_ImagingDictionary.Clear();
-
         }
 
       
@@ -798,220 +793,6 @@ namespace Waveguide
         }
 
 
-        public ITargetBlock<Tuple<ushort[], int, int>> CreateImageProcessingPipeline(TaskScheduler uiTask, CancellationToken cancelToken,
-                            AcquisitionParams acqParams, Dictionary<int, ImagingParamsStruct> _imagingDictionary, 
-                            MaskContainer mask, bool applyMask, bool saveImages, int projectID, int plateID, int experimentID)
-        {
-
-            List<int> indicatorIDList = new List<int>();            
-            foreach (int key in _imagingDictionary.Keys) indicatorIDList.Add(key);
-            ImageFileManager imageFileManager = new ImageFileManager();
-            imageFileManager.SetBasePath(GlobalVars.ImageFileSaveLocation, projectID, plateID, experimentID, indicatorIDList);
-            Dictionary<int, ImagingParamsStruct> imagingDictionary = _imagingDictionary;
-            CudaToolBox cuda = m_cudaToolBox;
-
-             var firstEntry = imagingDictionary.First();
-             ImagingParamsStruct firstIps = firstEntry.Value;
-             int binning = firstIps.binning;
-
-            // set up flat field correction arrays on GPU
-            SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_FLUOR, binning);
-            SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_LUMI, binning);
-                //ushort[] F;
-                //ushort[] D;
-                //FlatFieldCorrector ffc;
-                //var firstEntry = imagingDictionary.First();
-                //ImagingParamsStruct firstIps = firstEntry.Value;
-                //int binning = firstIps.binning;
-                //int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
-                //bool success;
-
-                //// FLUORESCENCE
-                //// get fluor ref images
-                //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_FLUOR, out F, out D);
-                //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
-
-                //// build flat field corrector for fluor
-                //ffc = new FlatFieldCorrector(imageSize, F, D);
-                //ffc.CorrectForBinning(binning, binning);
-
-                //// load fluor correction arrays to GPU
-                //cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_FLUOR, ffc.Gc, ffc.Dc);
-
-                //// LUMINESCENCE
-                //// get lumi ref images
-                //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_LUMI, out F, out D);
-                //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
-
-                //// build flat field corrector for lumi
-                //ffc = new FlatFieldCorrector(imageSize, F, D);
-                //ffc.CorrectForBinning(binning, binning);
-
-                //// load lumi correction arrays to GPU
-                //cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_LUMI, ffc.Gc, ffc.Dc);
-
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // CudaProcessing and Display
-
-            var CudaProcessAndDisplayImage = new TransformBlock<Tuple<ushort[], int, int>, Tuple<ushort[], int, int>>(inputData =>
-            {
-                // since this call Cuda and GUI functionality, it must be run on the UI Thread
-
-                ushort[] grayRoiImage = inputData.Item1;  // Raw Grayscale ROI image 
-                int expIndID = inputData.Item2;  // Experiment Indicator ID
-                int sequenceNumber = inputData.Item3; // number of msecs into the experiment that image was taken
-
-                
-                Stopwatch sw = new Stopwatch();
-                long t1 = 0;
-                ushort[] maskedFullGrayImage = null;
-                Int32Rect histRect = new Int32Rect(0, 0, m_histogramImageWidth, m_histogramImageHeight);
-
-                try
-                {
-                    // set the cuda context to this thread
-                    //cuda.PushCudaContext();
-
-                    sw.Restart();
-                    // get FlatFieldCorrector for this experiment indicator
-                    if (imagingDictionary.ContainsKey(expIndID))
-                    {
-                        // process image
-                        ImagingParamsStruct dps = imagingDictionary[expIndID];
-
-                        // copy image to GPU, if it's an ROI, it is padded with 0's to make a full image
-                        cuda.PostRoiGrayscaleImage(grayRoiImage, acqParams.BinnedFullImageWidth, acqParams.BinnedFullImageHeight,
-                                                   acqParams.BinnedRoiW, acqParams.BinnedRoiH, acqParams.BinnedRoiX, acqParams.BinnedRoiY);
-
-                        // flatten image
-                        cuda.FlattenGrayImage((int)dps.flatfieldType);
-
-                        // apply mask if applyMask is true, this will zero all pixels outside of mask apertures
-                        // this function also will apply a flat field correction *IF* a correction matrix has been loaded
-                        if (applyMask) cuda.ApplyMaskToGrayscaleImage();
-
-                        cuda.Download_GrayscaleImage(out maskedFullGrayImage, acqParams.BinnedFullImageWidth, acqParams.BinnedFullImageHeight);
-
-                        // calculate mask aperture sums
-                        UInt32[] sums;
-                        cuda.GetMaskApertureSums(out sums, mask.Rows, mask.Cols);
-
-                        // update the GUI with the aperture sums
-                       
-
-                        // calculate the image histogram
-                        UInt32[] histogram;
-                        cuda.GetHistogram_512(out histogram, 16);
-                        //histogram[0] = 0; // clear out the pixels that were zeroed, since they were outside the mask
-
-
-                        if (dps.histBitmap != null)
-                        {
-                            // build the histogram image and download it to the CPU
-                            byte[] histImage;
-                            cuda.GetHistogramImage_512(out histImage, m_histogramImageWidth, m_histogramImageHeight, 0);
-
-                            // display the histogram image
-                            dps.histBitmap.Lock();
-                            dps.histBitmap.WritePixels(histRect, histImage, m_histogramImageWidth * 4, 0);
-                            dps.histBitmap.Unlock();
-                        }
-
-                        // convert the grayscale image to color using the colormap that is already on the GPU
-                        IntPtr colorImageOnGpu = cuda.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
-
-                        // display color image
-                        if (dps.ImageControl.m_imageBitmap != null)
-                        {
-                            byte[] colorImage;
-                            m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
-
-                            // display the image
-                            Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
-                            dps.ImageControl.m_imageBitmap.Lock();
-                            dps.ImageControl.m_imageBitmap.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
-                            dps.ImageControl.m_imageBitmap.Unlock();
-                        }
-
-                    }
-                    t1 = sw.ElapsedMilliseconds;
-
-                    return Tuple.Create<ushort[], int, int>(maskedFullGrayImage, expIndID, sequenceNumber);
-                }
-                catch (OperationCanceledException)
-                {
-                    return null;
-                }
-                finally
-                {
-                    // make sure the cuda context is released
-                    //cuda.PopCudaContext();
-                }
-            },
-                // Specify a task scheduler as that which is passed in
-                // so that the action runs on the UI thread. 
-            new ExecutionDataflowBlockOptions
-            {
-                CancellationToken = cancelToken,
-                TaskScheduler = uiTask,
-                MaxDegreeOfParallelism = 1
-            });
-
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // Write Image Data to Database/Image file
-
-            var StoreData = new ActionBlock<Tuple<ushort[], int, int>>(inputData =>
-            {
-                // since this call Cuda and GUI functionality, it must be run on the UI Thread
-
-                ushort[] grayImage = inputData.Item1;  // Raw Grayscale ROI image 
-                int expIndID = inputData.Item2;  // Experiment Indicator ID
-                int sequenceNumber = inputData.Item3; // number of msecs into experiment that image was taken
-
-                Stopwatch sw = new Stopwatch();
-
-                try
-                {
-                    sw.Restart();
-                    // get FlatFieldCorrector for this experiment indicator
-                    if (imagingDictionary.ContainsKey(expIndID))
-                    {
-                        // process image
-                        ImagingParamsStruct dps = imagingDictionary[expIndID];
-
-                        imageFileManager.WriteImageFile(grayImage, expIndID, sequenceNumber);
-
-                    }
-
-                    long t1 = sw.ElapsedMilliseconds;
-
-                    return;
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-            },
-            new ExecutionDataflowBlockOptions
-            {
-                CancellationToken = cancelToken,
-                MaxDegreeOfParallelism = 1
-            });
-
-
-            CudaProcessAndDisplayImage.LinkTo(StoreData);
-
-
-
-            return CudaProcessAndDisplayImage;
-        }
-
 
 
         public void ConfigImageDisplaySurface(int ID, uint pixelWidth, uint pixelHeight, bool useAlphaChannel)
@@ -1234,8 +1015,8 @@ namespace Waveguide
                 }
             }
 
-   
-            ITargetBlock<Tuple<ushort[], int, int>> ImageProcessingPipeline = CreateImageProcessingPipeline(m_uiTask, ct, m_camera.m_acqParams,
+
+            ITargetBlock<Tuple<ushort[], int, int, bool, bool>> ImageProcessingPipeline = CreateImageProcessingPipeline(m_uiTask, ct, m_camera.m_acqParams,
                                                                                     m_ImagingDictionary,
                                                                                     m_mask, m_UseMask, saveImages, projectID, plateID, experimentID);
 
@@ -1345,7 +1126,7 @@ namespace Waveguide
                         // post image data to be processed (convert to full image, mask, flat field correct, calc histogram, build histogram image,
                         //                                  convert to color, display, calc well sums)
 
-                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds));
+                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int, bool, bool>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds, saveImages, saveImages));
 
                         imageCount++;
                                               
@@ -1514,7 +1295,7 @@ namespace Waveguide
             m_imagingSequenceCounter = sw;
 
 
-            ITargetBlock<Tuple<ushort[], int, int>> ImageProcessingPipeline = CreateImageProcessingPipeline(m_uiTask, ct, m_camera.m_acqParams,
+            ITargetBlock<Tuple<ushort[], int, int, bool, bool>> ImageProcessingPipeline = CreateImageProcessingPipeline(m_uiTask, ct, m_camera.m_acqParams,
                                                                                     m_ImagingDictionary,
                                                                                     m_mask, m_UseMask, false, 0, 0, 0);
 
@@ -1627,7 +1408,7 @@ namespace Waveguide
                         // post image data to be processed (convert to full image, mask, flat field correct, calc histogram, build histogram image,
                         //                                  convert to color, display, calc well sums)
 
-                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds));
+                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int, bool, bool>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds, false, false));
 
                         imageCount++;
 
@@ -1698,8 +1479,6 @@ namespace Waveguide
             m_kineticImagingON = false;
 
         }
-
-
 
 
 
@@ -2265,12 +2044,238 @@ namespace Waveguide
         #endregion
 
 
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////// 
+
+        #region Pipelines
+
+        #region ImageProcessingPipeline
+
+        public ITargetBlock<Tuple<ushort[], int, int, bool, bool>> CreateImageProcessingPipeline(TaskScheduler uiTask, CancellationToken cancelToken,
+                            AcquisitionParams acqParams, Dictionary<int, ImagingParamsStruct> _imagingDictionary,
+                            MaskContainer mask, bool applyMask, bool saveImages, int projectID, int plateID, int experimentID)
+        {
+
+            List<int> indicatorIDList = new List<int>();
+            foreach (int key in _imagingDictionary.Keys) indicatorIDList.Add(key);
+            ImageFileManager imageFileManager = new ImageFileManager();
+            imageFileManager.SetBasePath(GlobalVars.ImageFileSaveLocation, projectID, plateID, experimentID, indicatorIDList);
+            Dictionary<int, ImagingParamsStruct> imagingDictionary = _imagingDictionary;
+            CudaToolBox cuda = m_cudaToolBox;
+
+            var firstEntry = imagingDictionary.First();
+            ImagingParamsStruct firstIps = firstEntry.Value;
+            int binning = firstIps.binning;
+
+            // set up flat field correction arrays on GPU
+            SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_FLUOR, binning);
+            SetupFlatFieldCorrection(FLATFIELD_SELECT.USE_LUMI, binning);
+            //ushort[] F;
+            //ushort[] D;
+            //FlatFieldCorrector ffc;
+            //var firstEntry = imagingDictionary.First();
+            //ImagingParamsStruct firstIps = firstEntry.Value;
+            //int binning = firstIps.binning;
+            //int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
+            //bool success;
+
+            //// FLUORESCENCE
+            //// get fluor ref images
+            //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_FLUOR, out F, out D);
+            //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+
+            //// build flat field corrector for fluor
+            //ffc = new FlatFieldCorrector(imageSize, F, D);
+            //ffc.CorrectForBinning(binning, binning);
+
+            //// load fluor correction arrays to GPU
+            //cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_FLUOR, ffc.Gc, ffc.Dc);
+
+            //// LUMINESCENCE
+            //// get lumi ref images
+            //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_LUMI, out F, out D);
+            //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+
+            //// build flat field corrector for lumi
+            //ffc = new FlatFieldCorrector(imageSize, F, D);
+            //ffc.CorrectForBinning(binning, binning);
+
+            //// load lumi correction arrays to GPU
+            //cuda.SetFlatFieldCorrection((int)FLATFIELD_SELECT.USE_LUMI, ffc.Gc, ffc.Dc);
+
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // CudaProcessing and Display
+
+            var CudaProcessAndDisplayImage = new TransformBlock<Tuple<ushort[], int, int, bool, bool>, Tuple<ushort[], int, int>>(inputData =>
+            {
+                // since this call Cuda and GUI functionality, it must be run on the UI Thread
+                // Input: raw grayscale ROI image (ushort[]), 
+                // Experiment Indicator ID (int) - indicates which indicator this image belongs to, 
+                // sequence number (int) - milliseconds into experiment timestamp 
+                // store image? (bool) - flag indicating whether the image is stored
+                // analyze image? (bool) - flag indicating whether the image is analyzed for display in the chart array (as in an experiment run)
+
+                ushort[] grayRoiImage = inputData.Item1;  // Raw Grayscale ROI image 
+                int expIndID = inputData.Item2;  // Experiment Indicator ID
+                int sequenceNumber = inputData.Item3; // number of msecs into the experiment that image was taken
+                bool storeImage = inputData.Item4;  // store image?
+                bool analyzeImage = inputData.Item5; // analyze image?
+
+
+                Stopwatch sw = new Stopwatch();
+                long t1 = 0;
+                ushort[] FullGrayImage = null;
+                Int32Rect histRect = new Int32Rect(0, 0, m_histogramImageWidth, m_histogramImageHeight);
+
+                try
+                {
+                    // set the cuda context to this thread
+                    //cuda.PushCudaContext();
+
+                    sw.Restart();
+                    // get FlatFieldCorrector for this experiment indicator
+                    if (imagingDictionary.ContainsKey(expIndID))
+                    {
+                        // process image
+                        ImagingParamsStruct dps = imagingDictionary[expIndID];
+
+                        // copy image to GPU, if it's an ROI, it is padded with 0's to make a full image
+                        cuda.PostRoiGrayscaleImage(grayRoiImage, acqParams.BinnedFullImageWidth, acqParams.BinnedFullImageHeight,
+                                                   acqParams.BinnedRoiW, acqParams.BinnedRoiH, acqParams.BinnedRoiX, acqParams.BinnedRoiY);
+
+                        // flatten image
+                        cuda.FlattenGrayImage((int)dps.flatfieldType);
+
+                        // apply mask if applyMask is true, this will zero all pixels outside of mask apertures
+                        // this function also will apply a flat field correction *IF* a correction matrix has been loaded
+                        if (applyMask) cuda.ApplyMaskToGrayscaleImage();
+
+                        cuda.Download_GrayscaleImage(out FullGrayImage, acqParams.BinnedFullImageWidth, acqParams.BinnedFullImageHeight);
+
+                        // calculate mask aperture sums
+                        UInt32[] sums;
+                        cuda.GetMaskApertureSums(out sums, mask.Rows, mask.Cols);
+
+                        // update the GUI with the aperture sums
+
+
+                        // calculate the image histogram
+                        UInt32[] histogram;
+                        cuda.GetHistogram_512(out histogram, 16);
+                        //histogram[0] = 0; // clear out the pixels that were zeroed, since they were outside the mask
+
+
+                        if (dps.histBitmap != null)
+                        {
+                            // build the histogram image and download it to the CPU
+                            byte[] histImage;
+                            cuda.GetHistogramImage_512(out histImage, m_histogramImageWidth, m_histogramImageHeight, 0);
+
+                            // display the histogram image
+                            dps.histBitmap.Lock();
+                            dps.histBitmap.WritePixels(histRect, histImage, m_histogramImageWidth * 4, 0);
+                            dps.histBitmap.Unlock();
+                        }
+
+                        // convert the grayscale image to color using the colormap that is already on the GPU
+                        IntPtr colorImageOnGpu = cuda.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
+
+                        // display color image
+                        if (dps.ImageControl.m_imageBitmap != null)
+                        {
+                            byte[] colorImage;
+                            m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+
+                            // display the image
+                            Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                            dps.ImageControl.m_imageBitmap.Lock();
+                            dps.ImageControl.m_imageBitmap.WritePixels(displayRect, colorImage, m_camera.m_acqParams.BinnedFullImageWidth * 4, 0);
+                            dps.ImageControl.m_imageBitmap.Unlock();
+                        }
+
+                    }
+                    t1 = sw.ElapsedMilliseconds;
+
+                    return Tuple.Create<ushort[], int, int>(FullGrayImage, expIndID, sequenceNumber);
+                }
+                catch (OperationCanceledException)
+                {
+                    return null;
+                }
+                finally
+                {
+                    // make sure the cuda context is released
+                    //cuda.PopCudaContext();
+                }
+            },
+                // Specify a task scheduler as that which is passed in
+                // so that the action runs on the UI thread. 
+            new ExecutionDataflowBlockOptions
+            {
+                CancellationToken = cancelToken,
+                TaskScheduler = uiTask,
+                MaxDegreeOfParallelism = 1
+            });
+
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // Write Image Data to Database/Image file
+
+            var StoreData = new ActionBlock<Tuple<ushort[], int, int>>(inputData =>
+            {
+                // since this call Cuda and GUI functionality, it must be run on the UI Thread
+
+                ushort[] grayImage = inputData.Item1;  // Raw Grayscale ROI image 
+                int expIndID = inputData.Item2;  // Experiment Indicator ID
+                int sequenceNumber = inputData.Item3; // number of msecs into experiment that image was taken
+
+                try
+                {   
+                    if (imagingDictionary.ContainsKey(expIndID))
+                    {
+                        // process image
+                        ImagingParamsStruct dps = imagingDictionary[expIndID];
+
+                        imageFileManager.WriteImageFile(grayImage, expIndID, sequenceNumber);
+                    }
+
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            },
+            new ExecutionDataflowBlockOptions
+            {
+                CancellationToken = cancelToken,
+                MaxDegreeOfParallelism = 1
+            });
+
+
+            CudaProcessAndDisplayImage.LinkTo(StoreData);
+
+
+
+            return CudaProcessAndDisplayImage;
+        }
+
+        #endregion
+
+
+
 
 
         #region Image Storage Pipeline
 
 
-        public ITargetBlock<Tuple<ushort[], int, int, int>> CreateImageStoragePipeline(int projectID, int plateID, int experimentID, COMPRESSION_ALGORITHM compAlgorithm)
+        public ITargetBlock<Tuple<ushort[], int, int>> CreateImageStoragePipeline(int projectID, int plateID, int experimentID, COMPRESSION_ALGORITHM compAlgorithm)
         {
             int m_projectID = projectID;
             int m_plateID = plateID;
@@ -2284,9 +2289,13 @@ namespace Waveguide
             WaveguideDB m_wgDB = new WaveguideDB();
 
 
-            // input: grayimage (ushort[]), ExperimentIndicatorID (int), time (int), exposure (int)            
-            var storeImage = new ActionBlock<Tuple<ushort[], int, int, int>>(inputData =>
+            // input: grayimage (ushort[]), ExperimentIndicatorID (int), time (int)         
+            var storeImage = new ActionBlock<Tuple<ushort[], int, int>>(inputData =>
             {
+                // Input: 
+                //          raw grayscale image (ushort[]) - this is not the ROI, but the full image.  The ROI was previously converted to a full image.
+                //          experiment indicator ID (int) - tells us what indicator this image belongs to
+                //          sequence number (int) - milliseconds into experiment timestamp 
                 ushort[] grayImage = inputData.Item1;
                 int expIndicatorID = inputData.Item2;
                 int time = inputData.Item3;
@@ -2349,10 +2358,9 @@ namespace Waveguide
 
         #region Analysis Pipeline
 
-        public ITargetBlock<Tuple<ushort[], int, int>> CreateAnalysisPipeline(RunExperimentControl runExperimentControl,
-                 MaskContainer mask, int pixelWidth, int pixelHeight, int hBinning, int vBinning,
-                 int[] indicatorIdList, ObservableCollection<Tuple<int, int>> controlWells,
-                 int numFoFrames, int dynamicRatioNumeratorID, int dynamicRatioDenominatorID)
+        public ITargetBlock<Tuple<ushort[], int, int>> CreateAnalysisPipeline(RunExperimentControl runExperimentControl, 
+                ObservableCollection<Tuple<int, int>> controlWells,
+                int numFoFrames, int dynamicRatioNumeratorID, int dynamicRatioDenominatorID)
         {
             // perform pre-processing of mask.  This creates a 2D array with an array element for each mask aperture.  The idea
             // is that for each aperture, create an array of the pixels inside that aperture.  This is only done once, when the 
@@ -2369,7 +2377,10 @@ namespace Waveguide
 
             // now...preprocess the mask, i.e. create pixelList[mask.rows,mask.cols][numPixels]
 
-            mask.BuildPixelList(pixelWidth, pixelHeight, hBinning, vBinning);
+            ExperimentParams expParams = ExperimentParams.GetExperimentParams;
+
+            expParams.mask.BuildPixelList(m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, 
+                                          m_camera.m_acqParams.HBin, m_camera.m_acqParams.VBin);
 
             TaskScheduler m_runExperimentControlTask = runExperimentControl.GetTaskScheduler();
 
@@ -2383,28 +2394,28 @@ namespace Waveguide
             int m_dynamicRatioDenominatorID = dynamicRatioDenominatorID;
             bool m_dynamicRatioNumeratorReady = false;
             bool m_dynamicRatioDenominatorReady = false;
-            float[,] m_dynamicRatioNumeratorValues = new float[mask.Rows, mask.Cols];
-            float[,] m_dynamicRatioDenominatorValues = new float[mask.Rows, mask.Cols];
+            float[,] m_dynamicRatioNumeratorValues = new float[expParams.mask.Rows, expParams.mask.Cols];
+            float[,] m_dynamicRatioDenominatorValues = new float[expParams.mask.Rows, expParams.mask.Cols];
 
             WaveguideDB wgDB = new WaveguideDB();
 
-            bool success;
+            //bool success;
 
-            ExperimentIndicatorContainer indicator;
-            ushort[] Flat;
-            ushort[] Dark;
-            int flatID = 0;
-            int darkID = 0;
+            //ExperimentIndicatorContainer indicator;
+            //ushort[] Flat;
+            //ushort[] Dark;
+            //int flatID = 0;
+            //int darkID = 0;
 
             int cnt = 0;
 
-            foreach (int expIndID in indicatorIdList)
+            foreach (int expIndID in m_ImagingDictionary.Keys)
             {
                 //////////////////////////////////////////////////////////////////////////////
                 // Calculate Fo for this experiment indicator
-                float[,] Fo = new float[mask.Rows, mask.Cols];
-                for (int r = 0; r < mask.Rows; r++)
-                    for (int c = 0; c < mask.Cols; c++)
+                float[,] Fo = new float[expParams.mask.Rows, expParams.mask.Cols];
+                for (int r = 0; r < expParams.mask.Rows; r++)
+                    for (int c = 0; c < expParams.mask.Cols; c++)
                     {
                         Fo[r, c] = 0.0f;
                     }
@@ -2442,17 +2453,17 @@ namespace Waveguide
                 try
                 {
                     // sum all pixels in pixelList
-                    float[,] F = new float[mask.Rows, mask.Cols];
+                    float[,] F = new float[expParams.mask.Rows, expParams.mask.Cols];
 
-                    for (int r = 0; r < mask.Rows; r++)
-                        for (int c = 0; c < mask.Cols; c++)
+                    for (int r = 0; r < expParams.mask.Rows; r++)
+                        for (int c = 0; c < expParams.mask.Cols; c++)
                         {
                             F[r, c] = 0;
 
                             int pixelCount = 0;
 
                             // calculate sum of pixels inside mask aperture[r,c]
-                            foreach (int ndx in mask.PixelList[r, c])
+                            foreach (int ndx in expParams.mask.PixelList[r, c])
                             {                              
                                 F[r, c] += grayImage[ndx];
                                 pixelCount++;                              
@@ -2500,17 +2511,17 @@ namespace Waveguide
                 {
                     if (FoReady)
                     {
-                        staticRatio = new float[mask.Rows, mask.Cols];
-                        for (int r = 0; r < mask.Rows; r++)
-                            for (int c = 0; c < mask.Cols; c++)
+                        staticRatio = new float[expParams.mask.Rows, expParams.mask.Cols];
+                        for (int r = 0; r < expParams.mask.Rows; r++)
+                            for (int c = 0; c < expParams.mask.Cols; c++)
                             {
                                 staticRatio[r, c] = F[r, c] / Fo[r, c];
                             }
                     }
                     else
                     {
-                        for (int r = 0; r < mask.Rows; r++)
-                            for (int c = 0; c < mask.Cols; c++)
+                        for (int r = 0; r < expParams.mask.Rows; r++)
+                            for (int c = 0; c < expParams.mask.Cols; c++)
                             {
                                 Fo[r, c] += F[r, c];
                             }
@@ -2522,8 +2533,8 @@ namespace Waveguide
                             FoReady = true;
                             m_FoReady_Hash[expIndicatorID] = FoReady; // update Hashtable
 
-                            for (int r = 0; r < mask.Rows; r++)
-                                for (int c = 0; c < mask.Cols; c++)
+                            for (int r = 0; r < expParams.mask.Rows; r++)
+                                for (int c = 0; c < expParams.mask.Cols; c++)
                                 {
                                     Fo[r, c] /= numFoFrames;
                                 }
@@ -2568,7 +2579,7 @@ namespace Waveguide
 
                 float avgControl = 0.0f;
 
-                float[,] controlSubtraction = new float[mask.Rows, mask.Cols];
+                float[,] controlSubtraction = new float[expParams.mask.Rows, expParams.mask.Cols];
 
                 try
                 {
@@ -2586,8 +2597,8 @@ namespace Waveguide
                         avgControl /= controlWells.Count();
 
 
-                        for (int r = 0; r < mask.Rows; r++)
-                            for (int c = 0; c < mask.Cols; c++)
+                        for (int r = 0; r < expParams.mask.Rows; r++)
+                            for (int c = 0; c < expParams.mask.Cols; c++)
                             {
                                 controlSubtraction[r, c] = staticRatio[r, c] - avgControl;
                             }
@@ -2643,8 +2654,8 @@ namespace Waveguide
                     {
                         if (expIndicatorID == m_dynamicRatioNumeratorID)
                         {
-                            for (int r = 0; r < mask.Rows; r++)
-                                for (int c = 0; c < mask.Cols; c++)
+                            for (int r = 0; r < expParams.mask.Rows; r++)
+                                for (int c = 0; c < expParams.mask.Cols; c++)
                                 {
                                     m_dynamicRatioNumeratorValues[r, c] = staticRatio[r, c];
                                 }
@@ -2652,8 +2663,8 @@ namespace Waveguide
                         }
                         else if (expIndicatorID == m_dynamicRatioDenominatorID)
                         {
-                            for (int r = 0; r < mask.Rows; r++)
-                                for (int c = 0; c < mask.Cols; c++)
+                            for (int r = 0; r < expParams.mask.Rows; r++)
+                                for (int c = 0; c < expParams.mask.Cols; c++)
                                 {
                                     m_dynamicRatioDenominatorValues[r, c] = staticRatio[r, c];
                                 }
@@ -2666,10 +2677,10 @@ namespace Waveguide
                         m_dynamicRatioNumeratorReady = false;
                         m_dynamicRatioDenominatorReady = false;
 
-                        dynamicRatio = new float[mask.Rows, mask.Cols];
+                        dynamicRatio = new float[expParams.mask.Rows, expParams.mask.Cols];
 
-                        for (int r = 0; r < mask.Rows; r++)
-                            for (int c = 0; c < mask.Cols; c++)
+                        for (int r = 0; r < expParams.mask.Rows; r++)
+                            for (int c = 0; c < expParams.mask.Cols; c++)
                             {
                                 dynamicRatio[r, c] = m_dynamicRatioNumeratorValues[r, c] / m_dynamicRatioDenominatorValues[r, c];
                             }
@@ -2806,7 +2817,7 @@ namespace Waveguide
 
         #endregion
 
-    
+        #endregion
 
     }
 
@@ -2817,6 +2828,7 @@ namespace Waveguide
     ////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////// 
 
+    #region EventArgs
     public enum ImagerState
     {
         Idle,
@@ -2902,6 +2914,7 @@ namespace Waveguide
 
     }
 
+    #endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////

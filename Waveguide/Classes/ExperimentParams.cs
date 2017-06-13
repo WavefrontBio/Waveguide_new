@@ -34,11 +34,14 @@ namespace Waveguide
         /////////////////////////////
         // Properties
 
+        private UserContainer _user;
+        public UserContainer user { get { return _user; } set { if (value != _user) { _user = value; NotifyPropertyChanged("user"); } } }
+
         private PlateContainer _experimentPlate;
-        public PlateContainer experimentPlate { get { return _experimentPlate; } set { if (value != _experimentPlate) { _experimentPlate = value; NotifyPropertyChanged("ExperimentPlate"); } } }
+        public PlateContainer experimentPlate { get { return _experimentPlate; } set { if (value != _experimentPlate) { _experimentPlate = value; NotifyPropertyChanged("experimentPlate"); } } }
 
         private ExperimentContainer _experiment;
-        public ExperimentContainer experiment { get { return _experiment; } set { if (value != _experiment) { _experiment = value; NotifyPropertyChanged("Experiment"); } } }
+        public ExperimentContainer experiment { get { return _experiment; } set { if (value != _experiment) { _experiment = value; NotifyPropertyChanged("experiment"); } } }
 
         private ProjectContainer _project;
         public  ProjectContainer project { get { return _project; } set { if (value != _project) { _project = value; NotifyPropertyChanged("project"); } } }

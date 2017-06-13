@@ -9,6 +9,10 @@
 *.userosscache
 *.sln.docstates
 
+# User-specific directories
+D3DSurfaceManager/
+WpfD3D/
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

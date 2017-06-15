@@ -111,10 +111,17 @@ namespace Waveguide
 
         public void EnableHeater(bool enable)
         {
+            // This seems backwards!!!  I think it has something to do with how the Omega controller has it's output 1 configured.  Leaving it like this for now.  Yikes!!
+
+            //if (enable)
+            //    EnableOutput(1);
+            //else
+            //    DisableOutput(1);
+
             if (enable)
-                EnableOutput(1);
-            else
                 DisableOutput(1);
+            else
+                EnableOutput(1);
         }
 
 

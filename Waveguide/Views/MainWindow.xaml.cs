@@ -180,7 +180,7 @@ namespace Waveguide
 
         void VM_StatusChange(ViewModel_RunExperimentControl VM_RunExperimentControl, RunExperimentControlViewModel_EventArgs e)
         {
-            VM.ExperimentRunStatus = e.RunStatus;
+            VM.ExperimentRunState = e.RunState;
         }
 
 
@@ -217,11 +217,15 @@ namespace Waveguide
 
         void m_ethernetIO_m_doorStatusEvent(object sender, DoorStatusEventArgs e)
         {
-            VM.DoorStatus = e.DoorStatus;
-            if(VM.DoorStatus == DOOR_STATUS.LOCKED)
-                DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Red);
-            else
-                DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+            VM.DoorStatus = e.DoorStatus;           
+
+            this.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (VM.DoorStatus == DOOR_STATUS.LOCKED)
+                    DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Red);
+                else
+                    DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Transparent);
+            }));
         }
 
         void m_imager_m_insideTemperatureEvent(object sender, TemperatureEventArgs e)
@@ -281,6 +285,7 @@ namespace Waveguide
                 {
                     VM.CameraTemp = e.Temperature;
                     VM.CameraTempString = e.Temperature.ToString();
+                    GlobalVars.CameraTemp = e.Temperature;
                 }
                 else
                 {
@@ -295,6 +300,7 @@ namespace Waveguide
                         {
                             VM.CameraTemp = e.Temperature;
                             VM.CameraTempString = e.Temperature.ToString();
+                            GlobalVars.CameraTemp = e.Temperature;
                         }
                         else
                         {
@@ -319,9 +325,21 @@ namespace Waveguide
    
         public void PostMessage(string msg)
         {
-            MainMessageWindow.AppendText(Environment.NewLine);
-            MainMessageWindow.AppendText(msg);
-            MainMessageWindow.ScrollToEnd();
+            if (this.Dispatcher.CheckAccess())
+            {
+                MainMessageWindow.AppendText(Environment.NewLine);
+                MainMessageWindow.AppendText(msg);
+                MainMessageWindow.ScrollToEnd();
+            }
+            else
+            {
+                this.Dispatcher.BeginInvoke(new Action(() =>{
+                MainMessageWindow.AppendText(Environment.NewLine);
+                MainMessageWindow.AppendText(msg);
+                MainMessageWindow.ScrollToEnd();
+                } ));
+            }
+            
         }
 
 
@@ -374,16 +392,16 @@ namespace Waveguide
         private void DoorLockedIndicator_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             DoorLockPopup.IsOpen = true;
-            //if(m_imager != null)
-            //{
-            //    if(m_imager.m_ethernetIO != null)
-            //    {
-            //        if(GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
-            //            m_imager.m_ethernetIO.SetOutputON(0, true);
-            //        else
-            //            m_imager.m_ethernetIO.SetOutputON(0, false);
-            //    }
-            //}
+            if (m_imager != null)
+            {
+                //if (m_imager.m_ethernetIO != null)
+                //{
+                //    if (GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
+                //        m_imager.m_ethernetIO.SetOutputON(0, true);
+                //    else
+                //        m_imager.m_ethernetIO.SetOutputON(0, false);
+                //}
+            }
         }
 
 
@@ -397,6 +415,10 @@ namespace Waveguide
             {
                 m_imager.m_camera.CoolerON(false);
                 m_imager.Shutdown();
+
+                m_imager.m_ethernetIO.SetOutputON(0, false);  // unlock door
+
+                m_imager.m_omegaTempController.EnableHeater(false);  // turn heater off
             }
         }
 
@@ -531,6 +553,7 @@ namespace Waveguide
             HeaterOnOffPopup.IsOpen = false;
 
             // TODO: Turn Heater ON
+            m_imager.m_omegaTempController.EnableHeater(true);
         }
 
         private void HeaterOffPB_Click(object sender, RoutedEventArgs e)
@@ -541,6 +564,7 @@ namespace Waveguide
             HeaterOnOffPopup.IsOpen = false;
 
             // TODO: Turn Heater OFF
+            m_imager.m_omegaTempController.EnableHeater(false);
         }
 
 
@@ -574,7 +598,7 @@ namespace Waveguide
                     DoorLockedIndicator.Fill = new SolidColorBrush(Colors.Red);
                     PostMessage("Door Locked");
 
-                    if (GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
+                    //if (GlobalVars.DoorStatus == DOOR_STATUS.CLOSED)
                         m_imager.m_ethernetIO.SetOutputON(0, true);
                    
                 }
@@ -598,7 +622,18 @@ namespace Waveguide
             }
         }
 
-         
+     
+
+        private void InsideTemperatureEdit_ValueChanged(object sender, EventArgs e)
+        {
+            GlobalVars.InsideTargetTemperature = VM.InsideTargetTemp;
+
+            if (m_imager != null)
+                m_imager.SetInsideTemperatureTarget(VM.InsideTargetTemp);
+
+            VM.CheckInsideTemperature();
+        }
+
 
 
     }
@@ -638,19 +673,19 @@ namespace Waveguide
         private DOOR_STATUS _doorStatus;
         private bool _showHeaterOnOffPopup;     
         private bool _showRunExperimentPanel;
-        private ViewModel_RunExperimentControl.RUN_STATUS _experimentRunStatus;
+        private ViewModel_RunExperimentControl.RUN_STATE _experimentRunState;
 
         // make ExperimentParams Singleton part of view model (used to store selections made by user)
         private ExperimentParams _expParams;
         public ExperimentParams ExpParams { get { return _expParams; } }
 
 
-        public ViewModel_RunExperimentControl.RUN_STATUS ExperimentRunStatus
+        public ViewModel_RunExperimentControl.RUN_STATE ExperimentRunState
         {
-            get { return _experimentRunStatus; }
+            get { return _experimentRunState; }
             set
             {
-                _experimentRunStatus = value; NotifyPropertyChanged("ExperimentRunStatus");
+                _experimentRunState = value; NotifyPropertyChanged("ExperimentRunState");
             }
         }
 
@@ -754,7 +789,7 @@ namespace Waveguide
         }
 
 
-        private void CheckCameraTemperature()
+        public void CheckCameraTemperature()
         {
             if(!_coolingOn)
             {
@@ -773,7 +808,7 @@ namespace Waveguide
             }
         }
 
-        private void CheckInsideTemperature()
+        public void CheckInsideTemperature()
         {
             if (!_heatingOn)
             {
@@ -814,7 +849,7 @@ namespace Waveguide
 
             ShowHeaterOnOffPopup = false;
 
-            ExperimentRunStatus = ViewModel_RunExperimentControl.RUN_STATUS.NEEDS_INPUT;
+            ExperimentRunState = ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

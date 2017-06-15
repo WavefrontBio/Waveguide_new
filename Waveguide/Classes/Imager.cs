@@ -179,6 +179,15 @@ namespace Waveguide
             m_filterChangeSpeed = (byte)GlobalVars.FilterChangeSpeed;
 
             m_insideHeatingON = false;
+
+
+            CameraSettingsContainer cameraSettings;
+            bool success = m_wgDB.GetCameraSettingsDefault(out cameraSettings);
+            if (success && cameraSettings != null)
+            {
+                m_camera.ConfigureCamera(cameraSettings);
+            }
+           
         }
 
         public void SetInsideHeatingON(bool turnON)
@@ -239,21 +248,21 @@ namespace Waveguide
             }
             else
             {
-                // Initialize Lambda (filter controller)
-                //if (!m_lambda.SystemInitialized)
-                //{
-                //    success = m_lambda.Initialize();
-                //    if (!success)
-                //    {
-                //        ImagerReady = false;
-                //        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
-                //        return;
-                //    }
-                //    else
-                //    {
-                //        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
-                //    }
-                //}
+                 //Initialize Lambda (filter controller)
+                if (!m_lambda.SystemInitialized)
+                {
+                    success = m_lambda.Initialize();
+                    if (!success)
+                    {
+                        ImagerReady = false;
+                        OnImagerEvent(new ImagerEventArgs("Filter Controller FAILED to Initialize", ImagerState.Error));
+                        return;
+                    }
+                    else
+                    {
+                        OnImagerEvent(new ImagerEventArgs("Filter Controller Initialized Successfully", ImagerState.Idle));
+                    }
+                }
             }
 
             ImagerReady = true;
@@ -279,28 +288,9 @@ namespace Waveguide
          
             m_ImagingDictionary = new Dictionary<int, ImagingParamsStruct>();
 
-            m_mask = new MaskContainer();
-            m_mask.Angle = 0;
-            m_mask.Cols = 24;
-            m_mask.Description = "test mask";
-            m_mask.IsDefault = true;
-            m_mask.MaskID = 1;
-            m_mask.NumEllipseVertices = 24;
-            m_mask.PixelMaskImage = null;
-            m_mask.PixelList = null;
-            m_mask.PixelMask = null;
-            m_mask.PlateTypeID = 0;
-            m_mask.ReferenceImageID = 0;
-            m_mask.Rows = 16;
-            m_mask.Shape = 0;
-            m_mask.XOffset = 100;
-            m_mask.XSize = 25;
-            m_mask.XStep = 35;
-            m_mask.YOffset = 200;
-            m_mask.YSize = 25;
-            m_mask.YStep = 35;
-           
-            UpdateMask(m_mask);
+            SetMask(null); // tries to get the default mask from database.  If not there, it sythesizes a mask
+
+
 
             ColorModelContainer colorModelContainer = null;
             SetColorModel(colorModelContainer); // pass null here creates the default color model
@@ -338,6 +328,55 @@ namespace Waveguide
             m_ethernetIO = new EthernetIO(GlobalVars.EthernetIOModuleIP);
             
 
+        }
+
+
+        public void SetMask(MaskContainer mask)
+        {
+            // if mask == null, try to get the default mask from database and set to that.  If there is no default mask, set to a mask of 16x24 centered in image
+
+            if(mask == null)
+            {
+                // try to get default mask from database
+                mask = new MaskContainer();
+                bool success = m_wgDB.GetDefaultMask(ref mask);
+                if (success && mask != null)
+                {
+                    // set mask to default
+                    m_mask = mask;
+                }
+                else
+                {
+                    // no default found in database, so set
+                    // default mask to one centered in image
+                    m_mask = new MaskContainer();
+                    m_mask.Angle = 0;
+                    m_mask.Cols = 24;
+                    m_mask.Description = "test mask";
+                    m_mask.IsDefault = true;
+                    m_mask.MaskID = 1;
+                    m_mask.NumEllipseVertices = 24;
+                    m_mask.PixelMaskImage = null;
+                    m_mask.PixelList = null;
+                    m_mask.PixelMask = null;
+                    m_mask.PlateTypeID = 0;
+                    m_mask.ReferenceImageID = 0;
+                    m_mask.Rows = 16;
+                    m_mask.Shape = 0;
+                    m_mask.XOffset = 100;
+                    m_mask.XSize = 25;
+                    m_mask.XStep = 35;
+                    m_mask.YOffset = 200;
+                    m_mask.YSize = 25;
+                    m_mask.YStep = 35;
+                }
+            }
+            else
+            {
+                m_mask = mask;
+            }
+
+            UpdateMask(m_mask);
         }
 
         void m_omegaTempController_MessageEvent(object sender, OmegaTempCtrlMessageEventArgs e)
@@ -637,6 +676,8 @@ namespace Waveguide
 
                     if (dps.ImageControl.m_imageBitmap != null)
                     {
+                        dps.ImageControl.m_grayImage = grayFullImage;
+
                         byte[] colorImage;
                         m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
@@ -1588,23 +1629,28 @@ namespace Waveguide
             int tempPreAmpIndex = 0; // turn PreAmpGain all the way down
 
             if (cameraSettings == null)
-            {
-                startingExposure = 1;
-                exposureLimit = 1000;
-                highPixelValueThreshold = (UInt16)(0.8 * (float)GlobalVars.MaxPixelValue);
-                minPercentOfPixelsAboveLowLimit = 50;
-                maxPercentOfPixelsAboveHighLimit = 10;
-                lowPixelValueThreshold = (UInt16)(0.1 * (float)GlobalVars.MaxPixelValue);               
+            {                
+                success = m_wgDB.GetCameraSettingsDefault(out cameraSettings);
+
+                if(!success || cameraSettings != null)
+                {
+                    cameraSettings = new CameraSettingsContainer();
+                    cameraSettings.StartingExposure = 1;
+                    cameraSettings.ExposureLimit = 1000;
+                    cameraSettings.HighPixelThresholdPercent = 80;
+                    cameraSettings.MinPercentPixelsAboveLowThreshold = 50;
+                    cameraSettings.MaxPercentPixelsAboveHighThreshold = 10;
+                    cameraSettings.LowPixelThresholdPercent = 10;
+                }                                               
             }
-            else
-            {
-                startingExposure = cameraSettings.StartingExposure;
-                exposureLimit = cameraSettings.ExposureLimit;
-                highPixelValueThreshold = (UInt16)( ((float)cameraSettings.HighPixelThresholdPercent)/100.0f * ((float)GlobalVars.MaxPixelValue)  );
-                minPercentOfPixelsAboveLowLimit = cameraSettings.MinPercentPixelsAboveLowThreshold;
-                lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue)); ;
-                maxPercentOfPixelsAboveHighLimit = cameraSettings.MaxPercentPixelsAboveHighThreshold;                
-            }
+           
+            startingExposure = cameraSettings.StartingExposure;
+            exposureLimit = cameraSettings.ExposureLimit;
+            highPixelValueThreshold = (UInt16)( ((float)cameraSettings.HighPixelThresholdPercent)/100.0f * ((float)GlobalVars.MaxPixelValue)  );
+            minPercentOfPixelsAboveLowLimit = cameraSettings.MinPercentPixelsAboveLowThreshold;
+            lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue)); ;
+            maxPercentOfPixelsAboveHighLimit = cameraSettings.MaxPercentPixelsAboveHighThreshold;                
+           
 
             bool Done = false;
             string errMsg = "No Error";

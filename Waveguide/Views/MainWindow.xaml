@@ -192,8 +192,8 @@
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Target" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center"
                                Visibility="{Binding Path=HeatingOn, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     <ig:XamNumericInput Grid.Row="1" Grid.Column="1" Margin="0,0,0,0" Value="{Binding InsideTargetTemp,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" 
-                            ValueType="System:Int32"
-                            Mask="{}{number:10-40}" Width="50"
+                            ValueType="System:Int32" ValueChanged="InsideTemperatureEdit_ValueChanged"
+                            Mask="{}{number:70-100}" Width="50"
                             Visibility="{Binding Path=HeatingOn, Converter={StaticResource BooleanToVisibilityConverter}}"
                             SpinButtonDisplayMode="Always" SpinIncrement="1"/>
                 </Grid>

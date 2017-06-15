@@ -375,7 +375,7 @@ namespace Waveguide
                         newPti.Cols = ptc.Cols;
                         newPti.Rows = ptc.Rows;
                         newPti.IsDefault = false;
-                        newPti.PlateTypeID = 0;
+                        newPti.PlateTypeID = ptc.PlateTypeID;
 
                         VM.PlateTypeList.Insert(0, newPti);
                         

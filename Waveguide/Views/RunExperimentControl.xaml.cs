@@ -26,6 +26,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 
 namespace Waveguide
@@ -88,6 +89,8 @@ namespace Waveguide
         WriteableBitmap m_colorMapBitmap;
 
         public ViewModel_RunExperimentControl VM;
+
+        DispatcherTimer m_runStatusTimer;
 
         RangeClass m_range;  // limits for color model slider
 
@@ -242,8 +245,21 @@ namespace Waveguide
 
             VM.InsideTemperatureTarget = 10;
             VM.InsideTemperatureReady = false;
-                    
 
+            m_runStatusTimer = new DispatcherTimer();
+            m_runStatusTimer.Interval = TimeSpan.FromMilliseconds(1000);
+            m_runStatusTimer.Tick += m_runStatusTimer_Tick;
+            m_runStatusTimer.Start();
+        }
+
+        void m_runStatusTimer_Tick(object sender, EventArgs e)
+        {
+            VM.CameraTemperatureActual = GlobalVars.CameraTemp;
+            VM.InsideTemperatureActual = GlobalVars.InsideTemp;
+
+            VM.EvalCameraTemperature();
+            VM.EvalInsideTemperature();
+            VM.EvalRunStatus();
         }
 
 
@@ -253,9 +269,9 @@ namespace Waveguide
         }
 
       
-        public void SetStatus(ViewModel_RunExperimentControl.RUN_STATUS status)
+        public void SetState(ViewModel_RunExperimentControl.RUN_STATE state)
         {
-            VM.Status = status;
+            VM.RunState = state;
         }
 
 
@@ -307,6 +323,8 @@ namespace Waveguide
                 VM.InsideHeaterEnabled = m_imager.m_insideHeatingON;
 
                 BuildChartArray();
+
+                m_imager.SetMask(VM.ExpParams.mask);
             }
         }
 
@@ -2288,16 +2306,7 @@ namespace Waveguide
         }
 
 
-        private void InsideTemperatureEdit_ValueChanged(object sender, EventArgs e)
-        {
-            GlobalVars.InsideTargetTemperature = VM.InsideTemperatureTarget;
-
-            if (m_imager != null)
-                m_imager.SetInsideTemperatureTarget(VM.InsideTemperatureTarget);
-
-            VM.EvalInsideTemperature();
-        }
-
+      
 
         private void Binning_1x1_RadioButton_Checked(object sender, RoutedEventArgs e)
         {
@@ -2853,7 +2862,7 @@ namespace Waveguide
 
     public class ViewModel_RunExperimentControl : INotifyPropertyChanged
     {
-        public enum RUN_STATUS { NEEDS_INPUT, READY_TO_RUN, RUNNING, RUN_FINISHED };
+        //public enum RUN_STATUS { NEEDS_INPUT, READY_TO_RUN, RUNNING, RUN_FINISHED };
 
         public enum RUN_STATE
         {
@@ -2906,23 +2915,23 @@ namespace Waveguide
             }
         }
 
-        private RUN_STATUS _status;
-        public RUN_STATUS Status
-        {
-            get
-            {
-                return this._status;
-            }
+        //private RUN_STATUS _status;
+        //public RUN_STATUS Status
+        //{
+        //    get
+        //    {
+        //        return this._status;
+        //    }
 
-            set
-            {
-                if (value != this._status)
-                {
-                    this._status = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
+        //    set
+        //    {
+        //        if (value != this._status)
+        //        {
+        //            this._status = value;
+        //            NotifyPropertyChanged();
+        //        }
+        //    }
+        //}
 
         private int _activeBinning;
         public int ActiveBinning
@@ -3186,18 +3195,20 @@ namespace Waveguide
                 cp.Barcode = "";
             }
 
-            SetRunStatus(RUN_STATUS.NEEDS_INPUT);
+            SetRunState(RUN_STATE.NEEDS_INPUT);
         }
 
 
         public void EvalCameraTemperature()
         {
-            int deviation = CameraTemperatureActual - (CameraTemperatureTarget + GlobalVars.MaxCameraTemperatureThresholdDeviation);
+            //int deviation = CameraTemperatureActual - (CameraTemperatureTarget + GlobalVars.MaxCameraTemperatureThresholdDeviation);
 
-            if (deviation <= 0)
-                CameraTemperatureReady = true;
-            else
-                CameraTemperatureReady = false;
+            //if (deviation <= 0)
+            //    CameraTemperatureReady = true;
+            //else
+            //    CameraTemperatureReady = false;
+
+            CameraTemperatureReady = GlobalVars.CameraTempReady;
 
             EvalRunStatus();
         }
@@ -3205,12 +3216,14 @@ namespace Waveguide
 
         public void EvalInsideTemperature()
         {
-            int deviation = InsideTemperatureActual - (InsideTemperatureTarget + GlobalVars.MaxInsideTemperatureThresholdDeviation);
+            //int deviation = InsideTemperatureActual - (InsideTemperatureTarget + GlobalVars.MaxInsideTemperatureThresholdDeviation);
 
-            if (deviation <= 0 || InsideHeaterEnabled)
-                InsideTemperatureReady = true;
-            else
-                InsideTemperatureReady = false;
+            //if (deviation <= 0 || !InsideHeaterEnabled)
+            //    InsideTemperatureReady = true;
+            //else
+            //    InsideTemperatureReady = false;
+
+            InsideTemperatureReady = GlobalVars.InsideTempReady;
 
             EvalRunStatus();
         }
@@ -3219,7 +3232,7 @@ namespace Waveguide
         public void EvalRunStatus()
         {  // Possible Status: NEEDS_INPUT, READY_TO_RUN, RUNNING, RUN_FINISHED  
 
-            if (Status == RUN_STATUS.RUN_FINISHED || Status == RUN_STATUS.RUNNING) return;
+            if (RunState == RUN_STATE.RUN_FINISHED || RunState == RUN_STATE.RUNNING) return;
 
             if(ExpParams.experimentPlate.BarcodeValid)
             {
@@ -3235,26 +3248,26 @@ namespace Waveguide
                     if (!cp.BarcodeValid) allCompoundPlatesVerified = false;
                 }
 
-                if (allIndicatorsVerified && allCompoundPlatesVerified && CameraTemperatureReady && InsideTemperatureReady) Status = RUN_STATUS.READY_TO_RUN;
-                else Status = RUN_STATUS.NEEDS_INPUT;
+                if (allIndicatorsVerified && allCompoundPlatesVerified && CameraTemperatureReady && InsideTemperatureReady) RunState = RUN_STATE.READY_TO_RUN;
+                else RunState = RUN_STATE.NEEDS_INPUT;
             }
             else
             {
-                Status = RUN_STATUS.NEEDS_INPUT;
+                RunState = RUN_STATE.NEEDS_INPUT;
             }
 
             RunExperimentControlViewModel_EventArgs e = new RunExperimentControlViewModel_EventArgs();
-            e.RunStatus = Status;
+            e.RunState = RunState;
             if(StatusChange != null)
                 StatusChange(this, e);
         }
 
-        public void SetRunStatus(RUN_STATUS runStatus)
+        public void SetRunState(RUN_STATE runState)
         {
-            Status = runStatus;
+            RunState = runState;
 
             RunExperimentControlViewModel_EventArgs e = new RunExperimentControlViewModel_EventArgs();
-            e.RunStatus = runStatus;
+            e.RunState = runState;
             StatusChange(this, e);
         }
 
@@ -3285,11 +3298,11 @@ namespace Waveguide
 
     public class RunExperimentControlViewModel_EventArgs : EventArgs
     {
-        private ViewModel_RunExperimentControl.RUN_STATUS _runStatus;
-        public ViewModel_RunExperimentControl.RUN_STATUS RunStatus
+        private ViewModel_RunExperimentControl.RUN_STATE _runState;
+        public ViewModel_RunExperimentControl.RUN_STATE RunState
         {
-            set { _runStatus = value; }
-            get { return this._runStatus; }
+            set { _runState = value; }
+            get { return this._runState; }
         }
     }
 

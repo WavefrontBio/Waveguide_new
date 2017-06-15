@@ -68,7 +68,7 @@ namespace Waveguide
 
         void m_watchdogTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if(!m_connected && !m_tryingToConnect && m_device != null)
+            if(!m_connected && !m_tryingToConnect)
             {
                 m_tryingToConnect = true;
 

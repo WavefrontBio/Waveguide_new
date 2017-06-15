@@ -940,7 +940,7 @@ namespace Waveguide
 
 
 
-        public async void StartKineticImaging(int maxNumImages, bool saveImages = false, int projectID = 0, int plateID = 0, int experimentID = 0)
+        public async void StartKineticImaging(ITargetBlock<Tuple<ushort[], int, int>> imageProcessingPipeline,int maxNumImages, CancellationToken ct, CancellationTokenSource cts)
         {
             Task KineticImagingTask;
 
@@ -956,18 +956,15 @@ namespace Waveguide
                 m_camera.PrepForKineticImaging();
 
                 m_kineticImagingON = true;
-                m_cancelTokenSource = new CancellationTokenSource();
-
+              
                 OnImagerEvent(new ImagerEventArgs("Kinetic Imaging Started", ImagerState.Busy));
 
        
-                KineticImagingTask = Task.Factory.StartNew(() => KineticImagingProducer(m_cancelTokenSource.Token, m_cancelTokenSource, maxNumImages, 
-                                                                                        saveImages, projectID, plateID, experimentID), m_cancelTokenSource.Token);
+                KineticImagingTask = Task.Factory.StartNew(() => KineticImagingProducer(imageProcessingPipeline, maxNumImages, ct, cts),ct);
 
 
                 try
-                {
-                   
+                {                   
                     await KineticImagingTask;
                 }
                 catch (AggregateException aggEx)
@@ -1013,8 +1010,7 @@ namespace Waveguide
 
 
 
-        private void KineticImagingProducer(CancellationToken ct, CancellationTokenSource cts, int maxImagesToProduce, 
-                                            bool saveImages, int projectID, int plateID, int experimentID)
+        private void KineticImagingProducer(ITargetBlock<Tuple<ushort[], int, int>> imageProcessingPipeline, int maxImagesToProduce, CancellationToken ct, CancellationTokenSource cts )
         {
             // Kinetic Image Producer                        
 
@@ -1031,35 +1027,34 @@ namespace Waveguide
 
             m_imagingSequenceCounter = sw;
 
+            ITargetBlock<Tuple<ushort[], int, int>> ImageProcessingPipeline = imageProcessingPipeline;
+
+            ExperimentParams expParams = ExperimentParams.GetExperimentParams;
+
             // log file is saved in same directory as the images
-            string logFileName = GlobalVars.ImageFileSaveLocation + "\\" + projectID.ToString() + "\\" + plateID.ToString() + "\\" + experimentID.ToString() + "\\logfile.txt";
-            Trace.Listeners.Clear();
-            if (saveImages)
-            {
-                Trace.Listeners.Add(new TextWriterTraceListener(logFileName));
-                Trace.TraceInformation(DateTime.Now.ToString());
-                Trace.TraceInformation("Database Record ID's:");
-                Trace.TraceInformation("ProjectID: " + projectID.ToString());
-                Trace.TraceInformation("PlateID: " + plateID.ToString());
-                Trace.TraceInformation("ExperimentID: " + experimentID.ToString());
-                Trace.TraceInformation("");
-                Trace.TraceInformation("Indicators:");
-                int indNdx = 0;
-                foreach (KeyValuePair<int, ImagingParamsStruct> entry in m_ImagingDictionary)
-                {
-                    indNdx++;
-                    // do something with entry.Value or entry.Key
-                    Trace.TraceInformation(indNdx.ToString() + " - " + entry.Value.indicatorName);
-                    Trace.TraceInformation("Excitation Filter: " + entry.Value.excitationFilterPos.ToString());
-                    Trace.TraceInformation("Emission Filter: " + entry.Value.emissionFilterPos.ToString());
-                    Trace.TraceInformation("");
-                }
-            }
-
-
-            ITargetBlock<Tuple<ushort[], int, int, bool, bool>> ImageProcessingPipeline = CreateImageProcessingPipeline(m_uiTask, ct, m_camera.m_acqParams,
-                                                                                    m_ImagingDictionary,
-                                                                                    m_mask, m_UseMask, saveImages, projectID, plateID, experimentID);
+            //string logFileName = GlobalVars.ImageFileSaveLocation + "\\" + expParams.project.ProjectID.ToString() + "\\" + expParams.experimentPlate.PlateID.ToString() + "\\" + expParams.experiment.ExperimentID.ToString() + "\\logfile.txt";
+            //Trace.Listeners.Clear();
+            //if (saveImages)
+            //{
+            //    Trace.Listeners.Add(new TextWriterTraceListener(logFileName));
+            //    Trace.TraceInformation(DateTime.Now.ToString());
+            //    Trace.TraceInformation("Database Record ID's:");
+            //    Trace.TraceInformation("ProjectID: " + projectID.ToString());
+            //    Trace.TraceInformation("PlateID: " + plateID.ToString());
+            //    Trace.TraceInformation("ExperimentID: " + experimentID.ToString());
+            //    Trace.TraceInformation("");
+            //    Trace.TraceInformation("Indicators:");
+            //    int indNdx = 0;
+            //    foreach (KeyValuePair<int, ImagingParamsStruct> entry in m_ImagingDictionary)
+            //    {
+            //        indNdx++;
+            //        // do something with entry.Value or entry.Key
+            //        Trace.TraceInformation(indNdx.ToString() + " - " + entry.Value.indicatorName);
+            //        Trace.TraceInformation("Excitation Filter: " + entry.Value.excitationFilterPos.ToString());
+            //        Trace.TraceInformation("Emission Filter: " + entry.Value.emissionFilterPos.ToString());
+            //        Trace.TraceInformation("");
+            //    }
+            //}
 
 
             // set camera into kinetic imaging mode
@@ -1167,7 +1162,7 @@ namespace Waveguide
                         // post image data to be processed (convert to full image, mask, flat field correct, calc histogram, build histogram image,
                         //                                  convert to color, display, calc well sums)
 
-                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int, bool, bool>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds, saveImages, saveImages));
+                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds));
 
                         imageCount++;
                                               
@@ -1190,7 +1185,7 @@ namespace Waveguide
                             if(!filterChangeSucceeded)
                             {
                                 // TODO: handle filter changer error
-                                Trace.TraceError("Filter Change Error at " + sw.ElapsedMilliseconds.ToString() + " msecs into experiment");                                
+                                //Trace.TraceError("Filter Change Error at " + sw.ElapsedMilliseconds.ToString() + " msecs into experiment");                                
                             }
                         }                       
                     }
@@ -1199,8 +1194,8 @@ namespace Waveguide
                         m_camera.MyCamera.AbortAcquisition();
                         cts.Cancel();
                         abort = true;
-                        Trace.TraceError("Failed to get data from camera (error code =  " + ecode.ToString() + ") "
-                            + sw.ElapsedMilliseconds.ToString() + " msecs into experiment. Experiment Aborted.");
+                        //Trace.TraceError("Failed to get data from camera (error code =  " + ecode.ToString() + ") "
+                        //    + sw.ElapsedMilliseconds.ToString() + " msecs into experiment. Experiment Aborted.");
                     }
                 }
                 catch (OperationCanceledException)
@@ -1208,7 +1203,7 @@ namespace Waveguide
                     // Add Loop Canceled
                     m_camera.MyCamera.AbortAcquisition();
                     abort = true;
-                    Trace.TraceInformation("Experiment Cancelled at " + sw.ElapsedMilliseconds.ToString() + " msecs into experiment");
+                    //Trace.TraceInformation("Experiment Cancelled at " + sw.ElapsedMilliseconds.ToString() + " msecs into experiment");
                     break;
                 }
 
@@ -1230,10 +1225,10 @@ namespace Waveguide
             //float rate = (float)imageCount / (float)t1 * 1000;
             //MessageBox.Show("Frames: " + imageCount.ToString() + "\nMSecs: " + t1.ToString() + "\nRate(Hz): " + rate.ToString());
 
-            Trace.TraceInformation("Images Recorded: "+ imageCount.ToString());
-            Trace.TraceInformation("Complete: " + DateTime.Now.ToString());
+            //Trace.TraceInformation("Images Recorded: "+ imageCount.ToString());
+            //Trace.TraceInformation("Complete: " + DateTime.Now.ToString());
 
-            Trace.Listeners.Clear();
+            //Trace.Listeners.Clear();
 
             m_kineticImagingON = false;
 
@@ -1336,9 +1331,7 @@ namespace Waveguide
             m_imagingSequenceCounter = sw;
 
 
-            ITargetBlock<Tuple<ushort[], int, int, bool, bool>> ImageProcessingPipeline = CreateImageProcessingPipeline(m_uiTask, ct, m_camera.m_acqParams,
-                                                                                    m_ImagingDictionary,
-                                                                                    m_mask, m_UseMask, false, 0, 0, 0);
+            ITargetBlock<Tuple<ushort[], int, int>> ImageProcessingPipeline = CreateImageProcessingPipeline(m_uiTask, ct,m_mask, m_UseMask, false, 0, 0, 0,null);
 
 
             // set camera into kinetic imaging mode
@@ -1449,7 +1442,7 @@ namespace Waveguide
                         // post image data to be processed (convert to full image, mask, flat field correct, calc histogram, build histogram image,
                         //                                  convert to color, display, calc well sums)
 
-                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int, bool, bool>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds, false, false));
+                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds));
 
                         imageCount++;
 
@@ -2094,21 +2087,29 @@ namespace Waveguide
         ////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////// 
 
+      
         #region Pipelines
 
         #region ImageProcessingPipeline
 
-        public ITargetBlock<Tuple<ushort[], int, int, bool, bool>> CreateImageProcessingPipeline(TaskScheduler uiTask, CancellationToken cancelToken,
-                            AcquisitionParams acqParams, Dictionary<int, ImagingParamsStruct> _imagingDictionary,
-                            MaskContainer mask, bool applyMask, bool saveImages, int projectID, int plateID, int experimentID)
+        public ITargetBlock<Tuple<ushort[], int, int>> CreateImageProcessingPipeline(TaskScheduler uiTask, CancellationToken cancelToken,
+                            MaskContainer mask, bool applyMask, bool saveImages, int projectID, int plateID, int experimentID,
+                            ITargetBlock<Tuple<UInt32[], int, int>> _analysisPipeline)
         {
+            Dictionary<int, ImagingParamsStruct> imagingDictionary = m_ImagingDictionary;
 
             List<int> indicatorIDList = new List<int>();
-            foreach (int key in _imagingDictionary.Keys) indicatorIDList.Add(key);
+            foreach (int key in m_ImagingDictionary.Keys) indicatorIDList.Add(key);
+           
             ImageFileManager imageFileManager = new ImageFileManager();
             imageFileManager.SetBasePath(GlobalVars.ImageFileSaveLocation, projectID, plateID, experimentID, indicatorIDList);
-            Dictionary<int, ImagingParamsStruct> imagingDictionary = _imagingDictionary;
+            
             CudaToolBox cuda = m_cudaToolBox;
+
+            AcquisitionParams acqParams = m_camera.m_acqParams;
+            
+
+            ITargetBlock<Tuple<UInt32[], int, int>> analysisPipeline = _analysisPipeline;
 
             var firstEntry = imagingDictionary.First();
             ImagingParamsStruct firstIps = firstEntry.Value;
@@ -2156,7 +2157,7 @@ namespace Waveguide
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // CudaProcessing and Display
 
-            var CudaProcessAndDisplayImage = new TransformBlock<Tuple<ushort[], int, int, bool, bool>, Tuple<ushort[], int, int>>(inputData =>
+            var CudaProcessAndDisplayImage = new TransformBlock<Tuple<ushort[], int, int>, Tuple<ushort[], int, int>>(inputData =>
             {
                 // since this call Cuda and GUI functionality, it must be run on the UI Thread
                 // Input: raw grayscale ROI image (ushort[]), 
@@ -2168,22 +2169,18 @@ namespace Waveguide
                 ushort[] grayRoiImage = inputData.Item1;  // Raw Grayscale ROI image 
                 int expIndID = inputData.Item2;  // Experiment Indicator ID
                 int sequenceNumber = inputData.Item3; // number of msecs into the experiment that image was taken
-                bool storeImage = inputData.Item4;  // store image?
-                bool analyzeImage = inputData.Item5; // analyze image?
+                bool storeImage = saveImages;  // store image?
+                bool analyzeImage = saveImages; // analyze image?
 
 
-                Stopwatch sw = new Stopwatch();
                 long t1 = 0;
                 ushort[] FullGrayImage = null;
                 Int32Rect histRect = new Int32Rect(0, 0, m_histogramImageWidth, m_histogramImageHeight);
 
                 try
                 {
-                    // set the cuda context to this thread
-                    //cuda.PushCudaContext();
+                 
 
-                    sw.Restart();
-                    // get FlatFieldCorrector for this experiment indicator
                     if (imagingDictionary.ContainsKey(expIndID))
                     {
                         // process image
@@ -2206,7 +2203,11 @@ namespace Waveguide
                         UInt32[] sums;
                         cuda.GetMaskApertureSums(out sums, mask.Rows, mask.Cols);
 
-                        // update the GUI with the aperture sums
+                        // if analysisPipeline != null, then calculate aperature sums and post to Analysis Pipeline
+                        if(analysisPipeline != null)
+                        {
+                            analysisPipeline.Post(Tuple.Create<UInt32[], int, int>(sums, expIndID, sequenceNumber));
+                        }
 
 
                         // calculate the image histogram
@@ -2244,7 +2245,7 @@ namespace Waveguide
                         }
 
                     }
-                    t1 = sw.ElapsedMilliseconds;
+                  
 
                     return Tuple.Create<ushort[], int, int>(FullGrayImage, expIndID, sequenceNumber);
                 }
@@ -2404,7 +2405,7 @@ namespace Waveguide
 
         #region Analysis Pipeline
 
-        public ITargetBlock<Tuple<ushort[], int, int>> CreateAnalysisPipeline(RunExperimentControl runExperimentControl, 
+        public ITargetBlock<Tuple<UInt32[], int, int>> CreateAnalysisPipeline(RunExperimentControl runExperimentControl,
                 ObservableCollection<Tuple<int, int>> controlWells,
                 int numFoFrames, int dynamicRatioNumeratorID, int dynamicRatioDenominatorID)
         {
@@ -2490,47 +2491,75 @@ namespace Waveguide
             //      input: grayimage (ushort[]), ExperimentIndicatorID (int), time (int)
             //      output: array of raw pixel sums for each mask aperture (float[,]), ExperimentIndicatorID (int)
             //              and time (int)
-            var calculateApertureSums = new TransformBlock<Tuple<ushort[], int, int>, Tuple<float[,], int, int>>(inputData =>
+            //var calculateApertureSums = new TransformBlock<Tuple<ushort[], int, int>, Tuple<float[,], int, int>>(inputData =>
+            //{
+            //    ushort[] grayImage = inputData.Item1;
+            //    int expIndicatorID = inputData.Item2;
+            //    int time = inputData.Item3;
+
+            //    try
+            //    {
+            //        // sum all pixels in pixelList
+            //        float[,] F = new float[expParams.mask.Rows, expParams.mask.Cols];
+
+            //        for (int r = 0; r < expParams.mask.Rows; r++)
+            //            for (int c = 0; c < expParams.mask.Cols; c++)
+            //            {
+            //                F[r, c] = 0;
+
+            //                int pixelCount = 0;
+
+            //                // calculate sum of pixels inside mask aperture[r,c]
+            //                foreach (int ndx in expParams.mask.PixelList[r, c])
+            //                {                              
+            //                    F[r, c] += grayImage[ndx];
+            //                    pixelCount++;                              
+            //                }
+
+            //                if (pixelCount > 0)
+            //                    F[r, c] = F[r, c] / pixelCount;
+            //            }
+
+            //        return Tuple.Create(F, expIndicatorID, time);
+            //    }
+            //    catch (OperationCanceledException)
+            //    {
+            //        return null;
+            //    }
+            //},
+            //   new ExecutionDataflowBlockOptions
+            //   {
+            //       MaxDegreeOfParallelism = 1
+            //   });
+
+
+
+            // Convert in the incoming well sums from an UInt32[] 1D array to a float[,] 2D array.  A wasteful step, but necessary for now.
+            //      input: intF array (UInt32[]), ExperimentIndicatorID (int), and time (int)
+            //      output: floatF array (float[,]), ExperimentIndicatorID (int), and time (int)
+            var convertToFloatArray = new TransformBlock<Tuple<UInt32[],int,int>,Tuple<float[,],int,int>> (inputData =>
             {
-                ushort[] grayImage = inputData.Item1;
+                // this is a wasteful step...all it does it converts the incoming int[,] into a float[,].  Just easier to do it this way for now.
+
+                UInt32[] intF = inputData.Item1;
                 int expIndicatorID = inputData.Item2;
                 int time = inputData.Item3;
 
-                try
-                {
-                    // sum all pixels in pixelList
-                    float[,] F = new float[expParams.mask.Rows, expParams.mask.Cols];
+                float[,] floatF = new float[expParams.mask.Rows, expParams.mask.Cols];
 
-                    for (int r = 0; r < expParams.mask.Rows; r++)
-                        for (int c = 0; c < expParams.mask.Cols; c++)
-                        {
-                            F[r, c] = 0;
+                 for (int r = 0; r < expParams.mask.Rows; r++)
+                     for (int c = 0; c < expParams.mask.Cols; c++)
+                     {
+                         int ndx = (r * expParams.mask.Cols) + c;
+                         floatF[r, c] = (float)intF[ndx];
+                     }
 
-                            int pixelCount = 0;
-
-                            // calculate sum of pixels inside mask aperture[r,c]
-                            foreach (int ndx in expParams.mask.PixelList[r, c])
-                            {                              
-                                F[r, c] += grayImage[ndx];
-                                pixelCount++;                              
-                            }
-
-                            if (pixelCount > 0)
-                                F[r, c] = F[r, c] / pixelCount;
-                        }
-
-                    return Tuple.Create(F, expIndicatorID, time);
-                }
-                catch (OperationCanceledException)
-                {
-                    return null;
-                }
+                 return Tuple.Create<float[,], int, int>(floatF, expIndicatorID, time);
             },
-               new ExecutionDataflowBlockOptions
-               {
-                   MaxDegreeOfParallelism = 1
-               });
-
+             new ExecutionDataflowBlockOptions
+             {
+                 MaxDegreeOfParallelism = 1
+             });
 
 
             // calculate Static Ratio: F/Fo for each mask aperture.  Fo is the average of the 
@@ -2847,7 +2876,7 @@ namespace Waveguide
 
 
             // link blocks
-            calculateApertureSums.LinkTo(calculateStaticRatio);
+            convertToFloatArray.LinkTo(calculateStaticRatio);
             calculateStaticRatio.LinkTo(calculateControlSubtraction);
             calculateControlSubtraction.LinkTo(calculateDynamicRatio);
             calculateDynamicRatio.LinkTo(PostAnalysisResults);
@@ -2855,7 +2884,7 @@ namespace Waveguide
 
 
             // return head of display pipeline
-            return calculateApertureSums;
+            return convertToFloatArray;
           
 
         } // END CreateAnalysisPipeline()

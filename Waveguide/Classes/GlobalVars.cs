@@ -12,6 +12,20 @@ namespace Waveguide
     public class GlobalVars
     {
 
+        private static TaskScheduler _uiTask;
+        public static TaskScheduler UITask
+        {
+            get { return _uiTask;}
+            set { _uiTask = value; }  
+        }
+
+
+        private static VWorks _vWorks;
+        public static VWorks VWorks
+        {
+            get { return _vWorks; }
+            set { _vWorks = value; }
+        }
      
         public enum USER_ROLE_ENUM
         {

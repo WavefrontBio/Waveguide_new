@@ -27,11 +27,26 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Threading.Tasks.Dataflow;
+using System.Threading;
 
 
 namespace Waveguide
 {
-     
+
+    public class RunExperimentPanel_PostMessageEventArgs : EventArgs
+    {
+        private string _message;
+        public string Message
+        {
+            get { return _message; }
+            set { _message = value; }
+        }
+        public RunExperimentPanel_PostMessageEventArgs(string msg)
+        {
+            _message = msg;
+        }
+    }
 
     public partial class RunExperimentControl : UserControl
     {
@@ -49,6 +64,24 @@ namespace Waveguide
         {
             OnCloseRunExperimentPanel(null);
         }
+
+        ////////////////////////////////////////////////////////////////////////////
+
+        // PostMessage RunExperimentControl Panel Event
+        public delegate void PostMessage_RunExperimentPanelEventHandler(object sender, RunExperimentPanel_PostMessageEventArgs e);
+        public event PostMessage_RunExperimentPanelEventHandler PostMessage_RunExperimentPanelEvent;
+
+        protected virtual void OnPostMessage_RunExperimentPanel(RunExperimentPanel_PostMessageEventArgs e)
+        {
+            if (PostMessage_RunExperimentPanelEvent != null) PostMessage_RunExperimentPanelEvent(this, e);
+        }
+
+        public void PostMessageRunExperimentPanel(string msg)
+        {
+            OnPostMessage_RunExperimentPanel(new RunExperimentPanel_PostMessageEventArgs(msg));
+        }
+
+       
 
         ////////////////////////////////////////////////////////////////////////////
 
@@ -167,6 +200,15 @@ namespace Waveguide
         WaveguideDB wgDB;
 
         Imager m_imager;
+
+        VWorks m_vworks;
+
+        CancellationTokenSource m_cancelTokenSource;
+        CancellationToken m_cancelToken;
+
+        ITargetBlock<Tuple<UInt32[], int, int>> m_analysisPipeline;
+        ITargetBlock<Tuple<ushort[], int, int>> m_imageProcessingPipeline;
+
        
         public RunExperimentControl()
         {
@@ -250,6 +292,57 @@ namespace Waveguide
             m_runStatusTimer.Interval = TimeSpan.FromMilliseconds(1000);
             m_runStatusTimer.Tick += m_runStatusTimer_Tick;
             m_runStatusTimer.Start();
+
+            
+        }
+
+       
+
+        void m_vworks_PostVWorksCommandEvent(object sender, WaveGuideEvents.VWorksCommandEventArgs e)
+        {
+            switch(e.Command)
+            {
+                case VWORKS_COMMAND.Error:
+                    PostMessageRunExperimentPanel("VWorks Error");
+                    break;
+                case VWORKS_COMMAND.Event_Marker:
+                    PostMessageRunExperimentPanel("VWorks Event Marker");
+                    break;
+                case VWORKS_COMMAND.Initialization_Complete:
+                    PostMessageRunExperimentPanel("VWorks Initialization Complete");
+                    break;
+                case VWORKS_COMMAND.Message:
+                    PostMessageRunExperimentPanel("VWorks Message: " + e.Name + ", " + e.Description + ", " + e.Param1.ToString());
+                    break;
+                case VWORKS_COMMAND.Pause_Until:
+                    PostMessageRunExperimentPanel("VWorks Pause Until");
+                    break;
+                case VWORKS_COMMAND.Protocol_Aborted:
+                    PostMessageRunExperimentPanel("VWorks Protocol Aborted");
+                    break;
+                case VWORKS_COMMAND.Protocol_Complete:
+                    PostMessageRunExperimentPanel("VWorks Protocol Complete");
+                    break;
+                case VWORKS_COMMAND.Protocol_Paused:
+                    PostMessageRunExperimentPanel("VWorks Protocol Paused");
+                    break;
+                case VWORKS_COMMAND.Protocol_Resumed:
+                    PostMessageRunExperimentPanel("VWorks Protocol Resumed");
+                    break;
+                case VWORKS_COMMAND.Set_Time_Marker:
+                    PostMessageRunExperimentPanel("VWorks Set Time Marker");
+                    break;
+                case VWORKS_COMMAND.Start_Imaging:
+                    PostMessageRunExperimentPanel("VWorks Start Imaging");
+                    //m_imager.StartKineticImaging(m_imageProcessingPipeline, (int)1000000, m_cancelToken, m_cancelTokenSource);
+                    break;
+                case VWORKS_COMMAND.Stop_Imaging:
+                    PostMessageRunExperimentPanel("VWorks Stop Imaging");
+                    break;
+                case VWORKS_COMMAND.Unrecoverable_Error:
+                    PostMessageRunExperimentPanel("VWorks Unrecoverable Error");
+                    break;
+            }
         }
 
         void m_runStatusTimer_Tick(object sender, EventArgs e)
@@ -326,6 +419,14 @@ namespace Waveguide
 
                 m_imager.SetMask(VM.ExpParams.mask);
             }
+
+       
+            m_vworks = GlobalVars.VWorks;
+
+            m_vworks.PostVWorksCommandEvent -= m_vworks_PostVWorksCommandEvent;
+
+            m_vworks.PostVWorksCommandEvent += m_vworks_PostVWorksCommandEvent;    
+
         }
 
 
@@ -2342,6 +2443,7 @@ namespace Waveguide
             exFilt = null;
             emFilt = null;
             int previousBinning = m_imager.m_camera.m_acqParams.HBin;
+            CameraSettingsContainer previousCameraSettings = VM.ExpParams.cameraSettings;
 
             bool success = wgDB.GetAllExcitationFilters();
             if (success)
@@ -2455,8 +2557,8 @@ namespace Waveguide
             }
 
          
-            // if the binning was changed, un-verify all other indicators
-            if (VM.Binning != previousBinning) // binning was changed
+            // if the binning or camera settings were changed, un-verify all other indicators
+            if (VM.Binning != previousBinning || VM.ExpParams.cameraSettings != previousCameraSettings) // binning or camera settings were changed
             {
                 foreach (ExperimentIndicatorContainer ind in VM.ExpParams.indicatorList)
                 {
@@ -2490,6 +2592,11 @@ namespace Waveguide
             VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT;
         }
 
+        private void ClosePB_Click(object sender, RoutedEventArgs e)
+        {
+            CloseRunExperimentPanel();
+        }
+
         private void RunPB_Click(object sender, RoutedEventArgs e)
         {
             switch (VM.RunState)
@@ -2497,25 +2604,19 @@ namespace Waveguide
                 case ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT:
                     //Close_EnclosureCameraViewer();
                     //Close();
-                    CloseRunExperimentPanel();
+                    //CloseRunExperimentPanel();
                     break;
 
                 case ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN:
 
-                    //if (PrepForRun())
-                    //{
-                    //    m_tokenSource = new CancellationTokenSource();
-                    //    m_cancelToken = m_tokenSource.Token;
-                    //    m_progress = new Progress<int>();
-
-                    //    // RUN EXPERIMENT !!
-                    //    VM.RunState = RunExperiment_ViewModel.RUN_STATE.RUNNING;
-                    //    ChartArrayControl.SetStatus(ViewModel_ChartArray.RUN_STATUS.RUNNING);
-                    //    //SetButton(VM.RunState);
-
-                    //    PostMessage("Starting VWorks Method: " + m_vworksProtocolFilename);
-                    //    m_vworks.StartMethod(m_vworksProtocolFilename);
-                    //}
+                    if (PrepForRun())
+                    {                      
+                        // RUN EXPERIMENT !!
+                        VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
+                        SetState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
+                        PostMessageRunExperimentPanel("Starting VWorks Method: " + VM.ExpParams.method.BravoMethodFile);
+                        m_vworks.StartMethod(VM.ExpParams.method.BravoMethodFile);
+                    }
                     break;
 
                 case ViewModel_RunExperimentControl.RUN_STATE.RUNNING:
@@ -2527,19 +2628,19 @@ namespace Waveguide
                 case ViewModel_RunExperimentControl.RUN_STATE.RUN_FINISHED:
                     //Close_EnclosureCameraViewer();
                     //Close();
-                    CloseRunExperimentPanel();
+                    //CloseRunExperimentPanel();
                     break;
 
                 case ViewModel_RunExperimentControl.RUN_STATE.RUN_ABORTED:
                     //Close_EnclosureCameraViewer();
                     //Close();
-                    CloseRunExperimentPanel();
+                    //CloseRunExperimentPanel();
                     break;
 
                 case ViewModel_RunExperimentControl.RUN_STATE.ERROR:
                     //Close_EnclosureCameraViewer();
                     //Close();
-                    CloseRunExperimentPanel();
+                    //CloseRunExperimentPanel();
                     break;
             }
         }
@@ -2660,95 +2761,24 @@ namespace Waveguide
             //    m_histogramPipeline = m_imager.CreateHistogramPipeline(m_uiTask, m_histogram, m_iParams.HorzBinning, m_iParams.VertBinning, ffcDictionary);
             //}
 
+            int numeratorID = 0;
+            int denominatorID = 0;
+            if (VM.ExpParams.dynamicRatioNumerator != null) numeratorID = VM.ExpParams.dynamicRatioNumerator.ExperimentIndicatorID;
+            if (VM.ExpParams.dynamicRatioDenominator != null) denominatorID = VM.ExpParams.dynamicRatioDenominator.ExperimentIndicatorID;
+
+            m_analysisPipeline = m_imager.CreateAnalysisPipeline(this, VM.ExpParams.controlSubtractionWellList, VM.ExpParams.numFoFrames, numeratorID, denominatorID);
+
+         
+
+            m_cancelTokenSource = new CancellationTokenSource();
+            m_cancelToken = m_cancelTokenSource.Token;
+
+            m_imageProcessingPipeline = m_imager.CreateImageProcessingPipeline(GlobalVars.UITask,m_cancelToken,VM.ExpParams.mask,true,true,VM.ExpParams.project.ProjectID,VM.ExpParams.experimentPlate.PlateID,VM.ExpParams.experiment.ExperimentID,m_analysisPipeline);
+
             return true;
 
         }
 
-
-
-
-
-        //public void BuildImagingDictionary()
-        //{
-        //    m_imager.m_ImagingDictionary = new Dictionary<int, ImagingParamsStruct>();
-
-            
-        //    foreach(ExperimentIndicatorContainer expInd in VM.ExpParams.indicatorList)
-        //    {
-        //        ImagingParamsStruct ips = new ImagingParamsStruct();
-
-        //        ips.binning = VM.Binning;
-        //        ips.cycleTime = expInd.CycleTime;
-        //        ips.emissionFilterPos = (byte)expInd.EmissionFilterPos;
-        //        ips.excitationFilterPos = (byte)expInd.ExcitationFilterPos;
-        //        ips.experimentIndicatorID = expInd.ExperimentIndicatorID;
-        //        ips.exposure = expInd.Exposure;
-        //        ips.flatfieldType = expInd.FlatFieldCorrection;
-        //        ips.gain = expInd.Gain;
-        //        ips.histBitmap = null;
-        //        ips.ImageControl = null;
-        //        ips.indicatorName = expInd.Description;
-        //        ips.optimizeWellList = 
-        //    }
-
-            
-        //    iParams.maxPixelValue = GlobalVars.MaxPixelValue;
-        //    iParams.imageWidth = GlobalVars.PixelWidth / ChartArrayControl.VM.HorzBinning;
-        //    iParams.imageHeight = GlobalVars.PixelHeight / ChartArrayControl.VM.VertBinning;
-        //    iParams.Image_StartCol = VM.RoiX;
-        //    iParams.Image_EndCol = VM.RoiX + VM.RoiW - 1;
-        //    iParams.Image_StartRow = VM.RoiY;
-        //    iParams.Image_EndRow = VM.RoiY + VM.RoiH - 1;
-        //    iParams.BravoMethodFilename = VM.Method.BravoMethodFile;
-        //    iParams.CameraTemperature = GlobalVars.CameraTargetTemperature;
-        //    iParams.HorzBinning = ChartArrayControl.VM.HorzBinning;
-        //    iParams.VertBinning = ChartArrayControl.VM.VertBinning;
-        //    iParams.EmissionFilterChangeSpeed = GlobalVars.FilterChangeSpeed;
-        //    iParams.ExcitationFilterChangeSpeed = GlobalVars.FilterChangeSpeed;
-        //    iParams.LightIntensity = 100;
-        //    iParams.NumImages = 1000000; // artificial limit on number of images
-        //    iParams.NumIndicators = ChartArrayControl.VM.IndicatorList.Count;
-        //    iParams.SyncExcitationFilterWithImaging = true;
-
-        //    iParams.CycleTime = new int[ChartArrayControl.VM.IndicatorList.Count];
-        //    iParams.EmissionFilter = new byte[ChartArrayControl.VM.IndicatorList.Count];
-        //    iParams.ExcitationFilter = new byte[ChartArrayControl.VM.IndicatorList.Count];
-        //    iParams.Exposure = new float[ChartArrayControl.VM.IndicatorList.Count];
-        //    iParams.Gain = new int[ChartArrayControl.VM.IndicatorList.Count];
-        //    iParams.ExperimentIndicatorID = new int[ChartArrayControl.VM.IndicatorList.Count];
-        //    iParams.IndicatorName = new string[ChartArrayControl.VM.IndicatorList.Count];
-        //    iParams.LampShutterIsOpen = new bool[ChartArrayControl.VM.IndicatorList.Count];
-
-        //    iParams.PixelMask = new PixelMaskContainer[ChartArrayControl.VM.IndicatorList.Count];
-
-        //    int i = 0;
-        //    foreach (ExperimentIndicatorContainer ind in ChartArrayControl.VM.IndicatorList)
-        //    {
-        //        iParams.CycleTime[i] = ChartArrayControl.VM.CycleTime;
-        //        iParams.EmissionFilter[i] = (byte)ind.EmissionFilterPos;
-        //        iParams.ExcitationFilter[i] = (byte)ind.ExcitationFilterPos;
-        //        iParams.Exposure[i] = (float)ind.Exposure / 1000;
-        //        iParams.Gain[i] = ind.Gain;
-        //        iParams.ExperimentIndicatorID[i] = 0; // created by the RunExperiment object when the experiment is run
-        //        iParams.IndicatorName[i] = ind.Description;
-        //        iParams.LampShutterIsOpen[i] = true;
-        //        iParams.ExperimentIndicatorID[i] = ind.ExperimentIndicatorID;
-
-        //        iParams.PixelMask[i] = new PixelMaskContainer(iParams.imageWidth, iParams.imageHeight);
-
-        //        if (ind.UsePixelMask)
-        //        {
-        //            for (int j = 0; j < ind.PixelMask.MaskData.Length; j++)
-        //            {
-        //                iParams.PixelMask[i].MaskData[j] = ind.PixelMask.MaskData[j];
-        //            }
-        //        }
-
-        //        i++;
-        //    }
-
-        //    return iParams;
-        //}
 
 
 
@@ -2848,6 +2878,8 @@ namespace Waveguide
             MessageBox.Show(errMsg, title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
+        
+
     }
 
 
@@ -2915,24 +2947,7 @@ namespace Waveguide
             }
         }
 
-        //private RUN_STATUS _status;
-        //public RUN_STATUS Status
-        //{
-        //    get
-        //    {
-        //        return this._status;
-        //    }
-
-        //    set
-        //    {
-        //        if (value != this._status)
-        //        {
-        //            this._status = value;
-        //            NotifyPropertyChanged();
-        //        }
-        //    }
-        //}
-
+    
         private int _activeBinning;
         public int ActiveBinning
         {

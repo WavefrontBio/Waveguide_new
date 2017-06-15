@@ -86,6 +86,15 @@ namespace Waveguide
             this.Closing += new System.ComponentModel.CancelEventHandler(Window_Closing);
 
             m_uiTask = TaskScheduler.FromCurrentSynchronizationContext();
+            GlobalVars.UITask = m_uiTask;
+
+            MyRunExperimentControl.PostMessage_RunExperimentPanelEvent += MyRunExperimentControl_PostMessage_RunExperimentPanelEvent;
+            
+        }
+
+        void MyRunExperimentControl_PostMessage_RunExperimentPanelEvent(object sender, RunExperimentPanel_PostMessageEventArgs e)
+        {
+            PostMessage(e.Message);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -194,6 +203,7 @@ namespace Waveguide
         {
             bool success = true;
             m_vworks = new VWorks();
+            GlobalVars.VWorks = m_vworks;
 
             if(!m_vworks.m_vworksOK)
             {

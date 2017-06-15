@@ -24,6 +24,7 @@
             <local:BoolToInvertVisibilityConverter x:Key="BoolToInvertVis" />
             <local:ValidationErrorsToStringConverter x:Key="validationErrorToStringConverter"/>
 
+            
 
             <Style x:Key="TrackFillStyle" TargetType="igPrim:TrackFill">
                 <Setter Property="Template">
@@ -538,6 +539,11 @@
                             <igDP:FieldLayout.Fields>
 
                                 <igDP:Field Name="Description" Label="Indicator">
+                                    <igDP:Field.CellValuePresenterStyle>
+                                        <Style TargetType="{x:Type igDP:CellValuePresenter}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        </Style>
+                                    </igDP:Field.CellValuePresenterStyle>
                                     <igDP:Field.Settings>
                                         <igDP:FieldSettings AllowEdit="False" LabelTextAlignment="Center"/>
                                     </igDP:Field.Settings>
@@ -549,6 +555,7 @@
                                             <igDP:FieldSettings.EditorStyle>
                                                 <Style TargetType="{x:Type igEditors:XamNumericEditor}" >
                                                     <Setter Property="Mask" Value="nnnnn" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                                 </Style>
                                             </igDP:FieldSettings.EditorStyle>
                                         </igDP:FieldSettings>
@@ -561,6 +568,7 @@
                                             <igDP:FieldSettings.EditorStyle>
                                                 <Style TargetType="{x:Type igEditors:XamNumericEditor}" >
                                                     <Setter Property="Mask" Value="nnnnn" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                                 </Style>
                                             </igDP:FieldSettings.EditorStyle>
                                         </igDP:FieldSettings>
@@ -573,13 +581,42 @@
                                             <igDP:FieldSettings.EditorStyle>
                                                 <Style TargetType="{x:Type igEditors:XamNumericEditor}" >
                                                     <Setter Property="Mask" Value="nnn" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                                 </Style>
                                             </igDP:FieldSettings.EditorStyle>
                                         </igDP:FieldSettings>
                                     </igDP:Field.Settings>
                                 </igDP:Field>
 
+
+                                <igDP:Field Name="ExcitationFilterDesc" Label="Excitation Filter">
+                                    <igDP:Field.CellValuePresenterStyle>
+                                        <Style TargetType="{x:Type igDP:CellValuePresenter}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        </Style>
+                                    </igDP:Field.CellValuePresenterStyle>
+                                    <igDP:Field.Settings>
+                                        <igDP:FieldSettings AllowEdit="False" LabelTextAlignment="Center" />
+                                    </igDP:Field.Settings>
+                                </igDP:Field>
+
+                                <igDP:Field Name="EmissionFilterDesc" Label="Emission Filter">
+                                    <igDP:Field.CellValuePresenterStyle>
+                                        <Style TargetType="{x:Type igDP:CellValuePresenter}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        </Style>
+                                    </igDP:Field.CellValuePresenterStyle>                                 
+                                    <igDP:Field.Settings>
+                                        <igDP:FieldSettings AllowEdit="False" LabelTextAlignment="Center" />
+                                    </igDP:Field.Settings>
+                                </igDP:Field>
+
                                 <igDP:Field Name="FlatFieldCorrection" Label="Flat Field">
+                                    <igDP:Field.CellValuePresenterStyle>
+                                        <Style TargetType="{x:Type igDP:CellValuePresenter}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        </Style>
+                                    </igDP:Field.CellValuePresenterStyle>
                                     <igDP:Field.Settings>
                                         <igDP:FieldSettings AllowEdit="False" LabelTextAlignment="Center"/>
                                     </igDP:Field.Settings>
@@ -655,6 +692,7 @@
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -662,32 +700,31 @@
                     </Grid.RowDefinitions>
 
 
-                    <Image Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
-                            x:Name="EnclosureCameraPB" Source="/Images/eye.png" MouseLeftButtonUp="EnclosureCameraPB_MouseLeftButtonUp"/>
+                    <Image Grid.Row="1" Grid.Column="0" x:Name="EnclosureCameraPB"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                             Source="/Images/eye.png" MouseLeftButtonUp="EnclosureCameraPB_MouseLeftButtonUp"/>
 
 
-                    <Label Grid.Row="0" Grid.Column="1" Content="Pause"
+                    <Label Grid.Row="0" Grid.Column="1" Content="Pause" x:Name="DelayHeader"
                        HorizontalAlignment="Center" 
                        VerticalAlignment="Center"
-                       FontSize="18" FontWeight="Bold"
-                       x:Name="DelayHeader"                       
+                       FontSize="18" FontWeight="Bold"                                              
                        Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"
                        />
 
-                    
-                    <TextBlock Grid.Row="1" Grid.Column="1"
+
+                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DelayDisplay"
                        HorizontalAlignment="Center" VerticalAlignment="Stretch"
                        Text="{Binding Path=DelayText}"
-                       Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"
-                       x:Name="DelayDisplay"
+                       Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"                       
                        FontSize="32"
                        FontWeight="Bold"
                        />
 
 
-                    <Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
+                    <Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" x:Name="ResetPB"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    x:Name="ResetPB" Width="80" Height="60"
+                    Width="80" Height="60"
                     Content="Reset" FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                     Click="ResetPB_Click"                                       
                     >
@@ -719,7 +756,86 @@
                     </Button>
 
 
-                    <Image Grid.Row="0" Grid.Column="3" Grid.RowSpan="2" x:Name="RunStateImage" RenderTransformOrigin="0.5,0.5">
+
+                    <Button Grid.Row="0" Grid.Column="4" Grid.RowSpan="2" x:Name="ClosePB" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Width="80" Height="60"                            
+                    FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                    Click="ClosePB_Click"
+                    >
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Close"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+
+                    <Button Grid.Row="0" Grid.Column="5" Grid.RowSpan="2" x:Name="RunPB" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Width="80" Height="60"
+                    FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                    Click="RunPB_Click"
+                    >
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Content" Value=""/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Content" Value=""/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Run"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Content" Value="Abort"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Content" Value=""/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Content" Value=""/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+
+                    <Image Grid.Row="0" Grid.Column="6" Grid.RowSpan="2" x:Name="RunStateImage" RenderTransformOrigin="0.5,0.5">
                         <Image.RenderTransform>
                             <RotateTransform Angle="0"/>
                         </Image.RenderTransform>
@@ -764,44 +880,6 @@
 
                     </Image>
 
-
-                    <Button Grid.Row="0" Grid.Column="4" Grid.RowSpan="2"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    x:Name="RunPB" Width="80" Height="60"
-                    FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                    Click="RunPB_Click"
-                    >
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Content" Value="Close"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Content" Value="Close"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Content" Value="Run"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Content" Value="Abort"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Content" Value="Close"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Content" Value="Close"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
 
 
 

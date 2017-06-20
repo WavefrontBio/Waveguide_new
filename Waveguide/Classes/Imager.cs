@@ -81,8 +81,8 @@ namespace Waveguide
         Stopwatch m_imagingSequenceCounter;
         public OmegaTempCtrl m_omegaTempController;
         public EthernetIO m_ethernetIO;
-        
 
+      
         public Lambda m_lambda;
         public Thor m_thor;
 

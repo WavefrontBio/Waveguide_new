@@ -81,7 +81,20 @@ namespace Waveguide
             OnPostMessage_RunExperimentPanel(new RunExperimentPanel_PostMessageEventArgs(msg));
         }
 
-       
+        ////////////////////////////////////////////////////////////////////////////
+        // Bring Window to Front RunExperimentControl Panel Event
+        public delegate void BringToFrontRunExperimentPanelEventHandler(object sender, EventArgs e);
+        public event BringToFrontRunExperimentPanelEventHandler BringToFrontRunExperimentPanelEvent;
+
+        protected virtual void OnBringToFrontRunExperimentPanel(EventArgs e)
+        {
+            if (BringToFrontRunExperimentPanelEvent != null) BringToFrontRunExperimentPanelEvent(this, e);
+        }
+
+        public void BringToFrontRunExperimentPanel()
+        {
+            OnBringToFrontRunExperimentPanel(null);
+        }
 
         ////////////////////////////////////////////////////////////////////////////
 
@@ -203,6 +216,11 @@ namespace Waveguide
 
         VWorks m_vworks;
 
+        Dispatcher m_dispatcher;
+
+        DispatcherTimer m_timer;
+        int m_delayTime;
+
         CancellationTokenSource m_cancelTokenSource;
         CancellationToken m_cancelToken;
 
@@ -230,7 +248,7 @@ namespace Waveguide
             InitializeComponent();
 
             this.DataContext = VM;
-
+           
             m_visibleSignal = VISIBLE_SIGNAL.RAW;
             RawRadioButton.IsChecked = true;
 
@@ -293,57 +311,162 @@ namespace Waveguide
             m_runStatusTimer.Tick += m_runStatusTimer_Tick;
             m_runStatusTimer.Start();
 
-            
+            m_dispatcher = this.Dispatcher;
+
+            m_timer = new DispatcherTimer();
+            m_timer.Tick += m_timer_Tick;
+            m_timer.Interval = TimeSpan.FromMilliseconds(1000);
+
+            VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT;
+        }
+
+        void m_timer_Tick(object sender, EventArgs e)
+        {
+            m_delayTime -= 1000;
+            if (m_delayTime <= 0)
+            {
+                m_timer.Stop();
+                VM.DelayHeaderVisible = false;
+                VM.DelayText = "";
+            }
+            else
+            {
+                VM.DelayHeaderVisible = true;
+                VM.DelayText = ((int)(m_delayTime / 1000)).ToString();
+            }
         }
 
        
 
         void m_vworks_PostVWorksCommandEvent(object sender, WaveGuideEvents.VWorksCommandEventArgs e)
         {
-            switch(e.Command)
+            VWORKS_COMMAND command = e.Command;
+            int param1 = e.Param1;
+            string name = e.Name;
+            string desc = e.Description;
+            int sequenceNumber = (int)m_imager.GetImagingSequenceTime();
+            bool success;
+            EventMarkerContainer eventMarker;
+
+            switch(command)
             {
                 case VWORKS_COMMAND.Error:
                     PostMessageRunExperimentPanel("VWorks Error");
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        m_timer.Stop();
+                        VM.DelayText = "";
+                        VM.DelayHeaderVisible = false;
+                        m_cancelTokenSource.Cancel();  // stops the imaging task
+                        VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.ERROR;
+                    }));
                     break;
                 case VWORKS_COMMAND.Event_Marker:
                     PostMessageRunExperimentPanel("VWorks Event Marker");
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        AddEventMarker(sequenceNumber, desc);
+                        eventMarker = new EventMarkerContainer();
+                        eventMarker.Description = desc;
+                        eventMarker.ExperimentID = VM.ExpParams.experiment.ExperimentID;
+                        eventMarker.Name = name;
+                        eventMarker.SequenceNumber = sequenceNumber - GlobalVars.EventMarkerLatency;
+                        eventMarker.TimeStamp = DateTime.Now;
+                        success = wgDB.InsertEventMarker(ref eventMarker);
+                        if (!success) PostMessageRunExperimentPanel("Database Error in InsertEventMarker: " + wgDB.GetLastErrorMsg());
+                    }));
                     break;
                 case VWORKS_COMMAND.Initialization_Complete:
                     PostMessageRunExperimentPanel("VWorks Initialization Complete");
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        BringToFrontRunExperimentPanel();
+                    }));
                     break;
                 case VWORKS_COMMAND.Message:
-                    PostMessageRunExperimentPanel("VWorks Message: " + e.Name + ", " + e.Description + ", " + e.Param1.ToString());
+                    PostMessageRunExperimentPanel("VWorks Message: " + name + ", " + desc);
                     break;
                 case VWORKS_COMMAND.Pause_Until:
                     PostMessageRunExperimentPanel("VWorks Pause Until");
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        m_delayTime = param1;
+                        VM.DelayHeaderVisible = true;
+                        VM.DelayText = ((int)(m_delayTime / 1000)).ToString();
+                        m_timer.Start();
+                    }));
                     break;
                 case VWORKS_COMMAND.Protocol_Aborted:
                     PostMessageRunExperimentPanel("VWorks Protocol Aborted");
+
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        m_timer.Stop();
+                        VM.DelayText = "";
+                        m_cancelTokenSource.Cancel();  // stops the imaging task
+                        VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.RUN_ABORTED;
+                    }));
                     break;
                 case VWORKS_COMMAND.Protocol_Complete:
                     PostMessageRunExperimentPanel("VWorks Protocol Complete");
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        m_timer.Stop();
+                        VM.DelayText = "";
+                        VM.DelayHeaderVisible = false;
+                        m_cancelTokenSource.Cancel(); // make sure the imaging task stops
+                        VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.RUN_FINISHED;
+
+                        ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
+                                                            VM.ExpParams.experiment,
+                                                            VM.ExpParams.indicatorList);
+                        dlg.ShowDialog();
+                    }));
                     break;
                 case VWORKS_COMMAND.Protocol_Paused:
                     PostMessageRunExperimentPanel("VWorks Protocol Paused");
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        m_delayTime = param1;
+                        VM.DelayHeaderVisible = true;
+                        m_timer.Start();
+                    }));
                     break;
                 case VWORKS_COMMAND.Protocol_Resumed:
                     PostMessageRunExperimentPanel("VWorks Protocol Resumed");
+                     m_dispatcher.Invoke((Action)(() =>
+                        {
+                            m_timer.Stop();
+                            VM.DelayText = "";
+                            VM.DelayHeaderVisible = false;
+                        }));
                     break;
                 case VWORKS_COMMAND.Set_Time_Marker:
                     PostMessageRunExperimentPanel("VWorks Set Time Marker");
                     break;
                 case VWORKS_COMMAND.Start_Imaging:
                     PostMessageRunExperimentPanel("VWorks Start Imaging");
-                    //m_imager.StartKineticImaging(m_imageProcessingPipeline, (int)1000000, m_cancelToken, m_cancelTokenSource);
+                    BringToFrontRunExperimentPanel();
+                    m_imager.StartKineticImaging(m_imageProcessingPipeline, (int)1000000, m_cancelToken, m_cancelTokenSource);
                     break;
                 case VWORKS_COMMAND.Stop_Imaging:
                     PostMessageRunExperimentPanel("VWorks Stop Imaging");
+                    m_imager.StopKineticImaging();
                     break;
                 case VWORKS_COMMAND.Unrecoverable_Error:
                     PostMessageRunExperimentPanel("VWorks Unrecoverable Error");
+                    m_dispatcher.Invoke((Action)(() =>
+                    {
+                        m_timer.Stop();
+                        VM.DelayText = "";
+                        m_cancelTokenSource.Cancel();  // stops the imaging task
+                        VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.ERROR;
+                    }));
                     break;
             }
         }
+
+
 
         void m_runStatusTimer_Tick(object sender, EventArgs e)
         {
@@ -355,6 +478,8 @@ namespace Waveguide
             VM.EvalRunStatus();
         }
 
+
+     
 
         void ChartArrayGrid_SizeChanged(object sender, SizeChangedEventArgs e)
         {
@@ -573,7 +698,7 @@ namespace Waveguide
 
             //m_imager.ResetImagingDictionary();
 
-            bool createDisplayForEachIndicator = true;
+            bool createDisplayForEachIndicator = false;
             ImageDisplay imageDisplay = null;
 
             int i = 0;

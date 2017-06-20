@@ -89,7 +89,16 @@ namespace Waveguide
             GlobalVars.UITask = m_uiTask;
 
             MyRunExperimentControl.PostMessage_RunExperimentPanelEvent += MyRunExperimentControl_PostMessage_RunExperimentPanelEvent;
+            MyRunExperimentControl.BringToFrontRunExperimentPanelEvent += MyRunExperimentControl_BringToFrontRunExperimentPanelEvent;
             
+        }
+
+        void MyRunExperimentControl_BringToFrontRunExperimentPanelEvent(object sender, EventArgs e)
+        {            
+            Dispatcher.Invoke((Action)(() =>
+            {
+                BringWindowToFront();
+            }));
         }
 
         void MyRunExperimentControl_PostMessage_RunExperimentPanelEvent(object sender, RunExperimentPanel_PostMessageEventArgs e)
@@ -196,6 +205,28 @@ namespace Waveguide
         void Configure_RunExperimentControl()
         {          
             MyRunExperimentControl.Configure(m_imager);
+        }
+
+
+
+        void BringWindowToFront()
+        {
+            // Bring this window into view (on top of VWorks)
+            if (!this.IsVisible)
+            {
+                this.Show();
+            }
+
+            if (this.WindowState == WindowState.Minimized)
+            {
+                this.WindowState = WindowState.Normal;
+            }
+
+            this.Activate();
+            this.Topmost = true;  // important
+            this.Topmost = false; // important
+            this.Focus();         // important 
+
         }
 
 

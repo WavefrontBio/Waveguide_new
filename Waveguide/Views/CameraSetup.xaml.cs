@@ -304,6 +304,8 @@ namespace Waveguide
 
             UInt16[] grayRoiImage;
             int exposure = Convert.ToInt32(Exposure.Text);
+
+            m_imager.m_lambda.OpenShutterA();
                                                  
             bool success = m_imager.AcquireImage(exposure, out grayRoiImage);
             if(success)
@@ -311,6 +313,8 @@ namespace Waveguide
                 // display image
                 m_imager.ProcessAndDisplayImage(grayRoiImage, m_ID, vm.ApplyMask, m_lowerSliderValue, m_upperSliderValue);
             }
+
+            m_imager.m_lambda.CloseShutterA();
         }
 
         private void StartVideoPB_Click(object sender, RoutedEventArgs e)

@@ -60,7 +60,7 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
+    <OutputPath>..\x64\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -76,21 +76,61 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="InfragisticsWPF4.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Editors.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DragDrop.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataVisualization.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataPresenter.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataManager.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Menus.XamMenu.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Layouts.XamTileManager.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Interactions.XamDialogWindow.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Gauges.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamSlider.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamMaskedInput.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamComboEditor.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamColorPicker.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Charts.XamDataChart.v16.2, Version=16.2.20162.2045, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="Arction.DirectX, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.DirectX.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.DirectXFiles, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.DirectXFiles.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.DirectXInit, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.DirectXInit.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.Licensing, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.Licensing.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.MathCore, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.MathCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.RenderingDefinitions, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.RenderingDefinitions.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.RenderingEngine, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.RenderingEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.RenderingEngine11, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.RenderingEngine11.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.RenderingEngine9, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.RenderingEngine9.dll</HintPath>
+    </Reference>
+    <Reference Include="Arction.Wpf.Charting.LightningChartUltimate, Version=7.2.4.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\Arction.Wpf.Charting.LightningChartUltimate.dll</HintPath>
+    </Reference>
+    <Reference Include="InfragisticsWPF4.Controls.Charts.XamDataChart.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamColorPicker.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamComboEditor.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamMaskedInput.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamSlider.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Gauges.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Interactions.XamDialogWindow.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Layouts.XamTileManager.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Menus.XamMenu.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataManager.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataPresenter.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataVisualization.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DragDrop.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Editors.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
     <Reference Include="ATMCD64CS">
       <HintPath>..\References\ATMCD64CS.dll</HintPath>
     </Reference>
@@ -100,39 +140,6 @@
     <Reference Include="Brainboxes.IO, Version=1.2.4.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Brainboxes.IO.1.4.0.1\lib\net40\Brainboxes.IO.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.DirectX">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.DirectX.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.DirectXFiles">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.DirectXFiles.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.DirectXInit">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.DirectXInit.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.Licensing">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.Licensing.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.RenderingDefinitions">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.RenderingDefinitions.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.RenderingEngine">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.RenderingEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.RenderingEngine11">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.RenderingEngine11.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.RenderingEngine9">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.RenderingEngine9.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.Wpf.BindableCharting.LightningChartUltimate">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.Wpf.BindableCharting.LightningChartUltimate.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.Wpf.Charting.LightningChartUltimate">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.Wpf.Charting.LightningChartUltimate.dll</HintPath>
-    </Reference>
-    <Reference Include="Arction.Wpf.SemibindableCharting.LightningChartUltimate">
-      <HintPath>..\packages\LightningChartUltimateWPF7.7.2.4.1\lib\net40-client\Arction.Wpf.SemibindableCharting.LightningChartUltimate.dll</HintPath>
     </Reference>
     <Reference Include="MjpegProcessor">
       <HintPath>..\References\MjpegProcessor.dll</HintPath>
@@ -155,6 +162,9 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="ViewModels">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\ViewModels.dll</HintPath>
+    </Reference>
     <Reference Include="VWorks4Lib">
       <HintPath>..\References\VWorks4Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -162,6 +172,9 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="WpfToolkit">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\WpfToolkit.dll</HintPath>
+    </Reference>
     <Reference Include="WriteableBitmapEx.Wpf">
       <HintPath>..\packages\WriteableBitmapEx.1.5.1.0\lib\net40\WriteableBitmapEx.Wpf.dll</HintPath>
     </Reference>

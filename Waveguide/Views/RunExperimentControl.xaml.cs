@@ -338,7 +338,7 @@ namespace Waveguide
 
        
 
-        void m_vworks_PostVWorksCommandEvent(object sender, WaveGuideEvents.VWorksCommandEventArgs e)
+        public void m_vworks_PostVWorksCommandEvent(object sender, WaveGuideEvents.VWorksCommandEventArgs e)
         {
             VWORKS_COMMAND command = e.Command;
             int param1 = e.Param1;
@@ -548,9 +548,9 @@ namespace Waveguide
        
             m_vworks = GlobalVars.VWorks;
 
-            m_vworks.PostVWorksCommandEvent -= m_vworks_PostVWorksCommandEvent;
+            //m_vworks.PostVWorksCommandEvent += m_vworks_PostVWorksCommandEvent;  // this is now assigned inside the MainWindow.xaml.cs 
 
-            m_vworks.PostVWorksCommandEvent += m_vworks_PostVWorksCommandEvent;    
+            m_vworks.ShowVWorks();
 
         }
 
@@ -560,6 +560,7 @@ namespace Waveguide
         {
             // build the chart array using the data stored in the ExperimentParams Singleton
             BuildChartArray(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
+
         }
         
 
@@ -1310,6 +1311,7 @@ namespace Waveguide
 
 
             m_aggregateChart = new LightningChartUltimate("David Weaver/Developer1 - Renewed subscription/LightningChartUltimate/KRLD2KS3KTX5YQ42P6V8Q42JKU2B355YTMEU");
+            //m_aggregateChart = new LightningChartUltimate();
           
             m_aggregateChart.BeginUpdate();
 
@@ -1442,6 +1444,7 @@ namespace Waveguide
                     //m_charts[iChart] = new LightningChartUltimate(LicenseKeys.LicenseKeyStrings.LightningChartUltimate, renderSettings);
 
                     m_charts[iChart] = new LightningChartUltimate("David Weaver/Developer1 - Renewed subscription/LightningChartUltimate/KRLD2KS3KTX5YQ42P6V8Q42JKU2B355YTMEU", renderSettings);
+                    
 
                     //m_charts[iChart] = new LightningChartUltimate("David Weaver/LicensePack1/LightningChartUltimate/F3SCJUDJ3K2AYU42BMWMP9Q2KT279YSXMN3V", renderSettings);
 
@@ -2567,7 +2570,7 @@ namespace Waveguide
             FilterContainer exFilt, emFilt;
             exFilt = null;
             emFilt = null;
-            int previousBinning = m_imager.m_camera.m_acqParams.HBin;
+            int previousBinning = VM.Binning; 
             CameraSettingsContainer previousCameraSettings = VM.ExpParams.cameraSettings;
 
             bool success = wgDB.GetAllExcitationFilters();
@@ -2651,7 +2654,7 @@ namespace Waveguide
 
             indicator.Exposure = dlg.CameraSetupControl.vm.Exposure;
             indicator.Gain = dlg.CameraSetupControl.vm.EMGain;
-            
+            indicator.PreAmpGain = dlg.CameraSetupControl.vm.PreAmpGainIndex;
             indicator.CycleTime = dlg.CameraSetupControl.vm.CycleTime;
             indicator.FlatFieldCorrection = dlg.CameraSetupControl.vm.FlatFieldSelect.FlatField_Select;
             VM.CurrentCameraSettings = dlg.CameraSetupControl.vm.CurrentCameraSettings;
@@ -2664,7 +2667,8 @@ namespace Waveguide
                 ips.gain = indicator.Gain;
                 ips.binning = dlg.CameraSetupControl.vm.Binning;
                 ips.cycleTime = indicator.CycleTime;
-                ips.flatfieldType = indicator.FlatFieldCorrection;                
+                ips.flatfieldType = indicator.FlatFieldCorrection;
+                ips.preAmpGainIndex = indicator.PreAmpGain;
             }
 
 
@@ -2682,7 +2686,7 @@ namespace Waveguide
             }
 
          
-            // if the binning or camera settings were changed, un-verify all other indicators
+            // if the binning or camera settings were changed, un-verify all other indicators         
             if (VM.Binning != previousBinning || VM.ExpParams.cameraSettings != previousCameraSettings) // binning or camera settings were changed
             {
                 foreach (ExperimentIndicatorContainer ind in VM.ExpParams.indicatorList)
@@ -2722,6 +2726,13 @@ namespace Waveguide
             CloseRunExperimentPanel();
         }
 
+        private void AbortExperiment()
+        {
+            m_vworks.VWorks_AbortProtocol();
+           
+            m_cancelTokenSource.Cancel();  // stops the imaging task
+        }
+
         private void RunPB_Click(object sender, RoutedEventArgs e)
         {
             switch (VM.RunState)
@@ -2745,8 +2756,8 @@ namespace Waveguide
                     break;
 
                 case ViewModel_RunExperimentControl.RUN_STATE.RUNNING:
-                    //AbortExperiment();
-                    //VM.RunState = RunExperiment_ViewModel.RUN_STATE.RUN_ABORTED;
+                    AbortExperiment();
+                    VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.RUN_ABORTED;
                     //ChartArrayControl.SetStatus(ViewModel_ChartArray.RUN_STATUS.RUN_FINISHED);                  
                     break;
 
@@ -2796,9 +2807,12 @@ namespace Waveguide
                         ind.ExcitationFilterDesc = ei.ExcitationFilterDesc;
                         ind.ExcitationFilterPos = ei.ExcitationFilterPos;
                         ind.ExperimentID = VM.ExpParams.experiment.ExperimentID;
+                        ei.ExperimentID = VM.ExpParams.experiment.ExperimentID;
                         ind.Exposure = ei.Exposure;
                         ind.Gain = ei.Gain;
-                        ind.MaskID = ei.MaskID;
+                        ind.PreAmpGain = ei.PreAmpGain;
+                        ind.MaskID = VM.ExpParams.mask.MaskID;
+                        ei.MaskID = VM.ExpParams.mask.MaskID;
                         ind.SignalType = ei.SignalType;
                         ind.FlatFieldCorrection = ei.FlatFieldCorrection;
 
@@ -2850,14 +2864,50 @@ namespace Waveguide
             }
 
 
-            // BuildImagingDictionary();  // I think this is already built during the Verify process
+            
+
+            // rebuild m_imager.m_imagingDictionary
+
+                // get binning from first entry in m_imager.m_imagingDictionary (all are same, so getting first one will suffice)
+                int binning = 1;
+                foreach(ImagingParamsStruct ips in m_imager.m_ImagingDictionary.Values)
+                {
+                    binning = ips.binning;
+                    break;
+                }
+
+                m_imager.ResetImagingDictionary();
+                foreach(ExperimentIndicatorContainer eic in VM.ExpParams.indicatorList)
+                {
+                    ImagingParamsStruct ips = new ImagingParamsStruct();
+
+                    ips.binning = binning;
+                    ips.cycleTime = eic.CycleTime;
+                    ips.emissionFilterPos = (byte)eic.EmissionFilterPos;
+                    ips.excitationFilterPos = (byte)eic.ExcitationFilterPos;
+                    ips.experimentIndicatorID = eic.ExperimentIndicatorID;
+                    ips.exposure = (float)eic.Exposure / 1000.0f;
+                    ips.flatfieldType = eic.FlatFieldCorrection;                    
+                    ips.gain = eic.Gain;
+                    ips.indicatorName = eic.Description;
+                    ips.optimizeWellList = null;
+                    ips.preAmpGainIndex = eic.PreAmpGain;
+
+                    // these next two are set up in BuildDisplayGrid() called below
+                    ips.histBitmap = null;
+                    ips.ImageControl = null;
+
+                    m_imager.m_ImagingDictionary.Add(ips.experimentIndicatorID, ips);
+                }
+
+         
+
 
             BuildChartArray(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
             
             BuildDisplayGrid();
 
-            //Dictionary<int, ImageDisplay> idDictionary = ChartArrayControl.GetImageDisplayDictionary();
-
+      
             // prepare flat field correction for each indicator
             Dictionary<int, FLATFIELD_SELECT> ffcDictionary = new Dictionary<int, FLATFIELD_SELECT>();
             foreach (ExperimentIndicatorContainer ei in VM.ExpParams.indicatorList)
@@ -2865,27 +2915,9 @@ namespace Waveguide
                 ffcDictionary.Add(ei.ExperimentIndicatorID, ei.FlatFieldCorrection);
             }
 
-                   
+      
 
-
-            //m_displayPipeline = m_imager.CreateDisplayPipeline(m_uiTask, idDictionary, m_iParams.HorzBinning, m_iParams.VertBinning, ffcDictionary);
-
-
-            //// m_storagePipeline = m_imager.CreateImageStoragePipeline(GlobalVars.CompressionAlgorithm, m_iParams.imageWidth, m_iParams.imageHeight);
-
-           
-
-            //m_analysisPipeline = m_imager.CreateAnalysisPipeline(ChartArrayControl, VM.Mask, m_iParams.imageWidth,
-            //        m_iParams.imageHeight, m_iParams.HorzBinning, m_iParams.VertBinning,
-            //        m_iParams.ExperimentIndicatorID, m_controlSubtractionWellList, m_numFoFrames,
-            //        numerID, denomID, m_iParams.PixelMask);
-
-
-            //if (m_histogram != null)
-            //{
-            //    m_histogramPipeline = m_imager.CreateHistogramPipeline(m_uiTask, m_histogram, m_iParams.HorzBinning, m_iParams.VertBinning, ffcDictionary);
-            //}
-
+            // build Analysis Pipeline
             int numeratorID = 0;
             int denominatorID = 0;
             if (VM.ExpParams.dynamicRatioNumerator != null) numeratorID = VM.ExpParams.dynamicRatioNumerator.ExperimentIndicatorID;
@@ -2895,6 +2927,7 @@ namespace Waveguide
 
          
 
+            // build Image Processing Pipeline
             m_cancelTokenSource = new CancellationTokenSource();
             m_cancelToken = m_cancelTokenSource.Token;
 

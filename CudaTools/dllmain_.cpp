@@ -254,11 +254,11 @@ extern "C" DllExport void DownloadGrayscaleImage(uint16_t* grayImageDest)
 	cudaMemcpy(grayImageDest, mp_d_grayImage, m_imageW * m_imageH * sizeof(UINT16), cudaMemcpyDeviceToHost);
 }
 
-extern "C" DllExport void CudaInit(IDirect3DDevice9Ex* pDeviceEx)
+extern "C" DllExport void CudaInit()
 {
 	if (mp_cuda != 0)
 	{
-		mp_cuda->Init(pDeviceEx);
+		mp_cuda->Init();
 	}
 }
 
@@ -369,48 +369,6 @@ extern "C" DllExport void Shutdown()
 	cudaDeviceReset();
 }
 
-
-extern "C" DllExport void PushContext()
-{
-	// gives the cuda context (for this instance of CudaUtil) to the thread that called PushContext()
-	if (mp_cuda != 0)
-	{
-		CUcontext * pContext;
-        bool res =  mp_cuda->GetContext(&pContext);
-		if (res)
-			cuCtxPushCurrent(*pContext);
-	}		
-}
-
-extern "C" DllExport void PopContext()
-{
-	// releases the cuda context from the thread that called PushContext() to whatever thread owned it before.
-	// NOTE: PushContext should be called before calling this function.
-	if (mp_cuda != 0)
-	{
-		CUcontext * pContext;
-		bool res = mp_cuda->GetContext(&pContext);
-		if (res)
-			cuCtxPopCurrent(pContext);
-	}
-}
-
-
-extern "C" DllExport void CopyGPUImageToD3DSurface(int surfaceIndex, uint8_t* pData)
-{
-	mp_cuda->CopyImageToSurface(surfaceIndex, (CUdeviceptr)pData);
-}
-
-extern "C" DllExport bool RemoveD3DSurface(int surfaceIndex)
-{
-	return mp_cuda->RemoveD3DSurface(surfaceIndex);
-}
-
-
-extern "C" DllExport bool AddNewD3DSurface(int surfaceIndex, IDirect3DSurface9* pSurface, int width, int height)
-{ 
-	return mp_cuda->AddD3DSurface(surfaceIndex, pSurface, width, height);
-}
 
 
 extern "C" DllExport void GetHistogram_512Buckets(uint32_t* destHist, uint8_t maxValueBitWidth)

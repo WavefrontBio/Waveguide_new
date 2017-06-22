@@ -7,7 +7,6 @@ CudaUtil::CudaUtil()
     m_cudaContext = NULL;
     m_cudaDevice = -1;
 
-	mp_d3d9DeviceEx = NULL;
 }
 
 
@@ -25,78 +24,11 @@ CudaUtil::~CudaUtil()
 }
 
 
-void CudaUtil::Init(IDirect3DDevice9Ex* pDeviceEx)
-{
-	// pDeviceEx == NULL if not going to interact with DirectX
-
+void CudaUtil::Init()
+{	
 	m_result = cuInit(0); 
 	cudaFree(0); // call this to force Cuda to initialize (and thus getting rid of the delay during the first call to a Cuda function) 
-	return;
-
-
-	// Commented below out because it was causing some sort of issue at shutdown...nvcuda.dll wouldn't die!  I think it's related to cuda contexts tied to DirectX
-
-	//if (m_result == CUDA_SUCCESS)
-	//{
-	//	if (GetCudaDeviceCount(m_deviceCount))
-	//	{
-	//		// Get handle for device 0
-	//		m_result = cuDeviceGet(&m_cudaDevice, 0);
-	//		if (m_result != CUDA_SUCCESS)
-	//		{
-	//			m_errMsg = GetCudaErrorMessage(m_result);
-	//			m_cudaDriverReady = false;
-
-	//			Diagnostics::DebugMessage("Error in cuDeviceGet");
-	//			Diagnostics::DebugMessage(GetCudaErrorMessage(m_result));
-	//		}
-	//		else
-	//		{
-	//			// Create context
-	//			if (pDeviceEx == NULL)
-	//				m_result = cuCtxCreate(&m_cudaContext, 0, m_cudaDevice);
-	//			else
-	//			{
-	//				mp_d3d9DeviceEx = pDeviceEx;
-	//				
-	//				m_result = cuD3D9CtxCreate(&m_cudaContext, &m_cudaDevice, 0, mp_d3d9DeviceEx);	
-	//				cudaError_t res = cudaD3D9SetDirect3DDevice(mp_d3d9DeviceEx);
-	//			}
-
-
-	//			if (m_result != CUDA_SUCCESS)
-	//			{
-	//				m_errMsg = GetCudaErrorMessage(m_result);
-	//				m_cudaDriverReady = false;
-	//				Diagnostics::DebugMessage("Error in cuCtxCreate");
-	//				Diagnostics::DebugMessage(GetCudaErrorMessage(m_result));
-	//			}
-	//			else
-	//			{
-	//				// pop the cuda context to create a "floating context", i.e. one that can be passed to other threads
-	//				m_result = cuCtxPopCurrent(&m_cudaContext);
-	//				if (m_result != CUDA_SUCCESS)
-	//				{
-	//					m_errMsg = GetCudaErrorMessage(m_result);
-	//					m_cudaDriverReady = false;
-	//					Diagnostics::DebugMessage("Error in cuCtxPopCurrent");
-	//					Diagnostics::DebugMessage(GetCudaErrorMessage(m_result));
-	//				}
-	//				else
-	//				{
-	//					cuCtxPushCurrent(m_cudaContext); // set the current cuda context
-
-	//					cudaFree(0);  // call this to force Cuda to initialize (and thus getting rid of the delay during the first call to a Cuda function)
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-	//else
-	//{
-	//	m_errMsg = GetCudaErrorMessage(m_result);
-	//	m_cudaDriverReady = false;
-	//}
+	
 }
 
 
@@ -500,130 +432,3 @@ std::string CudaUtil::GetCudaErrorDescription(CUresult result)
  return errMsg;
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DirectX Interop Stuff
-
-
-bool CudaUtil::CopyImageToSurface(int SurfaceIndex, CUdeviceptr ImageData)
-{
-	if (m_SurfaceMap.find(SurfaceIndex) == m_SurfaceMap.end()) {
-		// surface with this index not found
-		return false;
-	}
-
-	D3D9Params *pparams = m_SurfaceMap[SurfaceIndex];
-
-
-	cudaError_t result_t;
-	cudaStream_t    stream = 0;
-	const int nbResources = 1;
-	cudaGraphicsResource *ppResources[nbResources] =
-	{
-		pparams->cudaResource
-	};
-
-	result_t = cudaGraphicsMapResources(nbResources, ppResources, stream);
-
-
-	//
-	// run kernels which will populate the contents of those textures
-	//
-
-	Call_CopyCudaArrayToD3D9Memory((uint8_t*)pparams->cudaLinearMemory,
-		(uint8_t*)ImageData,
-		pparams->pitch,
-		pparams->width,
-		pparams->height);
-
-	cudaArray *cuArray;
-	cudaGraphicsSubResourceGetMappedArray(&cuArray, pparams->cudaResource, 0, 0);
-	
-	// then we want to copy cudaLinearMemory to the D3D texture, via its mapped form : cudaArray
-	cudaMemcpy2DToArray(
-		cuArray, // dst array
-		0, 0,    // offset
-		pparams->cudaLinearMemory, pparams->pitch,       // src
-		pparams->width * 4, pparams->height, // extent
-		cudaMemcpyDeviceToDevice); // kind
-
-	//
-	// unmap the resources
-	//
-	result_t = cudaGraphicsUnmapResources(nbResources, ppResources, stream);
-
-	return true;
-}
-
-
-bool CudaUtil::RemoveD3DSurface(int SurfaceIndex)
-{
-	bool success = true;
-	if (m_SurfaceMap.find(SurfaceIndex) == m_SurfaceMap.end()) {
-		// not found
-		success = false;
-	}
-	else {
-		// found
-		D3D9Params *ptr = m_SurfaceMap[SurfaceIndex];
-		cudaFree(ptr->cudaLinearMemory);
-		cudaFree(ptr->cudaResource);
-		m_SurfaceMap.erase(SurfaceIndex);
-	}
-	return success;
-}
-
-
-
-bool CudaUtil::AddD3DSurface(int SurfaceIndex, IDirect3DSurface9 *pSurface, int width, int height)
-{
-	D3D9Params *pparams = new D3D9Params();
-
-	pparams->pSurface = pSurface;
-	pparams->width = width;
-	pparams->height = height;
-	pparams->cudaLinearMemory = 0;
-	pparams->cudaResource = 0;
-	pparams->pitch = width;
-
-
-	bool success = true;
-
-	// check to see if a surface already exists for given surface index...if so, release the resources it has
-	
-	if (m_SurfaceMap.find(SurfaceIndex) == m_SurfaceMap.end()) {
-		// not found
-	}
-	else {
-		// found
-		RemoveD3DSurface(SurfaceIndex);		
-	}
-
-
-	
-	cudaError_t res = cudaGraphicsD3D9RegisterResource(&pparams->cudaResource, pparams->pSurface, cudaGraphicsRegisterFlagsNone);
-
-	// cuda cannot write into the texture directly : the texture is seen as a cudaArray and can only be mapped as a texture
-	// Create a buffer so that cuda can write into it
-	// pixel fmt is DXGI_FORMAT_R8G8B8A8_SNORM
-	if (res == cudaSuccess)
-	{
-		res = cudaMallocPitch(&pparams->cudaLinearMemory, &pparams->pitch, pparams->width * 4, pparams->height);
-		if (res == cudaSuccess)
-		{
-			res = cudaMemset(pparams->cudaLinearMemory, 1, pparams->pitch * pparams->height);
-			if (res != cudaSuccess) success = false;
-		}
-		else success = false;
-	}
-	else success = false;
-
-	std::pair<std::map<int, D3D9Params*>::iterator, bool> result = m_SurfaceMap.insert(std::pair<int, D3D9Params*>(SurfaceIndex, pparams));
-
-	success = result.second;
-	
-	return success;
-}

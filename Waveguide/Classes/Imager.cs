@@ -282,7 +282,7 @@ namespace Waveguide
 
 
 
-            m_cudaToolBox.InitCudaTools(IntPtr.Zero); // Make sure this is done before calling any cuda function
+            m_cudaToolBox.InitCudaTools(); // Make sure this is done before calling any cuda function
 
             // set up camera
          
@@ -322,7 +322,7 @@ namespace Waveguide
                 m_omegaTempController.MessageEvent += m_omegaTempController_MessageEvent;
 
                 m_omegaTempController.Connect();
-                m_omegaTempController.StartTempUpdate(1.0);    
+                //m_omegaTempController.StartTempUpdate(1.0);    
             }
 
             m_ethernetIO = new EthernetIO(GlobalVars.EthernetIOModuleIP);
@@ -1693,9 +1693,14 @@ namespace Waveguide
 
             while (!Done)
             {
+                m_lambda.OpenShutterA(); Thread.Sleep(5);
+
                 // acquire image
                 if (m_camera.CheckCameraResult(m_camera.AcquireImage(exposure, ref grayRoiImage), ref errMsg))
                 {
+
+                    m_lambda.CloseShutterA();
+
                     // Post to GPU (which will also convert ROI to full image)
                     m_cudaToolBox.PostRoiGrayscaleImage(grayRoiImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                                         m_camera.m_acqParams.BinnedFullImageHeight,

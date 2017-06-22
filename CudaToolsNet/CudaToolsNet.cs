@@ -70,20 +70,11 @@ namespace CudaToolsNet
         static extern void Init();
 
         [DllImport("CudaTools.dll")]
-        static extern void CudaInit(IntPtr pDeviceEx);        
+        static extern void CudaInit();        
 
         [DllImport("CudaTools.dll")]
         static extern void Shutdown();
-
-        [DllImport("CudaTools.dll")]
-        static extern void CopyGPUImageToD3DSurface(int surfaceIndex, IntPtr pData);
-
-        [DllImport("CudaTools.dll")]
-        static extern bool RemoveD3DSurface(int surfaceIndex);
-
-        [DllImport("CudaTools.dll")]
-        static extern bool AddNewD3DSurface(int surfaceIndex, IntPtr pSurface, int width, int height);
-
+           
         [DllImport("CudaTools.dll")]
         static extern void GetHistogram_512Buckets(IntPtr destHist, byte maxValueBitWidth);
 
@@ -93,17 +84,11 @@ namespace CudaToolsNet
         [DllImport("CudaTools.dll")]
         static extern void CalculateMaskApertureSums(IntPtr sums);
 
-        [DllImport("CudaTools.dll")]
-        static extern void PushContext();
 
-        [DllImport("CudaTools.dll")]
-        static extern void PopContext();
-
-
-        public void InitCudaTools(IntPtr pDeviceEx)
+        public void InitCudaTools()
         {
             Init();
-            CudaInit(pDeviceEx);
+            CudaInit();
         }
 
         public void ShutdownCudaTools()
@@ -315,32 +300,6 @@ namespace CudaToolsNet
         }
 
 
-        public void Copy_GpuImageToD3DSurface(int surfaceIndex, IntPtr pData)
-        {
-            CopyGPUImageToD3DSurface(surfaceIndex, pData); 
-        }
-
-
-        public bool Remove_D3dSurface(int surfaceIndex)
-        {
-            return RemoveD3DSurface(surfaceIndex);
-        }
-
-        public bool Add_D3dSurface(int surfaceIndex, IntPtr pSurface, int width, int height)
-        { 
-            return AddNewD3DSurface(surfaceIndex, pSurface, width, height);
-        }
-
-
-        public void PushCudaContext()
-        {
-            PushContext();
-        }
-
-        public void PopCudaContext()
-        {
-            PopContext();
-        }
 
     }
 }

@@ -236,6 +236,7 @@ namespace Waveguide
             m_vworks = new VWorks();
             GlobalVars.VWorks = m_vworks;
 
+
             if(!m_vworks.m_vworksOK)
             {
                 PostMessage("VWorks Failed to Start!");
@@ -245,6 +246,11 @@ namespace Waveguide
             {
                 PostMessage("VWorks Creation Failure!");
                 success = false;
+            }
+
+            if(success)
+            {
+                m_vworks.PostVWorksCommandEvent += MyRunExperimentControl.m_vworks_PostVWorksCommandEvent;
             }
             
             return success;
@@ -454,12 +460,16 @@ namespace Waveguide
             // turn off camera cooler
             if (m_imager != null)
             {
-                m_imager.m_camera.CoolerON(false);
+                if(m_imager.m_camera != null)
+                    m_imager.m_camera.CoolerON(false);
+
                 m_imager.Shutdown();
 
-                m_imager.m_ethernetIO.SetOutputON(0, false);  // unlock door
+                if(m_imager.m_ethernetIO != null)
+                    m_imager.m_ethernetIO.SetOutputON(0, false);  // unlock door
 
-                m_imager.m_omegaTempController.EnableHeater(false);  // turn heater off
+                if(m_imager.m_omegaTempController != null)
+                    m_imager.m_omegaTempController.EnableHeater(false);  // turn heater off
             }
         }
 

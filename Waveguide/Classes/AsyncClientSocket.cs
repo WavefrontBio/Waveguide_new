@@ -41,6 +41,9 @@ namespace TcpTools
         private TcpClient _tcpClient;
         private CancellationTokenSource _cancellation;
         private int _bufferSize;
+        private string _hostname;
+        private int _port;
+
 
         /// <summary>
         /// The remote endpoint the SimpleAsyncClient is connected to.
@@ -93,6 +96,11 @@ namespace TcpTools
             _cancellation.Cancel();
         }
 
+        private void Reconnect()
+        {
+            Connect(_hostname, _port);
+        }
+
         /// <summary>
         /// Sends data to the remote host and automatically frames the message.
         /// </summary>
@@ -113,6 +121,23 @@ namespace TcpTools
         {
             NetworkStream netStream = _tcpClient.GetStream();
             await netStream.WriteAsync(message, 0, message.Length);
+
+            //if (_tcpClient != null)
+            //{
+            //    if (_tcpClient.Connected)
+            //    {
+            //        NetworkStream netStream = _tcpClient.GetStream();
+            //        await netStream.WriteAsync(message, 0, message.Length);
+            //    }
+            //    else
+            //    {
+            //        Reconnect();
+            //    }
+            //}
+            //else
+            //{
+            //    Reconnect();  // attempt to reconnect
+            //}
         }
 
         /// <summary>

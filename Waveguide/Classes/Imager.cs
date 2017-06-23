@@ -1025,6 +1025,11 @@ namespace Waveguide
             int indicatorIndex = 0;
             uint ecode;
 
+
+            if (cts == null) cts = new CancellationTokenSource();
+            m_cancelTokenSource = cts;
+            
+
             m_imagingSequenceCounter = sw;
 
             ITargetBlock<Tuple<ushort[], int, int>> ImageProcessingPipeline = imageProcessingPipeline;
@@ -1099,6 +1104,8 @@ namespace Waveguide
             int nextIndicatorID = indicatorIDList[indicatorIndex];  // get first indicator ID
             int cycleTime = 0;
             Task FilterChangeTask = null;
+
+            bool closeShutter;  // flag used during imaging loop
             
             // put system in starting state
             ChangeFilterPositions(m_ImagingDictionary[nextIndicatorID].excitationFilterPos, m_ImagingDictionary[nextIndicatorID].emissionFilterPos);
@@ -1122,6 +1129,13 @@ namespace Waveguide
                     cycleTime = m_ImagingDictionary[currentIndicatorID].cycleTime;
                     maxWaitDuration = cycleTime+10;  // max wait = cycleTime plus 10 msecs
                     
+                    
+                    // shutter control
+                    m_lambda.OpenShutterA(); // open shutter
+                    Thread.Sleep(5); // give shutter time to open
+                    closeShutter = (cycleTime < 100) ? false : true;
+                    
+
                     // start acquisition timer
                     acqTimer.Restart();
 
@@ -1145,6 +1159,10 @@ namespace Waveguide
                     }
 
                     
+                    // close shutter, if appropriate
+                    if (closeShutter) m_lambda.CloseShutterA();
+
+
                     // wait for frame transfer to complete (i.e. data to be moved from image area to storage area)
                     int eventNumber2 = WaitHandle.WaitAny(eventHandle, maxWaitDuration*2, false);
                     t6 = acqTimer.ElapsedMilliseconds;
@@ -1387,6 +1405,7 @@ namespace Waveguide
             sw.Restart();
 
 
+
             do
             {
                 try
@@ -1401,6 +1420,11 @@ namespace Waveguide
                     // get data for current indicator  
                     cycleTime = m_ImagingDictionary[currentIndicatorID].cycleTime;
                     maxWaitDuration = cycleTime + 10;  // max wait = cycleTime plus 10 msecs
+
+                    // open shutter
+                    m_lambda.OpenShutterA();
+                    Thread.Sleep(10);
+
 
                     // start acquisition timer
                     acqTimer.Restart();
@@ -1424,6 +1448,10 @@ namespace Waveguide
                         FilterChangeTask = Task.Factory.StartNew(() => ChangeFilterPositions(excitationPosition, emissionPosition));
                     }
 
+
+                    // close shutter
+                    m_lambda.CloseShutterA();
+                    Thread.Sleep(5);
 
                     // wait for frame transfer to complete (i.e. data to be moved from image area to storage area)
                     int eventNumber2 = WaitHandle.WaitAny(eventHandle, maxWaitDuration * 2, false);

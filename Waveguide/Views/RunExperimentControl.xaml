@@ -261,20 +261,22 @@
 
             <Grid Name="ChartArrayGrid" Grid.Column="1" Grid.Row="1"
               MouseMove="ChartArrayGrid_MouseMove" MouseLeave="ChartArrayGrid_MouseLeave"
-              UseLayoutRounding="True" Background="Black">
+              UseLayoutRounding="True" Background="Black"
+                  IsHitTestVisible="True">
 
                 <Grid Grid.Row="0" Grid.Column="0" Name="gridChart"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"             
-                  SizeChanged="gridChart_SizeChanged"
+                  SizeChanged="gridChart_SizeChanged" Panel.ZIndex="10"
+                  IsHitTestVisible="True"
                   />
 
-                <Image Grid.Row="0" Grid.Column="0" Name="overlayBitmap" 
+                <Image Grid.Row="0" Grid.Column="0" Name="overlayBitmap" Panel.ZIndex="12"
                    Stretch="Fill" Margin="0"
                    Source="{Binding Path=Overlay}"
                    IsHitTestVisible="False"               
                    />
 
-                <Image Grid.Row="0" Grid.Column="0" Name="gridLinesBitmap" 
+                <Image Grid.Row="0" Grid.Column="0" Name="gridLinesBitmap" Panel.ZIndex="11"
                    Stretch="Fill" Margin="0"
                    Source="{Binding Path=GridLines}"
                    IsHitTestVisible="False"               

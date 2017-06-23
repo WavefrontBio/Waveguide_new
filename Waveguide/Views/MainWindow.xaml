@@ -351,7 +351,7 @@
                         </Setter.Value>
                     </Setter>
                     <Style.Triggers>
-                        <!--               View Model Binding here vvvv  -->
+                                       <!--View Model Binding here vvvv-->  
                         <DataTrigger Binding="{Binding ShowRunExperimentPanel}" Value="True">
                             <DataTrigger.EnterActions>
                                 <BeginStoryboard>
@@ -376,14 +376,28 @@
                 </Style>
             </Grid.Resources>
 
+            <!--Style="{StaticResource expand}"-->
 
-            <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,0,0,10" Style="{StaticResource expand}" x:Name="ContentBorder"
+            <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,0,0,10"  x:Name="ContentBorder"
                     BorderBrush="DarkGray" BorderThickness="1" Background="White" CornerRadius="0" >
+                
+                <Border.Style>
+                    <Style TargetType="{x:Type Border}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ShowRunExperimentPanel}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding ShowRunExperimentPanel}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
 
 
                 <!-- Put the Sliding Panel contents here, inside this Border -->
-                
-                <local:RunExperimentControl x:Name="MyRunExperimentControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+                <local:RunExperimentControl x:Name="MyRunExperimentControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
 
             </Border>

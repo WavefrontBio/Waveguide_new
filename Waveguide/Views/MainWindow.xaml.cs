@@ -187,6 +187,7 @@ namespace Waveguide
 
         void MyRunExperimentControl_CloseRunExperimentPanelEvent(object sender, EventArgs e)
         {
+            MyExperimentConfigurator.ResetExperimentConfigurator();
             VM.ShowRunExperimentPanel = false;
         }
 

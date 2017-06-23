@@ -62,6 +62,7 @@ namespace Waveguide
 
         public void CloseRunExperimentPanel()
         {
+            Reset();
             OnCloseRunExperimentPanel(null);
         }
 
@@ -141,6 +142,11 @@ namespace Waveguide
         RangeClass m_range;  // limits for color model slider
 
         Double XLen = 100; // window width for each chart
+
+
+        // a couple of member variables to help us figure out if we need to build the chart array
+        int m_chartRows;
+        int m_chartCols;
 
         private LightningChartUltimate[] m_charts;
         private LightningChartUltimate m_aggregateChart;
@@ -227,6 +233,8 @@ namespace Waveguide
         ITargetBlock<Tuple<UInt32[], int, int>> m_analysisPipeline;
         ITargetBlock<Tuple<ushort[], int, int>> m_imageProcessingPipeline;
 
+        bool m_createDisplayForEachIndicator;
+
        
         public RunExperimentControl()
         {
@@ -244,6 +252,11 @@ namespace Waveguide
             m_iChartCount = 0;
             m_iTraceCountPerChart = 0;
             m_numPoints = 0;
+
+            m_chartRows = 0;
+            m_chartCols = 0;
+
+            m_createDisplayForEachIndicator = false;
 
             InitializeComponent();
 
@@ -479,6 +492,8 @@ namespace Waveguide
         }
 
 
+
+
      
 
         void ChartArrayGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -540,7 +555,7 @@ namespace Waveguide
             {
                 VM.InsideHeaterEnabled = m_imager.m_insideHeatingON;
 
-                BuildChartArray();
+                //BuildChartArray();  
 
                 m_imager.SetMask(VM.ExpParams.mask);
             }
@@ -562,25 +577,37 @@ namespace Waveguide
             BuildChartArray(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
 
         }
-        
+
 
 
         public void BuildChartArray(int rows, int cols)
         {
-            DisposeCharts();
-            
-            m_indicatorDictionary = new Dictionary<int,ExperimentIndicatorContainer>();
+            //if (rows == m_chartRows && cols == m_chartCols)
+            //{
+            //    return;
+            //}
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+
+            m_chartRows = rows;
+            m_chartCols = cols;
+
+            //DisposeCharts();
+
+            m_indicatorDictionary = new Dictionary<int, ExperimentIndicatorContainer>();
 
             m_indicatorVisibleDictionary = new Dictionary<int, bool>();
 
             m_indicatorColor = new Dictionary<int, Color>();
 
             m_rows = rows;
-            m_cols = cols;            
-            
+            m_cols = cols;
+
             int i = 0;
-            foreach(ExperimentIndicatorContainer indicator in VM.ExpParams.indicatorList)
-            {            
+            foreach (ExperimentIndicatorContainer indicator in VM.ExpParams.indicatorList)
+            {
                 m_indicatorDictionary.Add(indicator.ExperimentIndicatorID, indicator);
                 m_indicatorVisibleDictionary.Add(indicator.ExperimentIndicatorID, true);
                 m_indicatorColor.Add(indicator.ExperimentIndicatorID, GlobalVars.DefaultTraceColorList[i]);
@@ -606,7 +633,7 @@ namespace Waveguide
 
             m_DynamicRatio_Range.xMin = min; m_DynamicRatio_Range.xMax = max;
             m_DynamicRatio_Range.yMin = min; m_DynamicRatio_Range.yMax = max;
-                        
+
 
             // create the dictionaries that hold the data of each series
             m_ChartArray_Raw_Dictionary = new Dictionary<int, SampleDataSeries[,]>();
@@ -618,6 +645,8 @@ namespace Waveguide
             m_Aggregate_StaticRatio_Dictionary = new Dictionary<int, PointLineSeries[,]>();
             m_Aggregate_ControlSubtraction_Dictionary = new Dictionary<int, PointLineSeries[,]>();
             m_Aggregate_DynamicRatio_Dictionary = new Dictionary<int, PointLineSeries[,]>();
+
+
 
 
             // create the data series arrays for each indicator
@@ -633,14 +662,14 @@ namespace Waveguide
                 PointLineSeries[,] aggregateControlSubtraction = new PointLineSeries[m_rows, m_cols];
                 PointLineSeries[,] aggregateDynamicRatio = new PointLineSeries[m_rows, m_cols];
 
-                m_ChartArray_Raw_Dictionary.Add(indicator.ExperimentIndicatorID,chartArrayRaw);
-                m_ChartArray_StaticRatio_Dictionary.Add(indicator.ExperimentIndicatorID,chartArrayStaticRatio);
-                m_ChartArray_ControlSubtraction_Dictionary.Add(indicator.ExperimentIndicatorID,chartArrayControlSubtraction);
-                m_ChartArray_DynamicRatio_Dictionary.Add(indicator.ExperimentIndicatorID,chartArrayDynamicRatio);
-                
-                m_Aggregate_Raw_Dictionary.Add(indicator.ExperimentIndicatorID,aggregateRaw);
-                m_Aggregate_StaticRatio_Dictionary.Add(indicator.ExperimentIndicatorID,aggregateStaticRatio); 
-                m_Aggregate_ControlSubtraction_Dictionary.Add(indicator.ExperimentIndicatorID,aggregateControlSubtraction);
+                m_ChartArray_Raw_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayRaw);
+                m_ChartArray_StaticRatio_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayStaticRatio);
+                m_ChartArray_ControlSubtraction_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayControlSubtraction);
+                m_ChartArray_DynamicRatio_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayDynamicRatio);
+
+                m_Aggregate_Raw_Dictionary.Add(indicator.ExperimentIndicatorID, aggregateRaw);
+                m_Aggregate_StaticRatio_Dictionary.Add(indicator.ExperimentIndicatorID, aggregateStaticRatio);
+                m_Aggregate_ControlSubtraction_Dictionary.Add(indicator.ExperimentIndicatorID, aggregateControlSubtraction);
                 m_Aggregate_DynamicRatio_Dictionary.Add(indicator.ExperimentIndicatorID, aggregateDynamicRatio);
 
                 for (int r = 0; r < m_rows; r++)
@@ -658,22 +687,33 @@ namespace Waveguide
                     }
             }
 
-          
+
+            long t1 = sw.ElapsedMilliseconds;
+
             m_band = new Band[rows, cols];
             m_chartSelected = new bool[rows, cols];
 
             InitAggregateChart();
+            long t2 = sw.ElapsedMilliseconds;
+
             CreateCharts(cols, rows);
+            long t3 = sw.ElapsedMilliseconds;
+
             ArrangeCharts();
+            long t4 = sw.ElapsedMilliseconds;
 
             m_allChartsInColumnSelected = new bool[m_cols];
             m_allChartsInRowSelected = new bool[m_rows];
             SetUpChartArrayButtons();
+            long t5 = sw.ElapsedMilliseconds;
 
             DrawColorMap();
+            long t6 = sw.ElapsedMilliseconds;
 
             DrawGridLines();
+            long t7 = sw.ElapsedMilliseconds;
 
+            sw.Stop();
             SetAnalysisVisibility();
         }
 
@@ -699,7 +739,7 @@ namespace Waveguide
 
             //m_imager.ResetImagingDictionary();
 
-            bool createDisplayForEachIndicator = false;
+           
             ImageDisplay imageDisplay = null;
 
             int i = 0;
@@ -756,46 +796,69 @@ namespace Waveguide
                 ImageGrid.Children.Add(stack);
 
 
-                if (createDisplayForEachIndicator || i == 0)  // createDisplayForEachIndicator == true, then create new ImageDisplay for each indicator
+                ImagingParamsStruct ips;
+                if (m_imager.m_ImagingDictionary.TryGetValue(indicator.ExperimentIndicatorID, out ips))
                 {
-                    imageDisplay = new ImageDisplay();
-                    imageDisplay.Margin = new Thickness(2);
-                    Grid.SetColumn(imageDisplay, i);
-                    Grid.SetRow(imageDisplay, 1);
+                    if (m_createDisplayForEachIndicator || i == 0)  // createDisplayForEachIndicator == true, then create new ImageDisplay for each indicator
+                    {
+                        ips.ImageControl.Margin = new Thickness(2);
+                        Grid.SetColumn(ips.ImageControl, i);
+                        Grid.SetRow(ips.ImageControl, 1);
 
-                    ImageGrid.Children.Add(imageDisplay);
+                        ImageGrid.Children.Add(ips.ImageControl);
+
+                        m_imager.ConfigImageDisplaySurface(indicator.ExperimentIndicatorID,
+                                               m_imager.m_camera.m_acqParams.BinnedFullImageWidth,
+                                               m_imager.m_camera.m_acqParams.BinnedFullImageHeight, false);                        
+                    }
+
+                    if (!m_createDisplayForEachIndicator) Grid.SetColumnSpan(ips.ImageControl, i + 1);
+
                 }
+
+
+
+
+                //if (m_createDisplayForEachIndicator || i == 0)  // createDisplayForEachIndicator == true, then create new ImageDisplay for each indicator
+                //{
+                //    imageDisplay = new ImageDisplay();
+                //    imageDisplay.Margin = new Thickness(2);
+                //    Grid.SetColumn(imageDisplay, i);
+                //    Grid.SetRow(imageDisplay, 1);
+
+                //    ImageGrid.Children.Add(imageDisplay);
+                //}
                       
                 // if displaying all indicators in same display, then we must do this
-                if(!createDisplayForEachIndicator) Grid.SetColumnSpan(imageDisplay,i+1);
+                //if(!m_createDisplayForEachIndicator) Grid.SetColumnSpan(imageDisplay,i+1);
 
-                ImagingParamsStruct ips;
-                if(m_imager.m_ImagingDictionary.TryGetValue(expIndicatorID,out ips))
-                {
-                    ips.ImageControl = imageDisplay;
-                    ips.histBitmap = null; // no histogram shown
-                    m_imager.m_ImagingDictionary[expIndicatorID] = ips;
-                }
-                else
-                {
-                    ips = new ImagingParamsStruct();
-                    ips.cycleTime = indicator.CycleTime;
-                    ips.emissionFilterPos = (byte)indicator.EmissionFilterPos;
-                    ips.excitationFilterPos = (byte)indicator.ExcitationFilterPos;
-                    ips.experimentIndicatorID = indicator.ExperimentIndicatorID;
-                    ips.exposure = indicator.Exposure;
-                    ips.flatfieldType = indicator.FlatFieldCorrection;
-                    ips.gain = indicator.Gain;
-                    ips.indicatorName = indicator.Description; 
-                    ips.histBitmap = null;  // no histogram shown 
-                    ips.ImageControl = imageDisplay;
-                    m_imager.m_ImagingDictionary.Add(indicator.ExperimentIndicatorID,ips);
-                }
+                //ImagingParamsStruct ips;
+                //if (m_imager.m_ImagingDictionary.TryGetValue(indicator.ExperimentIndicatorID, out ips))
+                //{
+                //    ips.ImageControl = imageDisplay;
+                //    ips.histBitmap = null; // no histogram shown
+                //    m_imager.m_ImagingDictionary[expIndicatorID] = ips;
+                //}
+                //else
+                //{
+                //    ips = new ImagingParamsStruct();
+                //    ips.cycleTime = indicator.CycleTime;
+                //    ips.emissionFilterPos = (byte)indicator.EmissionFilterPos;
+                //    ips.excitationFilterPos = (byte)indicator.ExcitationFilterPos;
+                //    ips.experimentIndicatorID = indicator.ExperimentIndicatorID;
+                //    ips.exposure = indicator.Exposure;
+                //    ips.flatfieldType = indicator.FlatFieldCorrection;
+                //    ips.gain = indicator.Gain;
+                //    ips.indicatorName = indicator.Description; 
+                //    ips.histBitmap = null;  // no histogram shown 
+                //    ips.ImageControl = imageDisplay;
+                //    m_imager.m_ImagingDictionary.Add(indicator.ExperimentIndicatorID,ips);
+                //}
 
 
-                m_imager.ConfigImageDisplaySurface(indicator.ExperimentIndicatorID,
-                                                m_imager.m_camera.m_acqParams.BinnedFullImageWidth,
-                                                m_imager.m_camera.m_acqParams.BinnedFullImageHeight,false);
+                //m_imager.ConfigImageDisplaySurface(indicator.ExperimentIndicatorID,
+                //                                m_imager.m_camera.m_acqParams.BinnedFullImageWidth,
+                //                                m_imager.m_camera.m_acqParams.BinnedFullImageHeight,false);
 
                 i++;
             }
@@ -1429,9 +1492,7 @@ namespace Waveguide
         {
             m_charts = new LightningChartUltimate[chartCount];
 
-            
-
-
+       
                 for (int iChart = 0; iChart < chartCount; iChart++)
                 {
                     // define a column
@@ -1455,6 +1516,8 @@ namespace Waveguide
 
                     m_charts[iChart].MouseLeftButtonDown += ChartArray_MouseLeftButtonDown;
                     m_charts[iChart].MouseLeftButtonUp += ChartArray_MouseLeftButtonUp;
+                    Panel.SetZIndex(m_charts[iChart], 10);
+                 
 
                     m_charts[iChart].VerticalAlignment = VerticalAlignment.Top;
                     m_charts[iChart].HorizontalAlignment = HorizontalAlignment.Left;
@@ -1625,6 +1688,7 @@ namespace Waveguide
     
         }
 
+     
 
 
         public void SetTraceVisibility(int indicatorID, bool indicatorIsVisible)
@@ -2876,6 +2940,8 @@ namespace Waveguide
                     break;
                 }
 
+                ImageDisplay imageDisplay = new ImageDisplay();
+
                 m_imager.ResetImagingDictionary();
                 foreach(ExperimentIndicatorContainer eic in VM.ExpParams.indicatorList)
                 {
@@ -2895,17 +2961,23 @@ namespace Waveguide
 
                     // these next two are set up in BuildDisplayGrid() called below
                     ips.histBitmap = null;
-                    ips.ImageControl = null;
+                    if (m_createDisplayForEachIndicator)
+                    {
+                        ips.ImageControl = new ImageDisplay();
+                    }
+                    else
+                    {
+                        ips.ImageControl = imageDisplay;
+                    }
 
                     m_imager.m_ImagingDictionary.Add(ips.experimentIndicatorID, ips);
                 }
 
-         
 
 
-            BuildChartArray(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
+                BuildChartArray();
             
-            BuildDisplayGrid();
+                BuildDisplayGrid();
 
       
             // prepare flat field correction for each indicator

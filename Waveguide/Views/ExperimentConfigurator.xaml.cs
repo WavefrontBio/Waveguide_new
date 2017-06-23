@@ -432,7 +432,7 @@ namespace Waveguide
 
 
 
-        private void ResetExperimentConfigurator()
+        public void ResetExperimentConfigurator()
         {
             VM.ExpParams.compoundPlateList.Clear();  // clear compound plate list
 

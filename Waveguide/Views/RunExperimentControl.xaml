@@ -234,7 +234,7 @@
 
 
 
-    <Grid Name="MainGrid">
+    <Grid Name="MainGrid" IsHitTestVisible="True">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="5"/>
@@ -242,7 +242,7 @@
         </Grid.ColumnDefinitions>
         
         <!-- LEFT Panel -->
-        <Grid Grid.Column="0" x:Name="ChartGrid">
+        <Grid Grid.Column="0" x:Name="ChartGrid" IsHitTestVisible="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="*"/>

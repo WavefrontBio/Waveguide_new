@@ -1514,8 +1514,8 @@ namespace Waveguide
 
                     m_charts[iChart].Tag = iChart;
 
-                    m_charts[iChart].MouseLeftButtonDown += ChartArray_MouseLeftButtonDown;
-                    m_charts[iChart].MouseLeftButtonUp += ChartArray_MouseLeftButtonUp;
+                    m_charts[iChart].MouseDown += ChartArray_MouseLeftButtonDown;
+                    m_charts[iChart].MouseUp += ChartArray_MouseLeftButtonUp;
                     Panel.SetZIndex(m_charts[iChart], 10);
                  
 
@@ -1863,6 +1863,11 @@ namespace Waveguide
 
                     m_mouseUpPoint = e.GetPosition(chart);
 
+                    Point overlayPoint = e.GetPosition(overlayBitmap);
+                    double colWidth = overlayBitmap.ActualWidth/(double)VM.ExpParams.mask.Cols;
+                    int colNum = (int)(overlayPoint.X / colWidth);
+                    m_mouseUpCol = colNum;
+
                     m_mouseUpRow = GetClickedRow(chart, (int)m_mouseUpPoint.Y);
 
                     if (m_mouseUpRow != -1)
@@ -1954,6 +1959,8 @@ namespace Waveguide
                 }
 
                 VM.Overlay.Clear();
+
+                e.Handled = true;
             }
         }
 
@@ -1976,6 +1983,8 @@ namespace Waveguide
 
                 m_dragDown.X = (m_mouseDownPoint.X + (m_mouseDownCol * m_colWidth)) / gridChart.ActualWidth * VM.Overlay.Width;
                 m_dragDown.Y = (m_mouseDownPoint.Y) / gridChart.ActualHeight * VM.Overlay.Height;
+
+                e.Handled = true;
             }
         }
 

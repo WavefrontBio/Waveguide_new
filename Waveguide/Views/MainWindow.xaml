@@ -341,63 +341,28 @@
             The content of the Sliding Panel is placed inside the Border control -->
 
         <!--                                                                            View Model Binding here vvvv  -->
-        <Grid Grid.Row="0" x:Name="RunExperimentPanel" Background="Transparent" IsHitTestVisible="{Binding ShowRunExperimentPanel}" Panel.ZIndex="100">
+        <Grid Grid.Row="0" x:Name="RunExperimentPanel" Background="Transparent" IsHitTestVisible="True" Panel.ZIndex="100">
 
-            <Grid.Resources>
-                <Style TargetType="Border" x:Key="expand">
-                    <Setter Property="RenderTransform">
-                        <Setter.Value>
-                            <ScaleTransform ScaleX="0"/>
-                        </Setter.Value>
-                    </Setter>
+
+            <Grid.Style>
+                <Style TargetType="{x:Type Grid}">
                     <Style.Triggers>
-                                       <!--View Model Binding here vvvv-->  
                         <DataTrigger Binding="{Binding ShowRunExperimentPanel}" Value="True">
-                            <DataTrigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
-                                                     From="0" To="1"
-                                                     Duration="0:00:0.6"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </DataTrigger.EnterActions>
-                            <DataTrigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
-                                                     From="1" To="0"
-                                                     Duration="0:00:0.6"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </DataTrigger.ExitActions>
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ShowRunExperimentPanel}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </Grid.Resources>
-
-            <!--Style="{StaticResource expand}"-->
+            </Grid.Style>
 
             <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,0,0,10"  x:Name="ContentBorder"
-                    BorderBrush="DarkGray" BorderThickness="1" Background="White" CornerRadius="0" >
-                
-                <Border.Style>
-                    <Style TargetType="{x:Type Border}">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding ShowRunExperimentPanel}" Value="True">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding ShowRunExperimentPanel}" Value="False">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-
-
+                    BorderBrush="DarkGray" BorderThickness="1" Background="White" CornerRadius="0" IsHitTestVisible="True" >
+          
                 <!-- Put the Sliding Panel contents here, inside this Border -->
 
-                <local:RunExperimentControl x:Name="MyRunExperimentControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                <local:RunExperimentControl x:Name="MyRunExperimentControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" />
 
 
             </Border>

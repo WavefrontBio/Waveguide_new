@@ -1036,32 +1036,7 @@ namespace Waveguide
 
             ExperimentParams expParams = ExperimentParams.GetExperimentParams;
 
-            // log file is saved in same directory as the images
-            //string logFileName = GlobalVars.ImageFileSaveLocation + "\\" + expParams.project.ProjectID.ToString() + "\\" + expParams.experimentPlate.PlateID.ToString() + "\\" + expParams.experiment.ExperimentID.ToString() + "\\logfile.txt";
-            //Trace.Listeners.Clear();
-            //if (saveImages)
-            //{
-            //    Trace.Listeners.Add(new TextWriterTraceListener(logFileName));
-            //    Trace.TraceInformation(DateTime.Now.ToString());
-            //    Trace.TraceInformation("Database Record ID's:");
-            //    Trace.TraceInformation("ProjectID: " + projectID.ToString());
-            //    Trace.TraceInformation("PlateID: " + plateID.ToString());
-            //    Trace.TraceInformation("ExperimentID: " + experimentID.ToString());
-            //    Trace.TraceInformation("");
-            //    Trace.TraceInformation("Indicators:");
-            //    int indNdx = 0;
-            //    foreach (KeyValuePair<int, ImagingParamsStruct> entry in m_ImagingDictionary)
-            //    {
-            //        indNdx++;
-            //        // do something with entry.Value or entry.Key
-            //        Trace.TraceInformation(indNdx.ToString() + " - " + entry.Value.indicatorName);
-            //        Trace.TraceInformation("Excitation Filter: " + entry.Value.excitationFilterPos.ToString());
-            //        Trace.TraceInformation("Emission Filter: " + entry.Value.emissionFilterPos.ToString());
-            //        Trace.TraceInformation("");
-            //    }
-            //}
-
-
+     
             // set camera into kinetic imaging mode
             m_camera.PrepForKineticImaging();
 
@@ -1108,11 +1083,17 @@ namespace Waveguide
             bool closeShutter;  // flag used during imaging loop
             
             // put system in starting state
-            ChangeFilterPositions(m_ImagingDictionary[nextIndicatorID].excitationFilterPos, m_ImagingDictionary[nextIndicatorID].emissionFilterPos);
+            ImagingParamsStruct cip = m_ImagingDictionary[nextIndicatorID];
+            ChangeFilterPositionsAndCloseShutter(cip.excitationFilterPos, cip.emissionFilterPos);
+            m_camera.SetCameraEMGain(cip.gain);
+            m_camera.SetCameraPreAmpGain(cip.preAmpGainIndex);
+            
+
 
              // start experiment timer
             sw.Restart();
 
+            List<Tuple<int,int,int,int,int,int>> timeList = new List<Tuple<int,int,int,int,int,int>>();
             
             do
             {
@@ -1145,29 +1126,29 @@ namespace Waveguide
                     int eventNumber1 = WaitHandle.WaitAny(eventHandle, maxWaitDuration, false);  // eventNumber should be 0, unless timeout occurs (in that case, it's -1)                    
                     t5 = acqTimer.ElapsedMilliseconds;
 
-                   
-                    // if there are more than one indicators, then start prepping for next indicator here (i.e. filter changes)
-                    // this is done in a background task from the thread pool
-                    if(currentIndicatorID != nextIndicatorID)
-                    {
-                        // TODO:
-                        // start Task to move filter to position for next indicator (i.e. move filter to position for nextIndicatorID),
-                        // but only if the nextIndicatorID != currentIndicatorID
-                        int excitationPosition = m_ImagingDictionary[nextIndicatorID].excitationFilterPos;
-                        int emissionPosition = m_ImagingDictionary[nextIndicatorID].emissionFilterPos;
-                        FilterChangeTask = Task.Factory.StartNew(() => ChangeFilterPositions(excitationPosition,emissionPosition));
-                    }
-
-                    
-                    // close shutter, if appropriate
-                    if (closeShutter) m_lambda.CloseShutterA();
-
+                
 
                     // wait for frame transfer to complete (i.e. data to be moved from image area to storage area)
                     int eventNumber2 = WaitHandle.WaitAny(eventHandle, maxWaitDuration*2, false);
                     t6 = acqTimer.ElapsedMilliseconds;
 
 
+                    // if there are more than one indicators, then start prepping for next indicator here (i.e. filter changes)
+                    // this is done in a background task from the thread pool
+                    if (m_ImagingDictionary.Count > 1) // (currentIndicatorID != nextIndicatorID)
+                    {                        
+                        // put system in starting state
+                        ImagingParamsStruct ips = m_ImagingDictionary[nextIndicatorID];
+                        ChangeFilterPositionsAndCloseShutter(ips.excitationFilterPos, cip.emissionFilterPos);
+                        m_camera.SetCameraEMGain(ips.gain);
+                        m_camera.SetCameraPreAmpGain(ips.preAmpGainIndex);
+                        int excitationPosition = ips.excitationFilterPos;
+                        int emissionPosition = ips.emissionFilterPos;
+                        //FilterChangeTask = Task.Factory.StartNew(() => ChangeFilterPositionsAndCloseShutter(excitationPosition, emissionPosition));
+                        ChangeFilterPositionsAndCloseShutter(excitationPosition, emissionPosition);
+                    }
+
+                    
                     // now ready to read data off camera
 
                     // get data off camera                    
@@ -1187,25 +1168,31 @@ namespace Waveguide
                         t8 = acqTimer.ElapsedMilliseconds;
 
                         // wait for cycle time to elapse
+                        int loopCount = 0;
                         while (acqTimer.ElapsedMilliseconds < cycleTime)
                         {
                             Thread.Sleep(1);
+                            loopCount++;  // this instruction added to this loop seems to make it work!  weird, but dont' remove it!!
                         }
+
+                        timeList.Add(Tuple.Create<int, int, int, int, int,int>((int)sw.ElapsedMilliseconds, (int)acqTimer.ElapsedMilliseconds, currentIndicatorID,
+                                            (int)(m_ImagingDictionary[currentIndicatorID].exposure*1000),
+                                            m_ImagingDictionary[currentIndicatorID].excitationFilterPos, m_ImagingDictionary[currentIndicatorID].emissionFilterPos));
 
 
                         // if there are more than one indicators, wait here until the Task started earlier completes first before moving on.
                         // Hopefully, it has already completed by this time.
-                        if (currentIndicatorID != nextIndicatorID)
-                        {
-                            // TODO:
-                            // wait for filter changing task to complete
-                            bool filterChangeSucceeded = FilterChangeTask.Wait(2000, ct);
-                            if(!filterChangeSucceeded)
-                            {
-                                // TODO: handle filter changer error
-                                //Trace.TraceError("Filter Change Error at " + sw.ElapsedMilliseconds.ToString() + " msecs into experiment");                                
-                            }
-                        }                       
+                        //if (m_ImagingDictionary.Count > 1)
+                        //{
+                        //    // TODO:
+                        //    // wait for filter changing task to complete
+                        //    bool filterChangeSucceeded = FilterChangeTask.Wait(2000, ct);
+                        //    if (!filterChangeSucceeded)
+                        //    {
+                        //        // TODO: handle filter changer error
+                        //        //Trace.TraceError("Filter Change Error at " + sw.ElapsedMilliseconds.ToString() + " msecs into experiment");                                
+                        //    }
+                        //}                       
                     }
                     else
                     {
@@ -1399,7 +1386,7 @@ namespace Waveguide
             Task FilterChangeTask = null;
 
             // put system in starting state
-            ChangeFilterPositions(m_ImagingDictionary[nextIndicatorID].excitationFilterPos, m_ImagingDictionary[nextIndicatorID].emissionFilterPos);
+            ChangeFilterPositionsAndCloseShutter(m_ImagingDictionary[nextIndicatorID].excitationFilterPos, m_ImagingDictionary[nextIndicatorID].emissionFilterPos);
 
             // start experiment timer
             sw.Restart();
@@ -1445,7 +1432,7 @@ namespace Waveguide
                         // but only if the nextIndicatorID != currentIndicatorID
                         int excitationPosition = m_ImagingDictionary[nextIndicatorID].excitationFilterPos;
                         int emissionPosition = m_ImagingDictionary[nextIndicatorID].emissionFilterPos;
-                        FilterChangeTask = Task.Factory.StartNew(() => ChangeFilterPositions(excitationPosition, emissionPosition));
+                        FilterChangeTask = Task.Factory.StartNew(() => ChangeFilterPositionsAndCloseShutter(excitationPosition, emissionPosition));
                     }
 
 
@@ -1553,11 +1540,12 @@ namespace Waveguide
         }
 
 
-        private void ChangeFilterPositions(int excitationFilterPosition, int emissionFilterPosition)
+        private void ChangeFilterPositionsAndCloseShutter(int excitationFilterPosition, int emissionFilterPosition)
         {
-            // this function is used to change the filter positions
+            // this function is used to change the filter positions and close shutter
 
-            Thread.Sleep(20);
+            byte speed =  GlobalVars.FilterChangeSpeed;
+            m_lambda.MoveFilterABandCloseShutterA((byte)excitationFilterPosition, (byte)emissionFilterPosition,speed,speed);
         }
 
 
@@ -2322,7 +2310,20 @@ namespace Waveguide
                         // process image
                         ImagingParamsStruct dps = imagingDictionary[expIndID];
 
-                        imageFileManager.WriteImageFile(grayImage, expIndID, sequenceNumber);
+                        string filepath = imageFileManager.WriteImageFile(grayImage, expIndID, sequenceNumber);
+
+                        ExperimentImageContainer expImage = new ExperimentImageContainer();
+
+                        expImage.CompressionAlgorithm = GlobalVars.CompressionAlgorithm;
+                        expImage.ExperimentIndicatorID = expIndID;
+                        expImage.ImageData = grayImage;
+                        expImage.MaxPixelValue = GlobalVars.MaxPixelValue;
+                        expImage.MSecs = sequenceNumber;
+                        expImage.TimeStamp = DateTime.Now;
+                        expImage.FilePath = filepath;
+                                             
+                        bool success = m_wgDB.InsertExperimentImage(ref expImage);
+
                     }
 
                     return;

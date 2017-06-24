@@ -386,6 +386,8 @@ namespace Waveguide
                 SaveImagePB.IsEnabled = false;
                 FlatFieldCorrectionCB.IsEnabled = false;
                 WellSelectionPB.IsEnabled = false;
+
+                vm.CurrentCameraSettings.ExposureLimit = (int)((float)vm.CycleTime * 0.95);
                                
                 m_imager.StartOptimization(m_ID, vm.CurrentCameraSettings); // vm.IsIncreasingSignal, vm.Exposure);
 

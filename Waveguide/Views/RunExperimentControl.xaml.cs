@@ -2422,7 +2422,10 @@ namespace Waveguide
                 m_imager.m_RangeSliderLowerSliderPosition = lowerSliderValue;
                 m_imager.m_RangeSliderUpperSliderPosition = upperSliderValue;
 
-                m_imager.RedisplayCurrentImage(entry.Key, lowerSliderValue, upperSliderValue);
+                ushort lowerVal = (ushort)(((float)lowerSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
+                ushort upperVal = (ushort)(((float)upperSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
+
+                m_imager.RedisplayCurrentImage(entry.Key, lowerVal, upperVal);
             }
         }
 
@@ -2441,7 +2444,10 @@ namespace Waveguide
                 m_imager.m_RangeSliderLowerSliderPosition = lowerSliderValue;
                 m_imager.m_RangeSliderUpperSliderPosition = upperSliderValue;
 
-                m_imager.RedisplayCurrentImage(entry.Key, lowerSliderValue, upperSliderValue);
+                ushort lowerVal = (ushort)(((float)lowerSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
+                ushort upperVal = (ushort)(((float)upperSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
+
+                m_imager.RedisplayCurrentImage(entry.Key, lowerVal, upperVal);
             }
         }
 
@@ -2460,7 +2466,10 @@ namespace Waveguide
                 m_imager.m_RangeSliderLowerSliderPosition = lowerSliderValue;
                 m_imager.m_RangeSliderUpperSliderPosition = upperSliderValue;
 
-                m_imager.RedisplayCurrentImage(entry.Key, lowerSliderValue, upperSliderValue);
+                ushort lowerVal = (ushort)(((float)lowerSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
+                ushort upperVal = (ushort)(((float)upperSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
+
+                m_imager.RedisplayCurrentImage(entry.Key, lowerVal, upperVal);
             }
         }
 

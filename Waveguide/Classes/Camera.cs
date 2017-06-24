@@ -1137,6 +1137,18 @@ namespace Waveguide
             return uiErrorCode;
         }
 
+        public uint SetCameraPreAmpGain(int index)
+        {
+            uint uiErrorCode;
+
+            if (index > 1) index = 1;
+            if (index < 0) index = 0;
+
+            uiErrorCode = MyCamera.SetPreAmpGain(index);
+
+            return uiErrorCode;
+        }
+
 
         public uint SetCameraEMGainMode(int mode)
         {   // values for mode:

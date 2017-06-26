@@ -18,6 +18,7 @@ namespace Waveguide
 
         public static ExperimentParams GetExperimentParams { get { return lazy.Value; } }
 
+        WaveguideDB m_wgDB;
 
         /////////////////////////////
         // Private Constructor
@@ -29,6 +30,14 @@ namespace Waveguide
             _compoundPlateList = new System.Collections.ObjectModel.ObservableCollection<ExperimentCompoundPlateContainer>();
             _controlSubtractionWellList = new System.Collections.ObjectModel.ObservableCollection<Tuple<int, int>>();
             _indicatorList = new System.Collections.ObjectModel.ObservableCollection<ExperimentIndicatorContainer>();
+
+
+            m_wgDB = new WaveguideDB();
+            bool success = m_wgDB.GetCameraSettingsDefault(out _cameraSettings);
+            if (!success)
+            {
+                _cameraSettings = new CameraSettingsContainer(); 
+            }
         }
 
         /////////////////////////////

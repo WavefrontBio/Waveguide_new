@@ -248,6 +248,19 @@ namespace Waveguide
         }
 
 
+        public void Reset()
+        {
+            m_wellList.Clear();
+
+            for (int r = 0; r < m_rows; r++)
+                for (int c = 0; c < m_cols; c++)
+                {
+                    m_selected[r, c] = false;
+                }
+
+            DrawPlate();
+        }
+
 
         public void DrawPlate()
         {                      

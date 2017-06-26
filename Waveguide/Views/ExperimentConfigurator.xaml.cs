@@ -441,6 +441,8 @@ namespace Waveguide
             MethodComboBox.SelectedIndex = -1;  // clear method combobox selection
 
             VM.ExpParams.controlSubtractionWellList.Clear();  // clear control subtraction well list
+
+            WellSelection.Reset();  // clears the Well seledtion control (for control subtraction)
         }
 
 

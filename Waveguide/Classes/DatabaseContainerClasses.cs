@@ -1930,6 +1930,25 @@ namespace Waveguide
         private int _startingBinning;
         private int _emGainLimit;
 
+        public CameraSettingsContainer(string desc = "")
+        {
+            StartingExposure = 1;
+            ExposureLimit = 1000;
+            HighPixelThresholdPercent = 80;
+            MinPercentPixelsAboveLowThreshold = 50;
+            MaxPercentPixelsAboveHighThreshold = 10;
+            LowPixelThresholdPercent = 10;
+            EMGainLimit = 300;
+            HSSIndex = 0;
+            IncreasingSignal = true;
+            IsDefault = false;
+            StartingBinning = 1;
+            UseEMAmp = true;
+            UseFrameTransfer = true;
+            VertClockAmpIndex = 2;
+            VSSIndex = 0;
+            Description = desc;
+        }
 
         public int CameraSettingID
         {

@@ -323,6 +323,23 @@ namespace Waveguide
         }
 
 
+        public int MoveFilterABandOpenShutterA(byte posA, byte posB, byte aSpeed, byte bSpeed)
+        {
+            ClearBuffer();
+            if (!SystemInitialized) return NOT_INITIALIZED;
+
+            cmd[0] = 189;  // batch start (valid only for Lambda 10-3
+            cmd[1] = 170;  // open shutter A
+            cmd[2] = (byte)((aSpeed * 16) + posA);  // move filter A
+            cmd[3] = (byte)(128 + (bSpeed * 16) + posB);  // move filter B
+            cmd[4] = 190;  // batch end
+            PostMessage("Moving Filters");
+            ftStatus = myFtdiDevice.Write(cmd, 5, ref numBytesWritten);
+
+            return (int)ftStatus;
+        }
+
+
 
         public void WaitForCommandToComplete()
         {

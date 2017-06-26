@@ -1221,6 +1221,8 @@ namespace Waveguide
             } while (imageCount < maxImagesToProduce && !abort);
 
             sw.Stop();
+
+            m_lambda.CloseShutterA();
      
             t1 = sw.ElapsedMilliseconds;
             m_camera.MyCamera.AbortAcquisition();
@@ -1649,7 +1651,16 @@ namespace Waveguide
                     cameraSettings.HighPixelThresholdPercent = 80;
                     cameraSettings.MinPercentPixelsAboveLowThreshold = 50;
                     cameraSettings.MaxPercentPixelsAboveHighThreshold = 10;
-                    cameraSettings.LowPixelThresholdPercent = 10;
+                    cameraSettings.LowPixelThresholdPercent = 10; 
+                    cameraSettings.EMGainLimit = 300; 
+                    cameraSettings.HSSIndex = 0; 
+                    cameraSettings.IncreasingSignal = true;
+                    cameraSettings.IsDefault = false;
+                    cameraSettings.StartingBinning = 1;
+                    cameraSettings.UseEMAmp = true;
+                    cameraSettings.UseFrameTransfer = true;
+                    cameraSettings.VertClockAmpIndex = 2;
+                    cameraSettings.VSSIndex = 0;
                 }                                               
             }
            
@@ -1668,7 +1679,7 @@ namespace Waveguide
             bool tooBright = false;
 
 
-            m_camera.SetCameraBinning(1, 1);
+            m_camera.SetCameraBinning(cameraSettings.StartingBinning,cameraSettings.StartingBinning);
             success = m_camera.PrepareAcquisition();
 
             // reset DirectX display panel for new size of image

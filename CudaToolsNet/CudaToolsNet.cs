@@ -13,75 +13,75 @@ namespace CudaToolsNet
         const string DLL_NAME = "CudaTools.dll";
 
         // Import the methods exported by the unmanaged D3DSurfaceManager.
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr SetFullGrayscaleImage(IntPtr grayImage, UInt16 imageWidth, UInt16 imageHeight);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr SetRoiGrayscaleImage(IntPtr roiImage, UInt16 imageWidth, UInt16 imageHeight, UInt16 roiWidth, UInt16 roiHeight, UInt16 roiX, UInt16 roiY);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr GetGrayscaleImagePtr();
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr SetMaskImage(IntPtr maskImage, UInt16 maskWidth, UInt16 maskHeight, UInt16 maskRows, UInt16 maskCols);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr GetMaskImagePtr();
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void SetColorMap(IntPtr redMap, IntPtr greenMap, IntPtr blueMap, UInt16 maxPixelValue);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr ConvertGrayscaleToColor(UInt16 scaleLower, UInt16 scaleUpper);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr GetColorImagePtr();
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void ApplyMaskToImage();
 
 
 
         // void SetFlatFieldCorrectionArrays(int type, float* Gc, float* Dc, int numElements)
-        [DllImport(DLL_NAME,CallingConvention=CallingConvention.StdCall,EntryPoint="SetFlatFieldCorrectionArrays")]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetFlatFieldCorrectionArrays")]
         static extern void SetFlatFieldCorrectionArrays(int type, IntPtr Gc, IntPtr Dc, int numElements);
 
         // void FlattenImage(int type)
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.StdCall, EntryPoint = "FlattenImage")]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, EntryPoint = "FlattenImage")]
         static extern void FlattenImage(int type);
 
 
 
 
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr PipelineFullImage(IntPtr grayImage, UInt16 imageWidth, UInt16 imageHeight, bool applyMask);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr PipelineRoiImage(IntPtr roiImage, UInt16 imageWidth, UInt16 imageHeight, UInt16 roiWidth, UInt16 roiHeight, UInt16 roiX, UInt16 roiY, bool applyMask);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void DownloadColorImage(IntPtr colorImageDest);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void DownloadGrayscaleImage(IntPtr grayscaleImageDest);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void Init();
 
-        [DllImport("CudaTools.dll")]
-        static extern void CudaInit();        
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
+        static extern void CudaInit();
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void Shutdown();
-           
-        [DllImport("CudaTools.dll")]
+
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void GetHistogram_512Buckets(IntPtr destHist, byte maxValueBitWidth);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void GetHistogramImage_512Buckets(IntPtr histImage, UInt16 width, UInt16 height, UInt32 maxBinCount);
 
-        [DllImport("CudaTools.dll")]
+        [DllImport("CudaTools.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void CalculateMaskApertureSums(IntPtr sums);
 
 

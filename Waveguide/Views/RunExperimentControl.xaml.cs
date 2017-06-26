@@ -512,6 +512,13 @@ namespace Waveguide
         {
             VM.Reset();
             ClearPlotData();
+
+            CameraSettingsContainer csc;
+            bool success = wgDB.GetCameraSettingsDefault(out csc);
+            if(success)
+            {
+                VM.ExpParams.cameraSettings = csc;
+            }
         }
 
 
@@ -2731,6 +2738,7 @@ namespace Waveguide
             dlg.CameraSetupControl.StartVideoPB.Visibility = System.Windows.Visibility.Hidden;
             dlg.CameraSetupControl.SaveImagePB.Visibility = System.Windows.Visibility.Hidden;           
 
+           
 
             dlg.ShowDialog();
 
@@ -2781,7 +2789,9 @@ namespace Waveguide
 
             VM.EvalRunStatus();
 
-        
+            dlg = null;
+            GC.Collect();
+            
         }
 
              

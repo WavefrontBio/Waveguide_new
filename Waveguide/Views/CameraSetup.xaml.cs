@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -29,14 +30,21 @@ namespace Waveguide
 
         private WPFTools.SpinnerDotCircle m_spinner;
 
+        public bool m_enableRangerSliderUpdate;
+
+
 		public CameraSetup()
 		{
+     
 			this.InitializeComponent();
             m_ID = -1;
             m_lowerSliderValue = 0;
             m_upperSliderValue = (UInt16)GlobalVars.MaxPixelValue;
 
             m_wgDB = new WaveguideDB();
+
+            m_enableRangerSliderUpdate = false;
+           
 		}
 
         ~CameraSetup()
@@ -58,6 +66,12 @@ namespace Waveguide
             vm = new CameraSetupModel(m_imager, m_wgDB, AllowCameraConfiguration, IsManualMode);
 
             m_ID = indicatorID;
+
+            if(IsManualMode)  // if this is manual operation (i.e. NOT a verify, prep-for-run, operation), then enable filter changes based on combo-box changes
+            {
+                EmissionFilterCB.SelectionChanged+=EmissionFilterCB_SelectionChanged;
+                ExcitationFilterCB.SelectionChanged+=ExcitationFilterCB_SelectionChanged;
+            }
             
 
             ///////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +151,8 @@ namespace Waveguide
 
                 m_imager.m_ImagingDictionary.Add(m_ID, ips);
                 m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
+
+                m_imager.m_lambda.MoveFilterABandCloseShutterA((byte)vm.ExFilter.PositionNumber, (byte) vm.EmFilter.PositionNumber, GlobalVars.FilterChangeSpeed, GlobalVars.FilterChangeSpeed);
                 
             }
 
@@ -177,7 +193,9 @@ namespace Waveguide
             m_camera.m_acqParams.Updated += m_acqParams_Updated;
 
             RangeSlider.RangeChanged += RangeSlider_RangeChanged;
-          
+
+            m_imager.m_lambda.MoveFilterABandCloseShutterA((byte)vm.ExFilter.PositionNumber, (byte)vm.EmFilter.PositionNumber, GlobalVars.FilterChangeSpeed, GlobalVars.FilterChangeSpeed);
+
         }
 
         void RangeSlider_RangeChanged(object sender, WPFTools.RangeSliderEventArgs e)
@@ -190,7 +208,7 @@ namespace Waveguide
             m_imager.m_RangeSliderLowerSliderPosition = m_lowerSliderValue;
             m_imager.m_RangeSliderUpperSliderPosition = m_upperSliderValue;
 
-            m_imager.RedisplayCurrentImage(m_ID, m_lowerSliderValue, m_upperSliderValue);
+            if(m_enableRangerSliderUpdate) m_imager.RedisplayCurrentImage(m_ID, m_lowerSliderValue, m_upperSliderValue);
         }
 
         void m_acqParams_Updated(object sender, EventArgs e)
@@ -302,19 +320,25 @@ namespace Waveguide
         {
             if (m_imager == null) return;
 
+
+            m_imager.m_lambda.OpenShutterA(); Thread.Sleep(5);
+
+
             UInt16[] grayRoiImage;
             int exposure = Convert.ToInt32(Exposure.Text);
 
-            m_imager.m_lambda.OpenShutterA();
-                                                 
+
+
             bool success = m_imager.AcquireImage(exposure, out grayRoiImage);
-            if(success)
+            if (success)
             {
                 // display image
                 m_imager.ProcessAndDisplayImage(grayRoiImage, m_ID, vm.ApplyMask, m_lowerSliderValue, m_upperSliderValue);
             }
 
             m_imager.m_lambda.CloseShutterA();
+
+            m_enableRangerSliderUpdate = true;
         }
 
         private void StartVideoPB_Click(object sender, RoutedEventArgs e)
@@ -362,6 +386,7 @@ namespace Waveguide
         {
             if (m_imager == null) return;
 
+
             if (!vm.IsOptimizing)
             {
                 m_spinner = new WPFTools.SpinnerDotCircle();
@@ -397,6 +422,8 @@ namespace Waveguide
             {
                 m_imager.StopOptimization();
             }
+
+            m_enableRangerSliderUpdate = true;
 
         }
 

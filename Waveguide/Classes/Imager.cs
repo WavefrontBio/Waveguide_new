@@ -292,10 +292,21 @@ namespace Waveguide
 
 
 
+            // set up the color model
             ColorModelContainer colorModelContainer = null;
-            SetColorModel(colorModelContainer); // pass null here creates the default color model
+            ColorModel colorModel;
 
+            success = m_wgDB.GetDefaultColorModel(out colorModel, GlobalVars.MaxPixelValue);
+            if(success)
+            {
+                SetColorModel(colorModel);  // a default color model was found in database, so it is assigned
+            }
+            else
+            {
+                SetColorModel(colorModelContainer);  // since colorModelContainer = null, this creates a default Black/White color model
+            }
 
+            
 
             // start Temperature Monitoring Task
             if (!m_cameraTempMonitorRunning)
@@ -473,16 +484,11 @@ namespace Waveguide
             m_colorModel = colorModel;
             
             int arraySize = GlobalVars.MaxPixelValue;
-            byte[] red = new byte[arraySize];
-            byte[] green = new byte[arraySize];
-            byte[] blue = new byte[arraySize];
-
-            for (int i = 0; i < arraySize; i++)
-            {
-                red[i] = m_colorModel.m_colorMap[i].m_red;
-                green[i] = m_colorModel.m_colorMap[i].m_green;
-                blue[i] = m_colorModel.m_colorMap[i].m_blue;
-            }
+            byte[] red;
+            byte[] green;
+            byte[] blue;
+       
+            colorModel.BuildColorMapForGPU(out red, out green, out blue, arraySize);
 
             // copy to GPU
             if (m_cudaToolBox != null)
@@ -1085,6 +1091,9 @@ namespace Waveguide
             // put system in starting state
             ImagingParamsStruct cip = m_ImagingDictionary[nextIndicatorID];
             ChangeFilterPositionsAndCloseShutter(cip.excitationFilterPos, cip.emissionFilterPos);
+            Thread.Sleep(30);
+
+
             m_camera.SetCameraEMGain(cip.gain);
             m_camera.SetCameraPreAmpGain(cip.preAmpGainIndex);
             
@@ -1099,6 +1108,9 @@ namespace Waveguide
             {
                 try
                 {
+                    // start acquisition timer
+                    acqTimer.Restart();
+
                     // set currentIndicatorID 
                     currentIndicatorID = nextIndicatorID;
                     // set nextIndicatorID
@@ -1116,9 +1128,6 @@ namespace Waveguide
                     Thread.Sleep(5); // give shutter time to open
                     closeShutter = (cycleTime < 100) ? false : true;
                     
-
-                    // start acquisition timer
-                    acqTimer.Restart();
 
                     m_camera.MyCamera.SendSoftwareTrigger();
 
@@ -1138,14 +1147,17 @@ namespace Waveguide
                     if (m_ImagingDictionary.Count > 1) // (currentIndicatorID != nextIndicatorID)
                     {                        
                         // put system in starting state
-                        ImagingParamsStruct ips = m_ImagingDictionary[nextIndicatorID];
-                        ChangeFilterPositionsAndCloseShutter(ips.excitationFilterPos, cip.emissionFilterPos);
+                        ImagingParamsStruct ips = m_ImagingDictionary[nextIndicatorID];                       
                         m_camera.SetCameraEMGain(ips.gain);
                         m_camera.SetCameraPreAmpGain(ips.preAmpGainIndex);
                         int excitationPosition = ips.excitationFilterPos;
                         int emissionPosition = ips.emissionFilterPos;
                         //FilterChangeTask = Task.Factory.StartNew(() => ChangeFilterPositionsAndCloseShutter(excitationPosition, emissionPosition));
                         ChangeFilterPositionsAndCloseShutter(excitationPosition, emissionPosition);
+                    }
+                    else
+                    {
+                        m_lambda.CloseShutterA();
                     }
 
                     
@@ -1169,7 +1181,7 @@ namespace Waveguide
 
                         // wait for cycle time to elapse
                         int loopCount = 0;
-                        while (acqTimer.ElapsedMilliseconds < cycleTime)
+                        while (acqTimer.ElapsedMilliseconds < cycleTime-2)
                         {
                             Thread.Sleep(1);
                             loopCount++;  // this instruction added to this loop seems to make it work!  weird, but dont' remove it!!

@@ -2455,6 +2455,8 @@ namespace Waveguide
             m_colorModel.BuildColorMap();
             DrawColorMap();
 
+            m_imager.SetColorModel(m_colorModel);
+
             foreach (KeyValuePair<int,ImagingParamsStruct> entry in m_imager.m_ImagingDictionary)
             {
                 m_imager.m_RangeSliderLowerSliderPosition = lowerSliderValue;
@@ -2652,6 +2654,12 @@ namespace Waveguide
             Button btn = sender as Button;
             DataRecord record = btn.DataContext as DataRecord;
             ExperimentIndicatorContainer indicator = (ExperimentIndicatorContainer)record.DataItem;
+
+
+            ObservableCollection<ExperimentIndicatorContainer> expParam_indicators = VM.ExpParams.indicatorList;
+            Dictionary<int,ImagingParamsStruct> imagingDictionary = m_imager.m_ImagingDictionary;
+
+
 
             ManualControlDialog dlg = new ManualControlDialog(m_imager, indicator.ExperimentIndicatorID, false, false);
 

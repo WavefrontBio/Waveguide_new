@@ -283,6 +283,28 @@ namespace Waveguide
 
             VM.SetExperimentStatus();
 
+            if(m_imager.m_ImagingDictionary == null)
+            {
+                m_imager.m_ImagingDictionary = new Dictionary<int, ImagingParamsStruct>();
+            }
+            else
+            {
+                m_imager.m_ImagingDictionary.Clear();
+            }
+
+            foreach(ExperimentIndicatorContainer eic in VM.ExpParams.indicatorList)
+            {
+                ImagingParamsStruct ips = new ImagingParamsStruct();
+                ips.emissionFilterPos = (byte)eic.EmissionFilterPos;
+                ips.excitationFilterPos = (byte)eic.ExcitationFilterPos;
+                ips.experimentIndicatorID = eic.ExperimentIndicatorID;
+                ips.flatfieldType = eic.FlatFieldCorrection;
+                ips.indicatorName = eic.Description;
+                ips.binning = m_imager.m_camera.m_acqParams.HBin;
+
+                m_imager.m_ImagingDictionary.Add(eic.ExperimentIndicatorID, ips);
+            }
+
         }
 
 

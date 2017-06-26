@@ -650,7 +650,7 @@ namespace Waveguide
 
 
 
-        public ColorModel(ColorModelContainer cModelCont, int maxPixelValue = 16383, int gradientSize = 1024)
+        public ColorModel(ColorModelContainer cModelCont, int maxPixelValue = 65535, int gradientSize = 1024)
         {
             m_description = cModelCont.Description;
             m_gradientSize = gradientSize;
@@ -855,6 +855,21 @@ namespace Waveguide
 
 
 
+        public void BuildColorMapForGPU(out byte[] red, out byte[] green, out byte[] blue, int maxPixelValue)
+        {
+            red = new byte[maxPixelValue + 1];
+            green = new byte[maxPixelValue + 1];
+            blue = new byte[maxPixelValue + 1];
+
+            for(int i = 0; i<(maxPixelValue+1); i++)
+            {
+                int gradientIndex = (int)( ((float)i) / ((float)maxPixelValue) * ((float)(m_gradientSize-1)) );
+                red[i]   = m_gradient[gradientIndex].m_red;
+                green[i] = m_gradient[gradientIndex].m_green;
+                blue[i]  = m_gradient[gradientIndex].m_blue;
+            }
+        }
+
 
 
         public void BuildColorGradient()
@@ -866,7 +881,11 @@ namespace Waveguide
                 double blueRange = m_stops[ndx + 1].m_color.m_blue - m_stops[ndx].m_color.m_blue;
 
                 for (int i = m_stops[ndx].m_index; i <= m_stops[ndx + 1].m_index; i++)
-                {                   
+                {
+                    int a = m_stops[ndx].m_index;
+                    int b = m_stops[ndx + 1].m_index;
+
+
                     // interpolate
                     double percentValueRange = (double)(i-m_stops[ndx].m_index) / (double)(m_stops[ndx + 1].m_index - m_stops[ndx].m_index);
 
@@ -876,6 +895,9 @@ namespace Waveguide
                 }
 
             }
+
+            int iiii = 0;
+            iiii += 1;
 
         }
 

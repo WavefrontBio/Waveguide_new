@@ -21,11 +21,11 @@ namespace Waveguide
         Timer m_updateTimer;
 
         string m_ipAddr;
-        ushort m_port;
+        int m_port;
 
         string m_lastErrorMessage;
 
-        SimpleAsyncClient m_simpleClient;
+        EventDrivenTCPClient m_simpleClient;
 
 
         public event TempCtrl_MessageEventHandler MessageEvent;
@@ -45,68 +45,92 @@ namespace Waveguide
 
 
 
-        public OmegaTempCtrl(string _ipAddr, ushort _port)
+        public OmegaTempCtrl(string _ipAddr, int _port)
         {
             m_ipAddr = _ipAddr;
             m_port = _port;
             m_lastErrorMessage = "No Error";
-            //m_client = new TcpClient();
-            m_simpleClient = new SimpleAsyncClient();
+            m_simpleClient = new EventDrivenTCPClient(IPAddress.Parse(_ipAddr), _port, true);
 
-            m_simpleClient.OnConnect += m_simpleClient_OnConnect;
-            m_simpleClient.OnDisconnect += m_simpleClient_OnDisconnect;
-            m_simpleClient.OnError += m_simpleClient_OnError;
-            m_simpleClient.OnMessageReceived += m_simpleClient_OnMessageReceived;
+            m_simpleClient.ConnectionStatusChanged += m_simpleClient_ConnectionStatusChanged;
+            m_simpleClient.DataReceived += m_simpleClient_DataReceived;
+            
         }
 
-        void m_simpleClient_OnMessageReceived(SimpleAsyncClient client, SACMessageReceivedEventArgs args)
+        void m_simpleClient_DataReceived(EventDrivenTCPClient sender, object data)
         {
-            ParseReceivedMessage(args.MessageData);
+            ParseReceivedMessage((string)data);
         }
 
-        void m_simpleClient_OnError(SimpleAsyncClient client, SACErrorEventArgs args)
+        void m_simpleClient_ConnectionStatusChanged(EventDrivenTCPClient sender, EventDrivenTCPClient.ConnectionStatus status)
         {
-            OnMessage(new OmegaTempCtrlMessageEventArgs("Error Temp Ctrl: " + args.Exception.Message));
-        }
+            string msg = "Unknown Status";
 
-        void m_simpleClient_OnDisconnect(SimpleAsyncClient client)
-        {
-            OnMessage(new OmegaTempCtrlMessageEventArgs("Disconnected from Temp Controller"));
-        }
-
-        void m_simpleClient_OnConnect(SimpleAsyncClient client)
-        {
-            OnMessage(new OmegaTempCtrlMessageEventArgs("Connected to Temp Controller"));
-        }
-
-        public bool Connect()
-        {
-            bool success = true;
-
-            try
+            switch(status)
             {
-                //m_client.Connect(m_ipAddr,m_port);
-
-                m_simpleClient.Connect(m_ipAddr, m_port);
+                case EventDrivenTCPClient.ConnectionStatus.AutoReconnecting:
+                    msg = "Reconnecting...";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.Connected:
+                    msg = "Connected";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.ConnectFail_Timeout:
+                    msg = "Connection Fail, Timeout";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.Connecting:
+                    msg = "Connecting...";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.DisconnectedByHost:
+                    msg = "Disconnected by Host";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.DisconnectedByUser:
+                    msg = "Disconnected by User";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.Error:
+                    msg = "Error";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.NeverConnected:
+                    msg = "Never Connected";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.ReceiveFail_Timeout:
+                    msg = "Recieve Failure, Timeout";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.SendFail_NotConnected:
+                    msg = "Send Failure, Not Connected";
+                    break;
+                case EventDrivenTCPClient.ConnectionStatus.SendFail_Timeout:
+                    msg = "Send Failure, Timeout";
+                    break;
             }
-            catch (Exception e)
-            {
-                m_lastErrorMessage = e.Message;
-                success = false;
-                OnMessage(new OmegaTempCtrlMessageEventArgs("Temp Ctrl Error: " + m_lastErrorMessage));
-            }
 
-            return success;
+            OnMessage(new OmegaTempCtrlMessageEventArgs("Temp Ctrl: " + msg));
         }
+
+
+        public bool IsConnected()
+        {
+            return (m_simpleClient.ConnectionState == EventDrivenTCPClient.ConnectionStatus.Connected);
+        }
+
+
 
         public void StartTempUpdate(double secondsBetweenUpdates)
         {
             m_updateTimer = new Timer(updateTemperatureCallback, null, TimeSpan.FromSeconds(secondsBetweenUpdates), TimeSpan.FromSeconds(secondsBetweenUpdates));
+
+            if(!IsConnected())
+            {
+                m_simpleClient.Connect();
+            }
         }
 
         public void StopTempUpdate()
         {
-            if (m_updateTimer != null) m_updateTimer.Dispose();
+            if (m_updateTimer != null)
+            {
+                m_updateTimer.Dispose();
+                m_updateTimer = null;
+            }
         }
 
         public void EnableHeater(bool enable)
@@ -129,40 +153,60 @@ namespace Waveguide
         {
             bool success = true;
 
-            // send: *E01<cr>  or  *E02<cr>  depending on outputNumber          
-            byte[] message = new byte[5] { 0x2a, 0x45, 0x30, 0x31, 0x0d };
-            if (outputNumber == 2) message[3] = 0x32;
-            m_simpleClient.Send(message);
+            if (IsConnected())
+            {
+                // send: *E01<cr>  or  *E02<cr>  depending on outputNumber          
+                byte[] message = new byte[5] { 0x2a, 0x45, 0x30, 0x31, 0x0d };
+                if (outputNumber == 2) message[3] = 0x32;
+                m_simpleClient.Send(message);
 
-            GlobalVars.InsideHeaterON = true;
+                GlobalVars.InsideHeaterON = true;
 
-            return success;
+                return success;
+            }
+            else
+                return false;
         }
 
         private bool DisableOutput(int outputNumber)
         {
             bool success = true;
 
-            // send: *D01<cr>  or  *D02<cr>  depending on outputNumber   
-            byte[] message = new byte[5] { 0x2a, 0x44, 0x30, 0x31, 0x0d };
-            if (outputNumber == 2) message[3] = 0x32;
-            m_simpleClient.Send(message);
+            if (IsConnected())
+            {
+                // send: *D01<cr>  or  *D02<cr>  depending on outputNumber   
+                byte[] message = new byte[5] { 0x2a, 0x44, 0x30, 0x31, 0x0d };
+                if (outputNumber == 2) message[3] = 0x32;
+                m_simpleClient.Send(message);
 
-            GlobalVars.InsideHeaterON = false;
+                GlobalVars.InsideHeaterON = false;
 
-            return success;
+                return success;
+            }
+            else
+                return false;
         }
 
         private void updateTemperatureCallback(object state)
         {
-            requestTemperature();
+            if (IsConnected())
+            {
+                requestTemperature();
+            }
         }
 
         public void requestTemperature()
         {
-            // send: *D01<cr>  or  *D02<cr>  depending on outputNumber   
-            byte[] message = new byte[5] { 0x2a, 0x58, 0x30, 0x31, 0x0d };
-            m_simpleClient.Send(message);
+            if (IsConnected())
+            {
+                // send: *D01<cr>  or  *D02<cr>  depending on outputNumber   
+                byte[] message = new byte[5] { 0x2a, 0x58, 0x30, 0x31, 0x0d };
+                m_simpleClient.Send(message);
+            }
+            else
+            {
+                OnMessage(new OmegaTempCtrlMessageEventArgs("Attempted to communicate with disconnected Temp Controller"));
+            }
         }
 
 
@@ -170,13 +214,20 @@ namespace Waveguide
         {
             bool success = true;
 
-            byte[] message = BuildCommand_SetSetPoint(setpointNum, setpoint);
+            if (IsConnected())
+            {
 
-            m_simpleClient.Send(message);
+                byte[] message = BuildCommand_SetSetPoint(setpointNum, setpoint);
 
-            GlobalVars.InsideTargetTemperature = setpoint;
+                m_simpleClient.Send(message);
 
-            return success;           
+                GlobalVars.InsideTargetTemperature = setpoint;
+
+                return success;
+            }
+            else
+                return false;
+
         }
 
 

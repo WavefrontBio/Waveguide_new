@@ -147,6 +147,9 @@ namespace Waveguide
                         m_imager.m_ethernetIO.m_doorStatusEvent += m_ethernetIO_m_doorStatusEvent;
                         m_imager.m_ethernetIO.m_ioMessageEvent += m_ethernetIO_m_ioMessageEvent;
 
+                        m_imager.m_omegaTempController.MessageEvent += m_omegaTempController_MessageEvent;
+                        m_imager.m_omegaTempController.TempEvent += m_omegaTempController_TempEvent;
+
                         MyExperimentConfigurator.Init(m_imager);
                         MyExperimentConfigurator.StartExperimentEvent += MyExperimentConfigurator_StartExperimentEvent;
                         MyRunExperimentControl.CloseRunExperimentPanelEvent += MyRunExperimentControl_CloseRunExperimentPanelEvent;
@@ -183,6 +186,16 @@ namespace Waveguide
                 Close();
             }
             
+        }
+
+        void m_omegaTempController_TempEvent(object sender, OmegaTempCtrlTempEventArgs e)
+        {
+            VM.InsideTemp = (int)e.Temperature;
+        }
+
+        void m_omegaTempController_MessageEvent(object sender, OmegaTempCtrlMessageEventArgs e)
+        {
+            PostMessage(e.Message);
         }
 
         void MyRunExperimentControl_CloseRunExperimentPanelEvent(object sender, EventArgs e)
@@ -316,6 +329,10 @@ namespace Waveguide
             if(m_imager!=null)
             {
                 m_imager.m_camera.CoolerON(false);
+
+                m_imager.m_omegaTempController.EnableHeater(false);
+
+                m_imager.m_ethernetIO.DoorLockON(false);
             }
 
 

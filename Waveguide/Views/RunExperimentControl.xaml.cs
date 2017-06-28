@@ -744,10 +744,6 @@ namespace Waveguide
 
             SolidColorBrush brush = new SolidColorBrush(Colors.LightGray);
 
-            //m_imager.ResetImagingDictionary();
-
-           
-            ImageDisplay imageDisplay = null;
 
             int i = 0;
             foreach(KeyValuePair<int, ExperimentIndicatorContainer> entry in m_indicatorDictionary)
@@ -2319,7 +2315,7 @@ namespace Waveguide
             // this function sets the ranges of all the charts (in both the Chart Array and Aggregate) to the 
             // max/min values for the specified signal type
 
-            DataRange range;
+            DataRange range; 
 
             // get the number of datapoints in the series
             KeyValuePair<int, ExperimentIndicatorContainer> first = m_indicatorDictionary.First();
@@ -2421,27 +2417,29 @@ namespace Waveguide
 
 
 
-        private void RangeSlider_TrackFillDragCompleted(object sender, object e)
+        private void RangeSlider_TrackFillDragCompleted(object sender, object e)        
         {
+            return;
             UInt16 lowerSliderValue = (UInt16)(RangeMinThumb.Value);
             UInt16 upperSliderValue = (UInt16)(RangeMaxThumb.Value);
 
-            m_colorModel.m_controlPts[1].m_value = (int)lowerSliderValue;
-            m_colorModel.m_controlPts[1].m_colorIndex = 0;
-            m_colorModel.m_controlPts[2].m_value = (int)upperSliderValue;
-            m_colorModel.m_controlPts[2].m_colorIndex = 1023;
-            m_colorModel.BuildColorMap();
-            DrawColorMap();
+            //m_colorModel.m_controlPts[1].m_value = (int)lowerSliderValue;
+            //m_colorModel.m_controlPts[1].m_colorIndex = 0;
+            //m_colorModel.m_controlPts[2].m_value = (int)upperSliderValue;
+            //m_colorModel.m_controlPts[2].m_colorIndex = 1023;
+            //m_colorModel.BuildColorMap();
+            //DrawColorMap();
 
             foreach (KeyValuePair<int,ImagingParamsStruct> entry in m_imager.m_ImagingDictionary)
-            {                
-                m_imager.m_RangeSliderLowerSliderPosition = lowerSliderValue;
-                m_imager.m_RangeSliderUpperSliderPosition = upperSliderValue;
-
+            {
                 ushort lowerVal = (ushort)(((float)lowerSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
                 ushort upperVal = (ushort)(((float)upperSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
 
+                m_imager.m_RangeSliderLowerSliderPosition = lowerVal;
+                m_imager.m_RangeSliderUpperSliderPosition = upperVal;
+
                 m_imager.RedisplayCurrentImage(entry.Key, lowerVal, upperVal);
+                break;
             }
         }
 
@@ -2450,45 +2448,54 @@ namespace Waveguide
             UInt16 lowerSliderValue = (UInt16)(RangeMinThumb.Value);
             UInt16 upperSliderValue = (UInt16)(RangeMaxThumb.Value);
 
-            m_colorModel.m_controlPts[1].m_value = (int)RangeMinThumb.Value;
-            m_colorModel.m_controlPts[1].m_colorIndex = 0;
-            m_colorModel.BuildColorMap();
-            DrawColorMap();
+            //m_colorModel.m_controlPts[1].m_value = (int)RangeMinThumb.Value;
+            //m_colorModel.m_controlPts[1].m_colorIndex = 0;
+            //m_colorModel.BuildColorMap();
+            //DrawColorMap();
 
             m_imager.SetColorModel(m_colorModel);
 
             foreach (KeyValuePair<int,ImagingParamsStruct> entry in m_imager.m_ImagingDictionary)
             {
-                m_imager.m_RangeSliderLowerSliderPosition = lowerSliderValue;
-                m_imager.m_RangeSliderUpperSliderPosition = upperSliderValue;
-
                 ushort lowerVal = (ushort)(((float)lowerSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
                 ushort upperVal = (ushort)(((float)upperSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
 
+                m_imager.m_RangeSliderLowerSliderPosition = lowerVal;
+                m_imager.m_RangeSliderUpperSliderPosition = upperVal;
+
                 m_imager.RedisplayCurrentImage(entry.Key, lowerVal, upperVal);
+                break;
             }
         }
 
         private void RangeMaxThumb_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             UInt16 lowerSliderValue = (UInt16)(RangeMinThumb.Value);
             UInt16 upperSliderValue = (UInt16)(RangeMaxThumb.Value);
 
-            m_colorModel.m_controlPts[2].m_value = (int)RangeMaxThumb.Value;
-            m_colorModel.m_controlPts[2].m_colorIndex = 1023;
-            m_colorModel.BuildColorMap();
-            DrawColorMap();
+            //m_colorModel.m_controlPts[2].m_value = (int)RangeMaxThumb.Value;
+            //m_colorModel.m_controlPts[2].m_colorIndex = 1023;
+            //m_colorModel.BuildColorMap();
+            //DrawColorMap();
 
             foreach (KeyValuePair<int, ImagingParamsStruct> entry in m_imager.m_ImagingDictionary)
             {
-                m_imager.m_RangeSliderLowerSliderPosition = lowerSliderValue;
-                m_imager.m_RangeSliderUpperSliderPosition = upperSliderValue;
-
                 ushort lowerVal = (ushort)(((float)lowerSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
                 ushort upperVal = (ushort)(((float)upperSliderValue / 100.0f) * (float)GlobalVars.MaxPixelValue);
 
+                m_imager.m_RangeSliderLowerSliderPosition = lowerVal;
+                m_imager.m_RangeSliderUpperSliderPosition = upperVal;
+
                 m_imager.RedisplayCurrentImage(entry.Key, lowerVal, upperVal);
+                break;
             }
+
+            sw.Stop();
+            long t1 = sw.ElapsedMilliseconds;
+            t1 += 0;
         }
 
        

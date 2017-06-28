@@ -17,7 +17,6 @@ namespace Waveguide
     public class EthernetIO
     {
         string m_ipAddr;
-        IConnection m_connection;
         EDDevice m_device;
         bool m_connected;
         bool m_tryingToConnect;
@@ -56,6 +55,10 @@ namespace Waveguide
         {
             m_connected = false;
             m_ipAddr = ipAddr;
+
+            m_device = EDDevice.Create(ipAddr);
+
+            m_device.DeviceStatusChangedEvent+=m_device_DeviceStatusChangedEvent;
             
             m_watchdogTimer = new Timer(5.0); // monitor Ethernet connection
             m_watchdogTimer.Elapsed += m_watchdogTimer_Elapsed;
@@ -64,54 +67,74 @@ namespace Waveguide
             m_tryingToConnect = false;
 
             m_watchdogTimer_Elapsed(null, null);
+
+
+            m_device.Inputs.IOLineChange += Inputs_IOLineChange;
+            m_device.Outputs.IOLineChange += Outputs_IOLineChange;
         }
 
         void m_watchdogTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if(!m_connected && !m_tryingToConnect)
+            if(m_device.IsConnected)
             {
                 m_tryingToConnect = true;
 
-                m_connection = new TCPConnection(m_ipAddr);
-                m_connection.ConnectionStatusChangedEvent += m_connection_ConnectionStatusChangedEvent;
-                m_connection.Connect();      
+                try
+                {
+                  
+                }
+                catch(Exception ex)
+                {
+                    OnIOMessageEvent(new IOMessageEventArgs("Ethernet IO Error: " + ex.Message));                  
+                }
             }
         }
 
-        void m_connection_ConnectionStatusChangedEvent(IConnection connection, string property, bool newValue)
-        {
-            m_tryingToConnect = false;
+        //void m_connection_ConnectionStatusChangedEvent(IConnection connection, string property, bool newValue)
+        //{
+        //    m_tryingToConnect = false;
 
-            if(connection.IsConnected)
-            {
-                m_connected = true;
+        //    if(connection.IsConnected)
+        //    {
+        //        m_connected = true;
 
-                m_device = new ED588(m_connection);
-                m_device.Label = "BrainBoxes IO Module";
-          
-                m_device.Inputs.IOLineChange += Inputs_IOLineChange;
-                m_device.Outputs.IOLineChange += Outputs_IOLineChange;
-                m_device.DeviceStatusChangedEvent += m_device_DeviceStatusChangedEvent;
-                OnIOConnectionEvent(new IOConnectionEventArgs(true));
-                OnIOMessageEvent(new IOMessageEventArgs("Ethernet IO Module Connected"));
-            }
-            else
-            {
-                m_connected = false;  
-                m_device = null;
-                OnIOConnectionEvent(new IOConnectionEventArgs(false));
-                OnIOMessageEvent(new IOMessageEventArgs("Ethernet IO Module Disconnected"));
+        //        try
+        //        {
+                   
+        //            m_device.Inputs.IOLineChange += Inputs_IOLineChange;
+        //            m_device.Outputs.IOLineChange += Outputs_IOLineChange;
+        //            m_device.DeviceStatusChangedEvent += m_device_DeviceStatusChangedEvent;
+        //            OnIOConnectionEvent(new IOConnectionEventArgs(true));
+        //            OnIOMessageEvent(new IOMessageEventArgs("Ethernet IO Module Connected"));
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            m_device = null;
+        //            m_connected = false;
+        //            connection.Disconnect();
 
-                //m_connection.Connect(); // retry connection
-            }          
-        }
+        //            OnIOMessageEvent(new IOMessageEventArgs("Ethernet IO Error: " + ex.Message));
+        //        }
+        //    }
+        //    else
+        //    {
+        //        m_connected = false;  
+        //        m_device = null;
+        //        OnIOConnectionEvent(new IOConnectionEventArgs(false));
+        //        OnIOMessageEvent(new IOMessageEventArgs("Ethernet IO Module Disconnected"));
+
+        //        //m_connection.Connect(); // retry connection
+        //    }          
+        //}
 
         
 
         void m_device_DeviceStatusChangedEvent(IDevice<IConnection,IIOProtocol> device, string property, bool newValue)
         {
-            OnIOMessageEvent(new IOMessageEventArgs("IO Module Status Change: " + property));
+            OnIOMessageEvent(new IOMessageEventArgs("IO Module Status Change: " + property + " = " + newValue.ToString()));        
         }
+
+
 
         void Inputs_IOLineChange(IOLine line, EDDevice device, IOChangeTypes changeType)
         {            

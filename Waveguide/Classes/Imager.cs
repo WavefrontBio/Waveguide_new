@@ -332,8 +332,7 @@ namespace Waveguide
                 m_omegaTempController.TempEvent += m_omegaTempController_TempEvent;
                 m_omegaTempController.MessageEvent += m_omegaTempController_MessageEvent;
 
-                m_omegaTempController.Connect();
-                //m_omegaTempController.StartTempUpdate(1.0);    
+                m_omegaTempController.StartTempUpdate(1.0);
             }
 
             m_ethernetIO = new EthernetIO(GlobalVars.EthernetIOModuleIP);
@@ -392,11 +391,13 @@ namespace Waveguide
 
         void m_omegaTempController_MessageEvent(object sender, OmegaTempCtrlMessageEventArgs e)
         {
+            // message received from temperature controller...send it on to Main Window
             OnImagerEvent(new ImagerEventArgs("Temp Controller: " + e.Message,ImagerState.Idle));            
         }
 
         void m_omegaTempController_TempEvent(object sender, OmegaTempCtrlTempEventArgs e)
         {
+            // new temperature received...send it on to Main Window
             OnInsideTemperatureEvent(new TemperatureEventArgs(true,(int) e.Temperature));
         }
 
@@ -2881,7 +2882,7 @@ namespace Waveguide
                new ExecutionDataflowBlockOptions
                {
                    TaskScheduler = m_runExperimentControlTask,
-                   MaxDegreeOfParallelism = 8
+                   MaxDegreeOfParallelism = 1                 
                });
 
 

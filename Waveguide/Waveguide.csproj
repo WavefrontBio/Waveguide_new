@@ -187,9 +187,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Classes\AsyncClientSocket.cs" />
     <Compile Include="Classes\DatabaseContainerClasses.cs" />
     <Compile Include="Classes\EthernetIO.cs" />
+    <Compile Include="Classes\EventDrivenTCPClient.cs" />
     <Compile Include="Classes\ExperimentParams.cs" />
     <Compile Include="Classes\FlatFieldCorrector.cs" />
     <Compile Include="Classes\Lambda.cs" />
@@ -559,6 +559,10 @@
   <ItemGroup>
     <Resource Include="Images\Off.png" />
     <Resource Include="Images\On.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\lock.png" />
+    <Resource Include="Images\unlock.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

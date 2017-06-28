@@ -213,10 +213,9 @@
                 <Grid >
                     <Grid.RowDefinitions>                       
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="20"/>
                     </Grid.RowDefinitions>
                     
-                    <TextBlock Grid.Row="1" Tag="{Binding DoorStatus}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" >
+                    <!--<TextBlock Grid.Row="1" Tag="{Binding DoorStatus}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" >
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Style.Triggers>
@@ -232,20 +231,20 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
-                    </TextBlock>
+                    </TextBlock>-->
 
-                    <Image Grid.Row="0" Tag="{Binding DoorStatus}"  Height="32" Width="32" Margin="0,0,0,0" >
+                    <Image Grid.Row="0" Tag="{Binding DoorStatus}"  Height="32" Width="32" Margin="0,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" >
                         <Image.Style>
                             <Style TargetType="{x:Type Image}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Path=DoorStatus}" Value="OPEN">
-                                        <Setter Property="Source" Value="/Images/doorOpen.png"/>
+                                        <Setter Property="Source" Value="/Images/unlock.png"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Path=DoorStatus}" Value="CLOSED">
-                                        <Setter Property="Source" Value="/Images/doorClosed.png"/>
+                                        <Setter Property="Source" Value="/Images/unlock.png"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Path=DoorStatus}" Value="LOCKED">
-                                        <Setter Property="Source" Value="/Images/doorLocked.png"/>
+                                        <Setter Property="Source" Value="/Images/lock.png"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

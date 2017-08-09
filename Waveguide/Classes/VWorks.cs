@@ -273,6 +273,11 @@ namespace Waveguide
                 PostVWorksCommand(VWORKS_COMMAND.Stop_Imaging);
             }
 
+            else if (String.Compare(caption.Trim(), "Barcode", true) == 0)
+            {
+                PostVWorksCommand(VWORKS_COMMAND.Barcode, "Barcode", message);
+            }
+
             else 
                 PostVWorksCommand(VWORKS_COMMAND.Error, "Unknown Command Received", caption + ", " + message);
         }
@@ -390,7 +395,8 @@ namespace Waveguide
         Protocol_Complete,
         Initialization_Complete,
         Error, 
-        Message
+        Message,
+        Barcode
     };
 
 

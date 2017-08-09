@@ -2191,6 +2191,7 @@ namespace Waveguide
                             cont.OwnerID = reader.GetInt32(3);
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
+                            cont.IsAuto = reader.GetBoolean(6);
                           
                             m_methodList.Add(cont);
                         }
@@ -2236,6 +2237,7 @@ namespace Waveguide
                             cont.OwnerID = reader.GetInt32(3);
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
+                            cont.IsAuto = reader.GetBoolean(6);
 
                             m_methodList.Add(cont);
                         }
@@ -2278,6 +2280,7 @@ namespace Waveguide
                             cont.OwnerID = reader.GetInt32(3);
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
+                            cont.IsAuto = reader.GetBoolean(6);
 
                             m_methodList.Add(cont);
                         }
@@ -2322,7 +2325,8 @@ namespace Waveguide
                             cont.OwnerID = reader.GetInt32(3);
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
-
+                            cont.IsAuto = reader.GetBoolean(6);
+                            
                             m_methodList.Add(cont);
                         }
                     }
@@ -2366,7 +2370,8 @@ namespace Waveguide
                             method.BravoMethodFile = reader.GetString(2);
                             method.OwnerID = reader.GetInt32(3);
                             method.ProjectID = reader.GetInt32(4);
-                            method.IsPublic = reader.GetBoolean(5);                          
+                            method.IsPublic = reader.GetBoolean(5);
+                            method.IsAuto = reader.GetBoolean(6);
                         }
                     }
                     catch (Exception e)
@@ -2391,9 +2396,9 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO Method (Description,BravoMethodFile,OwnerID,ProjectID,IsPublic) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO Method (Description,BravoMethodFile,OwnerID,ProjectID,IsPublic,IsAuto) "
                                                             + "OUTPUT INSERTED.MethodID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6)"
                                                             , con))
                 {
                     try
@@ -2402,7 +2407,8 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p2", method.BravoMethodFile);
                         command.Parameters.AddWithValue("@p3", method.OwnerID);
                         command.Parameters.AddWithValue("@p4", method.ProjectID);
-                        command.Parameters.AddWithValue("@p5", method.IsPublic);                        
+                        command.Parameters.AddWithValue("@p5", method.IsPublic);
+                        command.Parameters.AddWithValue("@p6", method.IsAuto); 
 
                         method.MethodID = (int)command.ExecuteScalar();
                     }
@@ -2428,8 +2434,8 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("UPDATE Method SET Description=@p1,BravoMethodFile=@p2,OwnerID=@p3,ProjectID=@p4,IsPublic=@p5 " +
-                                                            "WHERE MethodID=@p6", con))
+                using (SqlCommand command = new SqlCommand("UPDATE Method SET Description=@p1,BravoMethodFile=@p2,OwnerID=@p3,ProjectID=@p4,IsPublic=@p5,IsAuto=@p6 " +
+                                                            "WHERE MethodID=@p7", con))
                 {
                     try
                     {
@@ -2438,7 +2444,8 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p3", method.OwnerID);
                         command.Parameters.AddWithValue("@p4", method.ProjectID);
                         command.Parameters.AddWithValue("@p5", method.IsPublic);
-                        command.Parameters.AddWithValue("@p6", method.MethodID);                       
+                        command.Parameters.AddWithValue("@p6", method.IsAuto);
+                        command.Parameters.AddWithValue("@p7", method.MethodID);                       
 
                         command.ExecuteNonQuery();
                     }

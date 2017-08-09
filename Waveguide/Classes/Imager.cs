@@ -1638,9 +1638,367 @@ namespace Waveguide
 
 
 
+        public bool AutoOptimizeAllIndicators(CameraSettingsContainer cameraSettings)
+        {
+            // make sure ImagingDictionary has been initialized
+            if(m_ImagingDictionary.Count < 1) return false;
+
+
+            bool success = false;
+
+            int startingExposure;
+            int exposureLimit;
+            UInt16 highPixelValueThreshold;
+            int minPercentOfPixelsAboveLowLimit;
+            UInt16 lowPixelValueThreshold;
+            int maxPercentOfPixelsAboveHighLimit;
+            int tempEMGain = 1;  // turn EM Gain all the way down
+            int tempPreAmpIndex = 0; // turn PreAmpGain all the way down
+
+
+            // Initialize camera settings used to optimize imaging
+            if (cameraSettings == null)
+            {
+                success = m_wgDB.GetCameraSettingsDefault(out cameraSettings);
+
+                if (!success || cameraSettings != null)
+                {
+                    cameraSettings = new CameraSettingsContainer();
+                    cameraSettings.StartingExposure = 1;
+                    cameraSettings.ExposureLimit = 1000;
+                    cameraSettings.HighPixelThresholdPercent = 80;
+                    cameraSettings.MinPercentPixelsAboveLowThreshold = 50;
+                    cameraSettings.MaxPercentPixelsAboveHighThreshold = 10;
+                    cameraSettings.LowPixelThresholdPercent = 10;
+                    cameraSettings.EMGainLimit = 300;
+                    cameraSettings.HSSIndex = 0;
+                    cameraSettings.IncreasingSignal = true;
+                    cameraSettings.IsDefault = false;
+                    cameraSettings.StartingBinning = 1;
+                    cameraSettings.UseEMAmp = true;
+                    cameraSettings.UseFrameTransfer = true;
+                    cameraSettings.VertClockAmpIndex = 2;
+                    cameraSettings.VSSIndex = 0;
+                }
+            }
+
+
+
+            // Initialize camera to starting condition            
+            m_camera.m_cameraParams.EMGain = 1;
+            m_camera.m_cameraParams.HSSIndex = cameraSettings.HSSIndex;
+            m_camera.m_cameraParams.PreAmpGainIndex = 0;
+            m_camera.m_cameraParams.UseEMAmp = cameraSettings.UseEMAmp;
+            m_camera.m_cameraParams.UseFrameTransfer = cameraSettings.UseFrameTransfer;
+            m_camera.m_cameraParams.VertClockAmpIndex = cameraSettings.VertClockAmpIndex;
+            m_camera.m_cameraParams.VSSIndex = cameraSettings.VSSIndex;
+
+            success = m_camera.ConfigureCamera();
+
+
+
+
+            bool tooDim = false;
+            bool tooBright = false;
+
+
+            // Initialize binning - this algorithm will check all indicators at this binning.  If they all can't be set at this binning, then the binning is reduced and checked again.
+            int currentBinning = 4;
+
+
+            // signal that an imaging optimization is in progress
+            OnImagerEvent(new ImagerEventArgs("Optimization in Progress", ImagerState.Busy));
+            OptimizationResult_Success = false;
+
+
+
+            bool DoneWithAllBinningLevels = false;
+            string errMsg = "No Error";
+           
+
+
+            while (!DoneWithAllBinningLevels)
+            {
+                // set binning level
+                m_camera.m_acqParams.HBin = currentBinning;
+                m_camera.m_acqParams.VBin = currentBinning;
+                m_camera.SetCameraBinning(currentBinning,currentBinning);
+                success = m_camera.PrepareAcquisition();
+            
+
+                // allocate image variables used in optimization
+                ushort[] grayRoiImage = new ushort[m_camera.m_acqParams.BinnedRoiImageNumPixels];
+                ushort[] grayFullImage = new ushort[m_camera.m_acqParams.BinnedFullImageNumPixels];
+
+                // calculate new image size
+                uint pixelWidth = (uint)(m_camera.XPixels / m_camera.m_acqParams.HBin);
+                uint pixelHeight = (uint)(m_camera.YPixels / m_camera.m_acqParams.VBin);
+               
+
+                // loop over all indicators
+                foreach (KeyValuePair<int, ImagingParamsStruct> pair in m_ImagingDictionary)
+                {
+                    // get next indicator
+                    int indicatorID = pair.Key;
+                    ImagingParamsStruct dps = pair.Value;
+
+                    // reset DirectX display panel for new size of image 
+                    ConfigImageDisplaySurface((int)indicatorID, pixelWidth, pixelHeight, false);
+
+
+                    // Initialize optimization settings
+                    startingExposure = cameraSettings.StartingExposure;
+                    exposureLimit = cameraSettings.ExposureLimit;
+                    highPixelValueThreshold = (UInt16)(((float)cameraSettings.HighPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue));
+                    minPercentOfPixelsAboveLowLimit = cameraSettings.MinPercentPixelsAboveLowThreshold;
+                    lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue)); ;
+                    maxPercentOfPixelsAboveHighLimit = cameraSettings.MaxPercentPixelsAboveHighThreshold;
+
+
+                    int exposure = startingExposure;
+                   
+
+                    // get well list for this indicator to use for optimization
+                    ObservableCollection<Tuple<int, int>> wellsToOptimizeOver = null;
+                    if (m_ImagingDictionary.ContainsKey((int)indicatorID))
+                    {
+                        wellsToOptimizeOver = m_ImagingDictionary[(int)indicatorID].optimizeWellList;
+                    }
+                    
+
+                    ///////////////////////////////////////////////////////////
+                    // optimize at current binning level
+                    bool Done = false;
+                    success = false;
+                    int count = 0;
+                    while (!Done)
+                    {
+                        m_lambda.OpenShutterA(); Thread.Sleep(5);
+
+                        // acquire image
+                        if (m_camera.CheckCameraResult(m_camera.AcquireImage(exposure, ref grayRoiImage), ref errMsg))
+                        {
+
+                            m_lambda.CloseShutterA();
+
+                            // Post to GPU (which will also convert ROI to full image)
+                            m_cudaToolBox.PostRoiGrayscaleImage(grayRoiImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                                                                m_camera.m_acqParams.BinnedFullImageHeight,
+                                                                m_camera.m_acqParams.BinnedRoiW, m_camera.m_acqParams.BinnedRoiH,
+                                                                m_camera.m_acqParams.BinnedRoiX, m_camera.m_acqParams.BinnedRoiY);
+
+                            // Get the full grayscale image for brightness evaluation                    
+                            m_cudaToolBox.Download_GrayscaleImage(out grayFullImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                                                                            m_camera.m_acqParams.BinnedFullImageHeight);
+
+
+                            // process and display
+                            // apply mask
+                            m_cudaToolBox.ApplyMaskToGrayscaleImage();
+
+                            // convert to color
+                            IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
+
+
+                            // check brightness levels
+                            m_mask.CheckImageLevelsInMask(grayFullImage, wellsToOptimizeOver, minPercentOfPixelsAboveLowLimit, lowPixelValueThreshold,
+                                   maxPercentOfPixelsAboveHighLimit, highPixelValueThreshold, ref tooDim, ref tooBright);
+
+                            if (tooBright)
+                            {
+                                int hbin = m_camera.m_acqParams.HBin;
+                                int vbin = m_camera.m_acqParams.VBin;
+                                if (cameraSettings.UseEMAmp)
+                                {
+                                    if (DecreaseEMGain(ref tempEMGain))
+                                    {
+                                        // successfully decreased em gain
+                                        m_camera.m_cameraParams.EMGain = tempEMGain;
+                                        success = m_camera.ConfigureCamera();
+                                        if (!success)
+                                        {  // failed to camera config
+                                            Done = true;
+                                        }
+                                    }
+                                }
+                                else if (DecreaseExposure(ref exposure))
+                                {
+                                    // successfully decreased exposure
+                                    success = m_camera.PrepareAcquisition();
+                                    if (!success)
+                                    {  // failed to prepare acquisition
+                                        Done = true;
+                                    }
+                                }                             
+                                else if (DecreasePreAmpGain(ref tempPreAmpIndex))
+                                {
+                                    m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
+                                    success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
+                                    if (!success)
+                                    {  // failed to camera config
+                                        Done = true;
+                                    }
+                                }
+                                else
+                                {
+                                    success = false;
+                                    Done = true;
+                                }
+                            }
+                            else if (tooDim)
+                            {
+                                int hbin = m_camera.m_acqParams.HBin;
+                                int vbin = m_camera.m_acqParams.VBin;
+
+                                if (IncreasePreAmpGain(ref tempPreAmpIndex))
+                                {
+                                    m_camera.m_cameraParams.PreAmpGainIndex = tempPreAmpIndex;
+                                    success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
+                                    if (!success)
+                                    {  // failed to camera config
+                                        Done = true;
+                                    }
+                                }                               
+                                else if (IncreaseExposure(ref exposure, exposureLimit))
+                                {
+                                    // successfully decreased exposure
+                                    success = m_camera.PrepareAcquisition(m_camera.m_acqParams);
+                                    if (!success)
+                                    {  // failed to prepare acquisition
+                                        Done = true;
+                                    }
+                                }
+                                else if (cameraSettings.UseEMAmp)
+                                {
+                                    if (IncreaseEMGain(ref tempEMGain, cameraSettings.EMGainLimit))
+                                    {
+                                        // successfully increased gain
+                                        m_camera.m_cameraParams.EMGain = tempEMGain;
+                                        success = m_camera.ConfigureCamera(m_camera.m_cameraParams);
+                                        if (!success)
+                                        {  // failed to camera config
+                                            Done = true;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    success = false;
+                                    Done = true;
+                                }
+                            }
+                            else // not tooDim AND not tooBright, i.e. inside defined brightness window                         
+                            {
+                                // SUCCESS!!
+                                success = true;
+                                Done = true;
+                                OptimizationResult_Success = true;
+                                OptimizationResult_Exposure = exposure;
+
+                                // Update Imaging Dictionary
+                                dps.exposure = ((float)exposure) / 1000;
+                                if (dps.cycleTime < (exposure + 10)) dps.cycleTime = exposure + 10;
+                                dps.gain = m_camera.m_cameraParams.EMGain;
+                                dps.preAmpGainIndex = m_camera.m_cameraParams.PreAmpGainIndex;
+                                dps.binning = m_camera.m_acqParams.HBin;
+
+                                //m_ImagingDictionary[(int)ID] = dps;                        
+                            }
+                        }
+                        else
+                        {
+                            MessageBox.Show("Error Acquiring Image: " + errMsg);
+                            success = false;
+                            Done = true;
+                        }
+
+
+                        count++;
+
+                        if (count > 100)
+                        {
+                            success = false;
+                            Done = true;
+                        }
+                    } // END -- while(!Done)  -> optimization loop
+
+                    
+
+                    // check to see if the optimization was successful at current binning level
+                    if(!success)
+                    {
+                        break;  // exit foreach loop if any one of the indicators could not be optimized at current binning level
+                    }
+                    
+                }  // END -- foreach loop over all indicators
+
+
+                // could not optimize all indicators at current binning level, so attempt to reduce binning
+                if(!success)
+                {
+                    // attempt to reduce binning level
+                    int hbin = currentBinning, vbin = currentBinning;
+                    if (DecreaseBinning(ref hbin, ref vbin))
+                    {
+                        // successfully decreased binning, so make adjustments due to binning change  
+                        currentBinning = hbin;
+                    }
+                    else
+                    {
+                        // FAILURE !!
+                        // optimization fail across all indicators FAILED
+                        DoneWithAllBinningLevels = true;
+                    }
+
+                }
+                else
+                {
+                    // SUCCESS !!
+                    // optimization across all indicators PASSED
+                    DoneWithAllBinningLevels = true;
+                }
+
+
+            } // END -- while(!DoneWithAll)
+
+
+            OnImagerEvent(new ImagerEventArgs("Optimization Complete", ImagerState.Idle));
+
+            return success;
+        }
+
+       
+
 
         public Tuple<bool,int> OptimizeImaging(int ID, CameraSettingsContainer cameraSettings) // bool forIncreasingSignal, int startingExposure)
         {
+
+            // Input Parameters
+            //   ID = indicator id
+            //   cameraSettings = camera settings for this indicator, including:
+                        //int _vssIndex;
+                        //int _hssIndex;
+                        //int _vertClockAmpIndex;
+                        //bool _useEMAmp;
+                        //bool _useFrameTransfer;       
+                        //string _description;
+                        //bool _isDefault;
+
+                        //int _cameraSettingID;
+                        //int _startingExposure;
+                        //int _exposureLimit;
+                        //int _highPixelThresholdPercent;
+                        //int _lowPixelThresholdPercent;
+                        //int _minPercentPixelsAboveLowThreshold;
+                        //int _maxPercentPixelsAboveHighThreshold;
+                        //bool _increasingSignal;
+                        //int _startingBinning;
+                        //int _emGainLimit;
+            // Output:
+            //   Tuple<bool, int>: 
+            //          Item1(bool) = success - successfully performed optimization
+            //          Item2(int) = exposure
+
             bool success = false;
 
             int startingExposure;

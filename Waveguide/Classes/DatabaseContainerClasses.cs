@@ -23,6 +23,17 @@ namespace Waveguide
     };
 
 
+
+
+    public enum PLATE_ID_RESET_BEHAVIOR
+    {
+        CONSTANT, // Barcode is constant, and is not effected by reset (user provides barcode)
+        INCREMENT, // Barcode is incremented upon reset (user provides initial barcode that is incremented)
+        CLEAR,  // Barcode is cleared upon reset (user must provide a new barcode after a reset)
+        VWORKS  // VWorks Barcode Scan provides barcode
+    }
+
+
     /////////////////////////////////////////////////////////
     // Color Model
     public class ColorModelContainer : INotifyPropertyChanged
@@ -1186,6 +1197,7 @@ namespace Waveguide
         private int _ownerID;
         private int _projectID;
         private bool _isPublic;
+        private bool _isAuto;
 
         public int MethodID
         {
@@ -1221,6 +1233,17 @@ namespace Waveguide
         {
             get { return _isPublic; }
             set { _isPublic = value; NotifyPropertyChanged("IsPublic"); }
+        }
+
+        public bool IsAuto
+        {
+            get { return _isAuto; }
+            set { _isAuto = value; NotifyPropertyChanged("IsAuto"); }
+        }
+
+        public string IsAutoString
+        {
+            get { if (IsAuto) return "Automated Protocol"; else return "Manual Protocol"; }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -1438,6 +1461,14 @@ namespace Waveguide
 
                 return String.Empty;
             }
+        }
+
+        // this field is not stored in database
+        private PLATE_ID_RESET_BEHAVIOR _plateIDResetBehavior;
+        public PLATE_ID_RESET_BEHAVIOR PlateIDResetBehavior
+        {
+            get { return _plateIDResetBehavior; }
+            set { _plateIDResetBehavior = value; NotifyPropertyChanged("PlateIDResetBehavior"); }
         }
 
         public string Error
@@ -1744,6 +1775,20 @@ namespace Waveguide
         private string _description;
         private string _barcode;
         private int _experimentID;
+
+        // not in database
+        private PLATE_ID_RESET_BEHAVIOR _plateIDResetBehavior;
+        public PLATE_ID_RESET_BEHAVIOR PlateIDResetBehavior
+        {
+            get { return _plateIDResetBehavior; }
+            set { _plateIDResetBehavior = value; NotifyPropertyChanged("PlateIDResetBehavior"); }
+        }
+
+        public ExperimentCompoundPlateContainer()
+        {
+            _plateIDResetBehavior = PLATE_ID_RESET_BEHAVIOR.CLEAR;
+        }
+
 
         public int ExperimentCompoundPlateID
         {

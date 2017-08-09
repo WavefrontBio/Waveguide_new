@@ -110,11 +110,13 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="{Binding Description}"/>
                                 <TextBlock Grid.Column="1" Text="{Binding BravoMethodFile, Converter={StaticResource filenameOnlyConverter}}" 
                                            Margin="10,0,0,0" Foreground="Blue"/>   
+                                <TextBlock Grid.Column="2" Text="{Binding IsAutoString}" Margin="10,0,0,0" Foreground="Green"/>
                             </Grid>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>

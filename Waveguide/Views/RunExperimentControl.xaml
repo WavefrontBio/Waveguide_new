@@ -222,6 +222,8 @@
             </Style>
 
 
+        
+
 
             <DoubleAnimation x:Key="RotateAnimation" 
                              Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)" 
@@ -317,6 +319,8 @@
                     Background="DarkGray"
                     Width="5"/>
 
+        
+        
         <!-- RIGHT Panel -->
         <Grid Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid.RowDefinitions>
@@ -380,11 +384,12 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Image Grid.Column="2" Grid.Row="0" Height="24" Width="24" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                    <Image Grid.Column="2" Grid.Row="0" Height="24" Width="24" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,10,0" >
                         <Image.Style>
                             <Style TargetType="{x:Type Image}">
                                 <Style.Triggers>
@@ -394,6 +399,13 @@
                                     <DataTrigger Binding="{Binding Path=ExpParams.experimentPlate.BarcodeValid}" Value="True">
                                         <Setter Property="Source" Value="/Images/green_check_small.png"/>
                                     </DataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Path=ExpParams.method.IsAuto}" Value="True" />
+                                            <Condition Binding="{Binding Path=ExpParams.experimentPlate.PlateIDResetBehavior}" Value="{x:Static local:PLATE_ID_RESET_BEHAVIOR.VWORKS}" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Source" Value="/Images/green_check_small.png"/>                                      
+                                    </MultiDataTrigger>                                    
                                 </Style.Triggers>
                             </Style>
                         </Image.Style>
@@ -413,29 +425,66 @@
                                         <Setter Property="Background" Value="#20FF0000"/>
                                         <Setter Property="ToolTip" Value="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
                                     </Trigger>
+                                    <DataTrigger Binding="{Binding Path=ExpParams.method.IsAuto}" Value="True">
+                                        <Setter Property="Background" Value="#20777777"/>
+                                        <Setter Property="ToolTip" Value="Barcode to be provided by VWorks during experiment run"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Style>
                     </TextBox>
 
                     <GroupBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Top"
-                              Header="Binning" FontSize="14" 
+                              Header="Reset Behavior" FontSize="14" 
                               BorderBrush="Black" BorderThickness="1" Margin="3"
-                              IsEnabled="False" >
+                              IsEnabled="True" >
                         <StackPanel Orientation="Horizontal">
-                            <RadioButton Content="1x1" x:Name="Binning_1x1_RadioButton" Margin="2" HorizontalAlignment="Center" IsChecked="True" Checked="Binning_1x1_RadioButton_Checked"/>
-                            <RadioButton Content="2x2" x:Name="Binning_2x2_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_2x2_RadioButton_Checked"/>
-                            <RadioButton Content="4x4" x:Name="Binning_4x4_RadioButton" Margin="2" HorizontalAlignment="Center" Checked="Binning_4x4_RadioButton_Checked"/>
+                            <RadioButton Content="Constant" x:Name="ImagePlateBarcode_ConstantRB"  HorizontalAlignment="Center" IsChecked="True" Checked="ImagePlateBarcode_ConstantRB_Checked" Margin="5,2,0,2"/>
+                            <RadioButton Content="Increment" x:Name="ImagePlateBarcode_IncrementRB" HorizontalAlignment="Center" Checked="ImagePlateBarcode_IncrementRB_Checked" Margin="5,2,0,2"/>
+                            <RadioButton Content="Clear" x:Name="ImagePlateBarcode_ClearRB" HorizontalAlignment="Center" Checked="ImagePlateBarcode_ClearRB_Checked" Margin="5,2,0,2">
+                                <RadioButton.Style>
+                                    <Style TargetType="{x:Type RadioButton}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=ExpParams.method.IsAuto}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=ExpParams.method.IsAuto}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </RadioButton.Style>
+                            </RadioButton>
+                            <RadioButton Content="VWorks" x:Name="ImagePlateBarcode_VWorksRB" HorizontalAlignment="Center" Checked="ImagePlateBarcode_VWorksRB_Checked" Margin="5,2,0,2">
+                                <RadioButton.Style>
+                                    <Style TargetType="{x:Type RadioButton}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=ExpParams.method.IsAuto}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=ExpParams.method.IsAuto}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </RadioButton.Style>
+                            </RadioButton>
                         </StackPanel>
                     </GroupBox>
 
                 </Grid>
-
+          
 
                 <igDP:XamDataGrid Grid.Column="0" Grid.Row="1" x:Name="CompoundPlateDataGrid"                                                      
                               CellUpdated="CompoundPlateDataGrid_CellUpdated"
                               DataSource="{Binding Path=ExpParams.compoundPlateList}" Margin="5" Theme="IGTheme">
                     <!-- Row for each CompoundPlate in the selected method, Columns: Description, Exposure  -->
+
+
+                    <igDP:XamDataGrid.Resources>
+                        <local:BindingProxy x:Key="proxy" Data="{Binding}" />
+                        <local:EnumToBoolConverter x:Key="IDResetTypeConverter" />
+                    </igDP:XamDataGrid.Resources>
 
 
                     <igDP:XamDataGrid.FieldLayoutSettings>
@@ -457,14 +506,42 @@
 
                                 <igDP:Field Name="Description" Label="Compound Plate" Width="Auto" >
                                     <igDP:Field.Settings>
-                                        <igDP:FieldSettings AllowEdit="False" />
+                                        <igDP:FieldSettings AllowEdit="False"/>
                                     </igDP:Field.Settings>
                                 </igDP:Field>
 
                                 <igDP:Field Name="Barcode" Label="Barcode">
                                     <igDP:Field.Settings>
                                         <igDP:FieldSettings AllowEdit="True">
+                                            <igDP:FieldSettings.CellValuePresenterStyle>
+                                                <Style  TargetType="{x:Type igDP:CellValuePresenter}">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="{x:Type igDP:CellValuePresenter}">
+                                                                <Grid Width="{TemplateBinding Width}">
+                                                                    <TextBox Name="CompoundPlateBarcodeTextBox" Text="{Binding Path=DataItem.Barcode,UpdateSourceTrigger=PropertyChanged,NotifyOnValidationError=True,ValidatesOnDataErrors=True}">
+                                                                        <TextBox.Style>
+                                                                            <Style TargetType="{x:Type TextBox}">
+                                                                                <Style.Triggers>
+                                                                                    <Trigger Property="Validation.HasError" Value="True">
+                                                                                        <Setter Property="Background" Value="#20FF0000"/>
+                                                                                        <Setter Property="ToolTip" Value="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+                                                                                    </Trigger>
+                                                                                    <DataTrigger Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="True">
+                                                                                        <Setter Property="Background" Value="#20777777"/>
+                                                                                        <Setter Property="ToolTip" Value="Barcode to be provided by VWorks during experiment run"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBox.Style>
 
+                                                                    </TextBox>
+                                                                </Grid>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </igDP:FieldSettings.CellValuePresenterStyle>
                                         </igDP:FieldSettings>
                                     </igDP:Field.Settings>
                                 </igDP:Field>
@@ -503,6 +580,16 @@
                                                                         <Setter TargetName="ValidIcon" Property="Visibility" Value="Visible" />
                                                                         <Setter TargetName="InvalidIcon" Property="Visibility" Value="Hidden" />
                                                                     </DataTrigger>
+                                                                    
+                                                                    <MultiDataTrigger>
+                                                                        <MultiDataTrigger.Conditions>
+                                                                            <Condition Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="True" />
+                                                                            <Condition Binding="{Binding Path=DataItem.PlateIDResetBehavior}" Value="{x:Static local:PLATE_ID_RESET_BEHAVIOR.VWORKS}" />
+                                                                        </MultiDataTrigger.Conditions>
+                                                                        <Setter TargetName="ValidIcon" Property="Visibility" Value="Visible" />
+                                                                        <Setter TargetName="InvalidIcon" Property="Visibility" Value="Hidden" />
+                                                                    </MultiDataTrigger>
+
                                                                 </ControlTemplate.Triggers>
                                                             </ControlTemplate>
                                                         </Setter.Value>
@@ -512,6 +599,77 @@
                                         </igDP:FieldSettings>
                                     </igDP:UnboundField.Settings>
                                 </igDP:UnboundField>
+
+
+                                <igDP:Field Name="PlateIDResetBehavior" Label="Reset Behavior" Width="400" >
+                                   
+                                    <igDP:Field.Settings>                                        
+                                        <igDP:FieldSettings
+                                             AllowEdit="True" 
+                                              AllowGroupBy="False" 
+                                              AllowResize="False" 
+                                              AllowSummaries="False"
+                                              LabelClickAction="Nothing"
+                                             DataItemUpdateTrigger="OnCellValueChange"
+                                              LabelMaxWidth="400" CellMaxWidth="400">
+
+                                            <igDP:FieldSettings.CellValuePresenterStyle>
+                                                <Style TargetType="{x:Type igDP:CellValuePresenter}">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate>
+                                                                
+                                                                <StackPanel Orientation="Horizontal">
+
+                                                                    <RadioButton Content="Constant" x:Name="CompoundPlateBarcode_ConstantRB"  HorizontalAlignment="Center" Checked="CompoundPlateBarcode_ConstantRB_Checked"  Margin="5,2,0,2" IsChecked="True"
+                                                                                 GroupName="{Binding Path=Index}"/>
+                                                                    
+                                                                    <RadioButton Content="Increment" x:Name="CompoundPlateBarcode_IncrementRB" HorizontalAlignment="Center" Checked="CompoundPlateBarcode_IncrementRB_Checked"  Margin="5,2,0,2"
+                                                                                 GroupName="{Binding Path=Index}"/>
+                                                                    
+                                                                    <RadioButton Content="Clear" x:Name="CompoundPlateBarcode_ClearRB" HorizontalAlignment="Center" Checked="CompoundPlateBarcode_ClearRB_Checked"  Margin="5,2,0,2"
+                                                                                 GroupName="{Binding Path=Index}">
+                                                                        <RadioButton.Style>
+                                                                            <Style TargetType="{x:Type RadioButton}">
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="False">
+                                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                                    </DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </RadioButton.Style>
+                                                                    </RadioButton>
+                                                                    
+                                                                    <RadioButton Content="VWorks" x:Name="CompoundPlateBarcode_VWorksRB" HorizontalAlignment="Center" Checked="CompoundPlateBarcode_VWorksRB_Checked"  Margin="5,2,0,2"
+                                                                                 GroupName="{Binding Path=Index}">
+                                                                        <RadioButton.Style>
+                                                                            <Style TargetType="{x:Type RadioButton}">
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="False">
+                                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                    </DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </RadioButton.Style>
+                                                                    </RadioButton>
+                                                                    
+                                                                </StackPanel>
+                                                        
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </igDP:FieldSettings.CellValuePresenterStyle>
+
+                                        </igDP:FieldSettings>
+                                    </igDP:Field.Settings>
+                                </igDP:Field>
 
                             </igDP:FieldLayout.Fields>
                         </igDP:FieldLayout>
@@ -523,6 +681,10 @@
                 <igDP:XamDataGrid Grid.Column="0" Grid.Row="2" x:Name="IndicatorDataGrid" 
                                   DataSource="{Binding Path=ExpParams.indicatorList}" Margin="5" Theme="IGTheme">
                     <!-- Row for each Indicator in the selected method, Columns: Description, Exposure  -->
+
+                    <igDP:XamDataGrid.Resources>
+                        <local:BindingProxy x:Key="proxy" Data="{Binding}" />                        
+                    </igDP:XamDataGrid.Resources>
 
 
                     <igDP:XamDataGrid.FieldLayoutSettings>
@@ -625,16 +787,58 @@
                                 </igDP:Field>
                                 
 
-                                <igDP:UnboundField Name="VerifyIndicator" Label="Verify" Column="5" Height="45" Width="80">
+                                <!--<igDP:UnboundField Name="VerifyIndicator" Label="Verify" Column="5" Height="45" Width="80">
                                     <igDP:UnboundField.Settings>
                                         <igDP:FieldSettings CellValuePresenterStyle="{StaticResource OptimizeButtonTemplate}" CellHeight="12" CellWidth="30" LabelTextAlignment="Center">
+                                        </igDP:FieldSettings>
+                                    </igDP:UnboundField.Settings>
+                                </igDP:UnboundField>-->
+
+
+                                <igDP:UnboundField Name="VerifyIndicator" Label="Verify" Column="5" Height="45" Width="80">
+                                    <igDP:UnboundField.Settings>
+                                        <igDP:FieldSettings CellHeight="12" CellWidth="30" LabelTextAlignment="Center">
+                                            <igDP:FieldSettings.CellValuePresenterStyle>
+                                                <Style TargetType="{x:Type igDP:CellValuePresenter}">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="{x:Type igDP:CellValuePresenter}">
+                                                                <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                                                                    <Button x:Name="VerifyPB" Margin="5,5,5,5" Click="VerifyPB_Click">
+                                                                        <Button.Style>
+                                                                            <Style TargetType="Button">
+                                                                                <!-- Set the default value here (if any) if you set it directly on the button that will override the trigger -->
+                                                                                <Setter Property="Background" Value="Red" />
+                                                                                <Setter Property="Content" Value="Unverified"/>
+                                                                                <Setter Property="Foreground" Value="Black"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding Path=DataItem.Verified}" Value="True">
+                                                                                        <Setter Property="Background" Value="Green" />
+                                                                                        <Setter Property="Content" Value="Verified"/>
+                                                                                        <Setter Property="Foreground" Value="White"/>
+                                                                                    </DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="True">
+                                                                                        <Setter Property="Background" Value="Gray" />
+                                                                                        <Setter Property="Content" Value="Auto"/>
+                                                                                        <Setter Property="Foreground" Value="Black"/>
+                                                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </Button.Style>
+                                                                    </Button>
+                                                                </Grid>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </igDP:FieldSettings.CellValuePresenterStyle>
                                         </igDP:FieldSettings>
                                     </igDP:UnboundField.Settings>
                                 </igDP:UnboundField>
 
 
-
-
+                 
                                 <igDP:UnboundField Label=" ">
                                     <igDP:UnboundField.Settings>
                                         <igDP:FieldSettings
@@ -666,6 +870,13 @@
                                                                         <Setter TargetName="ValidIcon" Property="Visibility" Value="Visible" />
                                                                         <Setter TargetName="InvalidIcon" Property="Visibility" Value="Hidden" />
                                                                     </DataTrigger>
+
+
+                                                                    <DataTrigger Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="True">
+                                                                        <Setter TargetName="ValidIcon" Property="Visibility" Value="Visible" />
+                                                                        <Setter TargetName="InvalidIcon" Property="Visibility" Value="Hidden" />
+                                                                    </DataTrigger>
+                                                                  
                                                                 </ControlTemplate.Triggers>
                                                             </ControlTemplate>
                                                         </Setter.Value>

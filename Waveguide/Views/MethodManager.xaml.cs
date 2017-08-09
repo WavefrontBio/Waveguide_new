@@ -35,6 +35,7 @@ namespace Waveguide
 
         public static readonly RoutedCommand BrowseButtonCommand = new RoutedCommand();
         public static readonly RoutedCommand IsPublicCheckBoxCommand = new RoutedCommand();
+        public static readonly RoutedCommand IsAutoCheckBoxCommand = new RoutedCommand();
 
 
 
@@ -52,6 +53,19 @@ namespace Waveguide
                 this.SetIsPublicOnMethod(method,method.IsPublic);
         }
 
+
+        void IsAutoCheckBoxCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            // The ShowInChartCommand command can execute if the parameter references a Customer.
+            e.CanExecute = e.Parameter is MethodItem;
+        }
+
+        void IsAutoCheckBoxCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            var method = e.Parameter as MethodItem;
+            if (method != null)
+                this.SetIsAutoOnMethod(method, method.IsAuto);
+        }
 
 
 
@@ -94,6 +108,7 @@ namespace Waveguide
                 mc.Description = method.Description;
                 mc.BravoMethodFile = method.BravoMethodFile;
                 mc.IsPublic = method.IsPublic;
+                mc.IsAuto = method.IsAuto;
                 mc.MethodID = method.MethodID;
                 mc.OwnerID = method.OwnerID;
                 mc.ProjectID = method.ProjectID;
@@ -117,6 +132,26 @@ namespace Waveguide
             mc.MethodID = method.MethodID;
             mc.OwnerID = method.OwnerID;
             mc.ProjectID = method.ProjectID;
+            mc.IsAuto = method.IsAuto;
+
+            wgDB.UpdateMethod(mc);
+        }
+
+
+        void SetIsAutoOnMethod(MethodItem method, bool isAuto)
+        {
+            method.IsAuto = isAuto;
+
+            if (wgDB == null) wgDB = new WaveguideDB();
+
+            MethodContainer mc = new MethodContainer();
+            mc.Description = method.Description;
+            mc.BravoMethodFile = method.BravoMethodFile;
+            mc.IsPublic = method.IsPublic;
+            mc.MethodID = method.MethodID;
+            mc.OwnerID = method.OwnerID;
+            mc.ProjectID = method.ProjectID;
+            mc.IsAuto = method.IsAuto;
 
             wgDB.UpdateMethod(mc);
         }
@@ -140,7 +175,7 @@ namespace Waveguide
             RefreshProjectList();
                      
              //Initialize data in the XamDataGrid - NOTE: A blank record is added FIRST, this is key to this approach for the XamDataGrid
-            MethodItem blank = new MethodItem(0,"","",GlobalVars.UserID,VM.ProjectList.Count > 0 ? VM.ProjectList.ElementAt(0).ProjectID:0,false,ref projectList);
+            MethodItem blank = new MethodItem(0,"","",GlobalVars.UserID,VM.ProjectList.Count > 0 ? VM.ProjectList.ElementAt(0).ProjectID:0,false,false,ref projectList);
             
             VM.Methods.Add(blank);
             
@@ -310,6 +345,7 @@ namespace Waveguide
                     mc.BravoMethodFile = mi.BravoMethodFile;
                     mc.OwnerID = mi.OwnerID;
                     mc.IsPublic = mi.IsPublic;
+                    mc.IsAuto = mi.IsAuto;
                     mc.ProjectID = mi.ProjectID;
 
                     bool success = wgDB.UpdateMethod(mc);
@@ -378,6 +414,7 @@ namespace Waveguide
                         mc.BravoMethodFile = mi.BravoMethodFile;
                         mc.Description = mi.Description;
                         mc.IsPublic = mi.IsPublic;
+                        mc.IsAuto = mi.IsAuto;
                         mc.MethodID = mi.MethodID;
                         mc.OwnerID = mi.OwnerID;
                         mc.ProjectID = proj.ProjectID;
@@ -517,6 +554,7 @@ namespace Waveguide
                     newMethod.OwnerID = mi.OwnerID;
                     newMethod.BravoMethodFile = mi.BravoMethodFile;
                     newMethod.IsPublic = mi.IsPublic;
+                    newMethod.IsAuto = mi.IsAuto;
                     newMethod.ProjectID = mi.ProjectID;
                   
                     bool success = wgDB.InsertMethod(ref newMethod);
@@ -526,7 +564,7 @@ namespace Waveguide
 
                         UnMarkAddNewRecord(methodRecord);
                         
-                        MethodItem miNew = new MethodItem(mi.MethodID,"","",mi.OwnerID,mi.ProjectID,false,ref projectList);
+                        MethodItem miNew = new MethodItem(mi.MethodID,"","",mi.OwnerID,mi.ProjectID,false,false,ref projectList);
                         
                         VM.Methods.Insert(0, miNew);
 
@@ -850,12 +888,13 @@ namespace Waveguide
             private int _ownerID;
             private int _projectID;
             private bool _isPublic;
+            private bool _isAuto;
 
             private ObservableCollection<IndicatorItem> _indicators;
             private ObservableCollection<CompoundPlateItem> _compoundPlates;
             private ObservableCollection<ProjectContainer> _projectList;
 
-            public MethodItem(int methodID, string description, string bravoMethodFile, int ownerID, int projectID, bool isPublic,
+            public MethodItem(int methodID, string description, string bravoMethodFile, int ownerID, int projectID, bool isPublic, bool isAuto,
                 ref ObservableCollection<ProjectContainer> projectList)
             {
                 _methodID = methodID;
@@ -863,7 +902,8 @@ namespace Waveguide
                 _bravoMethodFile = bravoMethodFile;
                 _ownerID = ownerID;
                 _projectID = projectID;
-                _isPublic = isPublic;                     
+                _isPublic = isPublic;
+                _isAuto = isAuto;     
 
                 _indicators = new ObservableCollection<IndicatorItem>();
                 _compoundPlates = new ObservableCollection<CompoundPlateItem>();
@@ -878,6 +918,7 @@ namespace Waveguide
                 _ownerID = mc.OwnerID;
                 _projectID = mc.ProjectID;
                 _isPublic = mc.IsPublic;
+                _isAuto = mc.IsAuto;
 
                 _indicators = new ObservableCollection<IndicatorItem>();
                 _compoundPlates = new ObservableCollection<CompoundPlateItem>();
@@ -907,6 +948,9 @@ namespace Waveguide
 
             public bool IsPublic
             { get { return _isPublic; } set { _isPublic = value; NotifyPropertyChanged("IsPublic"); } }
+
+            public bool IsAuto
+            { get { return _isAuto; } set { _isAuto = value; NotifyPropertyChanged("IsAuto"); } }
 
             public ObservableCollection<IndicatorItem> Indicators
             { get { return _indicators; } set { _indicators = value; NotifyPropertyChanged("Indicators"); } }

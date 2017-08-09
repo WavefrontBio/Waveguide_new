@@ -63,6 +63,22 @@
             </Style>
 
 
+            <Style x:Key="IsAutoCheckBoxCellStyle"
+                       TargetType="{x:Type igDP:CellValuePresenter}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type igDP:CellValuePresenter}">
+                            <CheckBox   x:Name="IsAutoCheckBox"
+                                        Command="local:MethodManager.IsAutoCheckBoxCommand"
+                                        CommandParameter="{Binding Path=DataItem}"
+                                        IsChecked="{Binding Path=DataItem.IsAuto}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
 
             <Style x:Key="BrowseButtonTemplate" TargetType="{x:Type igDP:CellValuePresenter}">
                 <Setter Property="Template">
@@ -356,8 +372,13 @@
                 
                 <CommandBinding Command="local:MethodManager.IsPublicCheckBoxCommand"
                                 CanExecute="IsPublicCheckBoxCommand_CanExecute"
-                                Executed="IsPublicCheckBoxCommand_Executed" />            
-                
+                                Executed="IsPublicCheckBoxCommand_Executed" />
+
+                <CommandBinding Command="local:MethodManager.IsAutoCheckBoxCommand"
+                                CanExecute="IsAutoCheckBoxCommand_CanExecute"
+                                Executed="IsAutoCheckBoxCommand_Executed" />
+
+
                 <CommandBinding Command="local:MethodManager.BrowseButtonCommand"
                                 CanExecute="BrowseButtonCommand_CanExecute"
                                 Executed="BrowseButtonCommand_Executed" />
@@ -406,6 +427,7 @@
                         </igDP:UnboundField>
 
                         <igDP:Field Name="OwnerID" Visibility="Collapsed"/>
+                        
                         <igDP:Field Name="IsPublic" Label="Is Public" Width="100">
                             <igDP:Field.Settings>
                                 <igDP:FieldSettings CellMaxWidth="80"
@@ -413,6 +435,13 @@
                             </igDP:Field.Settings>
                         </igDP:Field>
 
+
+                        <igDP:Field Name="IsAuto" Label="Is Auto" Width="80">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings CellMaxWidth="80"
+                                                    CellValuePresenterStyle="{StaticResource IsAutoCheckBoxCellStyle}" />
+                            </igDP:Field.Settings>
+                        </igDP:Field>
 
 
                         <igDP:Field Name="ProjectID" Label="Project">

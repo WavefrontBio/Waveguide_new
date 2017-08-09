@@ -341,4 +341,33 @@ namespace Waveguide
     }
 
 
+
+
+
+    public class EnumToBoolConverter : IValueConverter
+    {
+
+        // The idea of this converter is that you bind the converter parameter to the static value of the enum value for 
+        // which it should return true. Any other value will return false. The reverse conversion works the same way, 
+        // returning the converter parameter if the binding is true, otherwise returning DependencyProperty.UnsetValue.
+      
+        public object Convert(object value, Type targetType, object trueValue, System.Globalization.CultureInfo culture)
+        {
+            if (value != null && value.GetType().IsEnum)
+                return (Enum.Equals(value, trueValue));
+            else
+                return DependencyProperty.UnsetValue;
+        }
+
+        public object ConvertBack(object value, Type targetType, object trueValue, System.Globalization.CultureInfo culture)
+        {
+            if (value is bool && (bool)value)
+                return trueValue;
+            else
+                return DependencyProperty.UnsetValue;
+        }
+       
+    }
+
+
 }

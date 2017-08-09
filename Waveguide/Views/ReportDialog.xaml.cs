@@ -157,6 +157,66 @@ namespace Waveguide
 
 
 
+        private string ReportWriteErrorStr;
+        public string GetLastError()
+        {
+            return ReportWriteErrorStr;
+        }
+
+        public bool WriteReportFiles(bool writeWaveguideReport, bool writeExcelReport)
+        {
+            bool success1 = true;
+            bool success2 = true;
+
+            if (writeWaveguideReport)
+            {
+                success1 = m_reportWriter.VerifyDirectoryExists(VM.WaveguideDirectory);
+                if (success1)
+                    success1 = m_reportWriter.WriteExperimentFile_WaveGuide(VM.WaveguideDirectory + "\\" +
+                                                                            VM.WaveguideFilename,
+                                                                            VM.AnalysisList);
+
+                if (!success1) ReportWriteErrorStr = "Failed to Write Waveguide Report";
+            }
+
+            if (writeExcelReport)
+            {
+                success2 = m_reportWriter.VerifyDirectoryExists(VM.ExcelDirectory);
+
+                if (success2)
+                {
+                    List<string> fileNameList =
+                        m_reportWriter.GetFormattedStringList(VM.ExcelFilename, VM.AnalysisList);
+
+                    int i = 0;
+                    foreach (AnalysisContainer analysis in VM.AnalysisList)
+                    {
+                        string filename = "";
+                        if (i + 1 > fileNameList.Count) filename = "UnknownIndicator_" + i.ToString();
+                        else filename = fileNameList.ElementAt(i);
+
+                        success2 = m_reportWriter.WriteExperimentFile_Excel(VM.ExcelDirectory + "\\" + filename, analysis);
+                        if (!success2) break;
+                        i++;
+                    }
+                }
+
+                if(!success2)
+                {
+                    if (ReportWriteErrorStr == "None") ReportWriteErrorStr = "Failed to Write Excel Report";
+                }
+            }
+
+
+            if (success1 && success2) ReportWriteErrorStr = "None";
+            else if (!success1 && success2) ReportWriteErrorStr = "Failed to write Waveguide Report";
+            else if (success1 && !success2) ReportWriteErrorStr = "Failed to write Excel Report";
+            else if (!success1 && !success2) ReportWriteErrorStr = "Frailed to write Waveguide and Excel Report";
+
+            return (success1 && success2);
+        }
+
+
        
 
         private void BrowseForWaveguideDirectoryPB_Click(object sender, RoutedEventArgs e)

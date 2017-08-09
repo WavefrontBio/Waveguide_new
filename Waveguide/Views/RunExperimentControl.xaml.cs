@@ -487,9 +487,215 @@ namespace Waveguide
                         VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.ERROR;
                     }));
                     break;
+                case VWORKS_COMMAND.Barcode:
+                    // Here's how this works:  the barcode passed here from VWorks to Waveguide is assigned to
+                    // the first plate checked that has a PlateIDResetBehavior == VWorks (which means we're expecting a barcode for this plate)
+                    // AND
+                    // doesn't already have a barcode assigned.
+                    //
+                    // Since when a new run is started, all plates with PlateIDResetBehavior == VWorks have their barcodes cleared, the VWorks
+                    // protocol can provide the barcode for the image plate and/or any/all of the compound plates.
+                    //
+                    // The order of filling barcodes is as follows:
+                    //      1 - image plate will be checked first.  If it has PlateIDResetBehavior == VWorks and has no barcode yet, 
+                    //          the barcode passed in here would be assigned to the image plate.  If the image plate already has a barcode
+                    //          or PlateIDResetBehavior != VWorks, move on to step 2 below.
+                    //      2 - iterate the compound plate list (m_expParams.compoundPlateList), assigning this barcode to the first plate
+                    //          that has PlateIDResetBehavior == VWorks AND has an empty barcode.
+                    //
+                    //  If no plates meet this criteria, the barcode is not assigned to any plate, and thus is lost
+
+
+                    // Step 1 
+
+                    if (VM.ExpParams.experimentPlate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS && VM.ExpParams.experimentPlate.Barcode == "")
+                    {
+                        VM.ExpParams.experimentPlate.Barcode = e.Description;
+                    }
+                    // Step 2
+                    else
+                    {
+                        foreach (ExperimentCompoundPlateContainer plate in VM.ExpParams.compoundPlateList)
+                        {
+                            if (plate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS && plate.Barcode == "")
+                            {
+                                plate.Barcode = e.Description;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                case VWORKS_COMMAND.VerifyImaging:
+                    // this is used to signal that it's time to verify all of the indicators
+
+                    m_vworks.VWorks_PauseProtocol();  // pause the VWorks protocol (this should already be paused inside the VWorks protocol)
+
+                    if(m_imager.AutoOptimizeAllIndicators(VM.ExpParams.cameraSettings))
+                    {
+                        // successfully optimized imaging
+                        m_vworks.VWorks_ResumeProtcol();
+                    }
+                    else
+                    {
+                        // failed to optimize imaging
+                        m_vworks.VWorks_AbortProtocol();
+                    }                    
+                    break;
+                case VWORKS_COMMAND.PlateComplete:
+                    // VWorks should have paused the protocol right after sending this, so it will wait until we resume it when we're done
+                    // Signal to perform the following:
+                    //  1 - Write the report for this plate
+                    //  2 - Clear the data and reset the barcodes
+                    //  3 - Resume the VWorks protocol
+
+                    m_vworks.VWorks_PauseProtocol();  // pause the VWorks protocol (this should already be paused inside the VWorks protocol)
+
+                    // stop all timers, timer messages, and imaging tasks
+                    m_timer.Stop();
+                    VM.DelayText = "";
+                    VM.DelayHeaderVisible = false;
+                    m_cancelTokenSource.Cancel(); // make sure the imaging task stops
+
+
+                    // 1 - write report
+                    {
+                        ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
+                                                            VM.ExpParams.experiment,
+                                                            VM.ExpParams.indicatorList);
+
+                        bool reportSuccess = dlg.WriteReportFiles(true, true);
+
+                        if (!reportSuccess)
+                        {
+                            PostMessageRunExperimentPanel("Error writing Reports: " + dlg.GetLastError());
+                        }
+                    }
+
+
+                    // 2 - clear data and reset barcodes
+                    Reset();  // clears plot data
+                    ResetBarcodes();
+
+                    // 3 - resume VWorks protocol
+                    m_vworks.VWorks_ResumeProtcol();
+
+                    break;
             }
         }
 
+
+
+
+        void ResetBarcodes()
+        {
+            // reset image plate
+            switch (VM.ExpParams.experimentPlate.PlateIDResetBehavior)
+            { 
+                case PLATE_ID_RESET_BEHAVIOR.CLEAR:
+                    VM.ExpParams.experimentPlate.Barcode = "";
+                    break;
+                case PLATE_ID_RESET_BEHAVIOR.CONSTANT:
+                    break;
+                case PLATE_ID_RESET_BEHAVIOR.INCREMENT:
+                    {
+                        string bc = VM.ExpParams.experimentPlate.Barcode;
+                        IncrementBarcode(ref bc);
+                        VM.ExpParams.experimentPlate.Barcode = bc;
+                    }
+                    break;
+                case PLATE_ID_RESET_BEHAVIOR.VWORKS:
+                    VM.ExpParams.experimentPlate.Barcode = "";
+                    break;
+            }
+            
+                       
+            // reset compound plates
+            foreach (ExperimentCompoundPlateContainer plate in VM.ExpParams.compoundPlateList)
+            {
+                switch (plate.PlateIDResetBehavior)
+                {
+                    case PLATE_ID_RESET_BEHAVIOR.CLEAR:
+                        plate.Barcode = "";
+                        break;
+                    case PLATE_ID_RESET_BEHAVIOR.CONSTANT:
+                        break;
+                    case PLATE_ID_RESET_BEHAVIOR.INCREMENT:
+                        {
+                            string bc = plate.Barcode;
+                            IncrementBarcode(ref bc);
+                            plate.Barcode = bc;
+                        }
+                        break;
+                    case PLATE_ID_RESET_BEHAVIOR.VWORKS:
+                        plate.Barcode = "";
+                        break;
+                }
+            }
+            
+        }
+
+
+
+        public void IncrementBarcode(ref string barcode)
+        {
+            if (barcode.Length < 1)
+            {   // handle barcode = "", so give a default barcode and start numbering at 1.  Here, the default barcode is "Barcode"
+                barcode = "Barcode_1";
+            }
+            else
+            {
+                // break apart barcode pieces and put in List
+                string[] words = barcode.Split('_');
+                List<string> wordList = new List<string>();
+                for (int i = 0; i < words.Length; i++) wordList.Add(words[i]);
+
+                if (wordList.Count == 1)
+                {   // handle barcode has no underscore, so has no number on end.  Start numbering.
+                    barcode = wordList[0] + "_1";
+                }
+                else
+                {
+                    // handle if barcode ended in "_"
+                    if (wordList[wordList.Count - 1].Length < 1)
+                    {
+                        wordList[wordList.Count - 1] = "0";
+                    }
+                    // handle last word is not a number, so add number to end                      
+                    else
+                    {
+                        int val;
+                        try
+                        {
+                            if (Convert.ToInt32(wordList[wordList.Count - 1]) < 1)
+                            {
+                                wordList.Add("0");
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            wordList.Add("0");
+                        }
+                    }
+
+                    int intValueOfLastWord = Convert.ToInt32(wordList[wordList.Count - 1]);
+
+                    intValueOfLastWord++;
+
+                    wordList.RemoveAt(wordList.Count - 1);
+                    wordList.Add(intValueOfLastWord.ToString());
+
+                    // build new barcode with incremented value
+                    barcode = "";
+                    foreach (string s in wordList)
+                    {
+                        barcode += s + "_";
+                    }
+                    // remove last "_"
+                    barcode = barcode.TrimEnd('_');
+                }
+            }
+
+        }
 
 
         void m_runStatusTimer_Tick(object sender, EventArgs e)
@@ -3622,18 +3828,21 @@ namespace Waveguide
 
             if (RunState == RUN_STATE.RUN_FINISHED || RunState == RUN_STATE.RUNNING) return;
 
-            if(ExpParams.experimentPlate.BarcodeValid)
+            if(ExpParams.experimentPlate.BarcodeValid || ExpParams.experimentPlate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS)
             {
                 bool allIndicatorsVerified = true;
-                foreach(ExperimentIndicatorContainer ind in ExpParams.indicatorList)
+                if (!ExpParams.method.IsAuto)
                 {
-                    if (!ind.Verified) allIndicatorsVerified = false;
+                    foreach (ExperimentIndicatorContainer ind in ExpParams.indicatorList)
+                    {
+                        if (!ind.Verified) allIndicatorsVerified = false;
+                    }
                 }
 
                 bool allCompoundPlatesVerified = true;
                 foreach(ExperimentCompoundPlateContainer cp in ExpParams.compoundPlateList)
                 {
-                    if (!cp.BarcodeValid) allCompoundPlatesVerified = false;
+                    if (!cp.BarcodeValid && cp.PlateIDResetBehavior != PLATE_ID_RESET_BEHAVIOR.VWORKS) allCompoundPlatesVerified = false;
                 }
 
                 if (allIndicatorsVerified && allCompoundPlatesVerified && CameraTemperatureReady && InsideTemperatureReady) RunState = RUN_STATE.READY_TO_RUN;

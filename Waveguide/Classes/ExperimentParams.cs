@@ -30,7 +30,7 @@ namespace Waveguide
             _compoundPlateList = new System.Collections.ObjectModel.ObservableCollection<ExperimentCompoundPlateContainer>();
             _controlSubtractionWellList = new System.Collections.ObjectModel.ObservableCollection<Tuple<int, int>>();
             _indicatorList = new System.Collections.ObjectModel.ObservableCollection<ExperimentIndicatorContainer>();
-
+            _experimentRunPlateCount = 2;
 
             m_wgDB = new WaveguideDB();
             bool success = m_wgDB.GetCameraSettingsDefault(out _cameraSettings);
@@ -84,6 +84,10 @@ namespace Waveguide
 
         private CameraSettingsContainer _cameraSettings;
         public CameraSettingsContainer cameraSettings { get { return _cameraSettings; } set { if (value != _cameraSettings) { _cameraSettings = value; NotifyPropertyChanged("cameraSettings"); } } }
+
+
+        private int _experimentRunPlateCount;
+        public int experimentRunPlateCount { get { return _experimentRunPlateCount; } set { if (value != _experimentRunPlateCount) { _experimentRunPlateCount = value; NotifyPropertyChanged("experimentRunPlateCount"); } } }
 
 
         /////////////////////////////

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Timers;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
@@ -29,6 +30,8 @@ namespace Waveguide
         string m_bravoMethodFile;
 
         public bool m_vworksOK;
+
+        ExperimentParams m_expParams;
  
 
         /////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +79,10 @@ namespace Waveguide
         // Constructor
 
         public VWorks()
-        {           
+        {
+
+            m_expParams = ExperimentParams.GetExperimentParams;
+
             // Set up VWorks Event handlers
             try
             {               
@@ -206,6 +212,18 @@ namespace Waveguide
             PostVWorksCommand(VWORKS_COMMAND.Protocol_Aborted);
         }
 
+        public void VWorks_PauseProtocol()
+        {
+            VWorks_.PauseProtocol();
+            PostVWorksCommand(VWORKS_COMMAND.Protocol_Paused);
+        }
+
+        public void VWorks_ResumeProtcol()
+        {
+            VWorks_.ResumeProtocol();
+            PostVWorksCommand(VWORKS_COMMAND.Protocol_Resumed);
+        }
+
 
         void VWorks__UserMessage(int session, string caption, string message, bool wantsData, out string userData)
         {
@@ -275,7 +293,28 @@ namespace Waveguide
 
             else if (String.Compare(caption.Trim(), "Barcode", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.Barcode, "Barcode", message);
+                PostVWorksCommand(VWORKS_COMMAND.Barcode, "Barcode", message);                
+            }
+           
+            else if (String.Compare(caption.Trim(), "VerifyImaging", true) == 0)
+            {   
+                // This is a signal to perform an Auto Verification (Optimization) on all indicators.  The VWorks protocol needs to be paused while this happens since we don't know 
+                // how long it might take.  
+
+                PostVWorksCommand(VWORKS_COMMAND.VerifyImaging);
+
+            }
+
+            else if (String.Compare(caption.Trim(), "PlateComplete", true) == 0)
+            {
+                PostVWorksCommand(VWORKS_COMMAND.PlateComplete, "PlateComplete", message);
+            }
+
+            else if (String.Compare(caption.Trim(), "GetPlateCount", true) == 0)
+            {
+                userData = m_expParams.experimentRunPlateCount.ToString();
+
+                PostVWorksCommand(VWORKS_COMMAND.GetPlateCount, "Plate Count to VWorks:", "  Count = " + userData);
             }
 
             else 
@@ -396,7 +435,10 @@ namespace Waveguide
         Initialization_Complete,
         Error, 
         Message,
-        Barcode
+        Barcode,        // results of a barcode read was received
+        VerifyImaging,  // run verification on all indicators
+        PlateComplete,  // signals that experiment is complete with this plate: write report and reset data/graphs/etc.
+        GetPlateCount   // pass back the plate count to VWorks
     };
 
 

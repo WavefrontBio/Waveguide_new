@@ -348,7 +348,7 @@
             <Grid Grid.Row="2" Grid.RowSpan="1" Panel.ZIndex="1">
                  
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="60"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
@@ -379,11 +379,12 @@
                 <!-- Experiment Plate Barcode Entry and Binning GroupBox -->
                 <Grid Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="2,10,2,0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="60"/>
+                        <RowDefinition Height="100"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -434,7 +435,7 @@
                         </TextBox.Style>
                     </TextBox>
 
-                    <GroupBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Top"
+                    <GroupBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"
                               Header="Reset Behavior" FontSize="14" 
                               BorderBrush="Black" BorderThickness="1" Margin="3"
                               IsEnabled="True" >
@@ -472,15 +473,45 @@
                         </StackPanel>
                     </GroupBox>
 
+
+                    <GroupBox Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32,0,0,0"
+                          Header="Plate Count" BorderBrush="Black" BorderThickness="1" FontSize="14" x:Name="PlateCountGroupBox">
+                        
+                        <StackPanel Orientation="Horizontal">                            
+                            <ig:XamNumericInput Grid.Row="1" SpinIncrement="1" SpinButtonDisplayMode="Always"
+                               Width="50" 
+                               HorizontalAlignment="Center" VerticalAlignment="Top" 
+                               Mask="{}{number:1-12}" ValueType="sys:Int32"
+                               Value="{Binding Path=ExpParams.experimentRunPlateCount,UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        
+                        <GroupBox.Style>
+                            <Style TargetType="{x:Type GroupBox}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=ExpParams.method.IsAuto}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Path=ExpParams.method.IsAuto}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </GroupBox.Style>
+                    </GroupBox>
+
+
                 </Grid>
           
+                
+               
+                
 
                 <igDP:XamDataGrid Grid.Column="0" Grid.Row="1" x:Name="CompoundPlateDataGrid"                                                      
                               CellUpdated="CompoundPlateDataGrid_CellUpdated"
                               DataSource="{Binding Path=ExpParams.compoundPlateList}" Margin="5" Theme="IGTheme">
                     <!-- Row for each CompoundPlate in the selected method, Columns: Description, Exposure  -->
 
-
+               
                     <igDP:XamDataGrid.Resources>
                         <local:BindingProxy x:Key="proxy" Data="{Binding}" />
                         <local:EnumToBoolConverter x:Key="IDResetTypeConverter" />
@@ -488,7 +519,7 @@
 
 
                     <igDP:XamDataGrid.FieldLayoutSettings>
-                        <igDP:FieldLayoutSettings  
+                        <igDP:FieldLayoutSettings 
                             AllowAddNew="False" 
                             AllowDelete="False"
                             AutoGenerateFields="False"
@@ -532,6 +563,7 @@
                                                                                         <Setter Property="ToolTip" Value="Barcode to be provided by VWorks during experiment run"/>
                                                                                     </DataTrigger>
                                                                                 </Style.Triggers>
+                                                                                <Setter Property="Margin" Value="0,1,0,1"/>
                                                                             </Style>
                                                                         </TextBox.Style>
 
@@ -539,7 +571,7 @@
                                                                 </Grid>
                                                             </ControlTemplate>
                                                         </Setter.Value>
-                                                    </Setter>
+                                                    </Setter>                                                    
                                                 </Style>
                                             </igDP:FieldSettings.CellValuePresenterStyle>
                                         </igDP:FieldSettings>
@@ -619,7 +651,7 @@
                                                         <Setter.Value>
                                                             <ControlTemplate>
                                                                 
-                                                                <StackPanel Orientation="Horizontal">
+                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                                                                     <RadioButton Content="Constant" x:Name="CompoundPlateBarcode_ConstantRB"  HorizontalAlignment="Center" Checked="CompoundPlateBarcode_ConstantRB_Checked"  Margin="5,2,0,2" IsChecked="True"
                                                                                  GroupName="{Binding Path=Index}"/>

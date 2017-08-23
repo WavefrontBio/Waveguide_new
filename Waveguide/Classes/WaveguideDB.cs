@@ -2192,6 +2192,7 @@ namespace Waveguide
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
                             cont.IsAuto = reader.GetBoolean(6);
+                            cont.ImagePlateBarcodeReset = (PLATE_ID_RESET_BEHAVIOR)reader.GetInt32(7);
                           
                             m_methodList.Add(cont);
                         }
@@ -2238,6 +2239,7 @@ namespace Waveguide
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
                             cont.IsAuto = reader.GetBoolean(6);
+                            cont.ImagePlateBarcodeReset = (PLATE_ID_RESET_BEHAVIOR)reader.GetInt32(7);
 
                             m_methodList.Add(cont);
                         }
@@ -2281,6 +2283,7 @@ namespace Waveguide
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
                             cont.IsAuto = reader.GetBoolean(6);
+                            cont.ImagePlateBarcodeReset = (PLATE_ID_RESET_BEHAVIOR)reader.GetInt32(7);
 
                             m_methodList.Add(cont);
                         }
@@ -2326,6 +2329,7 @@ namespace Waveguide
                             cont.ProjectID = reader.GetInt32(4);
                             cont.IsPublic = reader.GetBoolean(5);
                             cont.IsAuto = reader.GetBoolean(6);
+                            cont.ImagePlateBarcodeReset = (PLATE_ID_RESET_BEHAVIOR)reader.GetInt32(7);
                             
                             m_methodList.Add(cont);
                         }
@@ -2372,6 +2376,7 @@ namespace Waveguide
                             method.ProjectID = reader.GetInt32(4);
                             method.IsPublic = reader.GetBoolean(5);
                             method.IsAuto = reader.GetBoolean(6);
+                            method.ImagePlateBarcodeReset = (PLATE_ID_RESET_BEHAVIOR)reader.GetInt32(7);
                         }
                     }
                     catch (Exception e)
@@ -2396,9 +2401,9 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO Method (Description,BravoMethodFile,OwnerID,ProjectID,IsPublic,IsAuto) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO Method (Description,BravoMethodFile,OwnerID,ProjectID,IsPublic,IsAuto,ImagePlateBarcodeReset) "
                                                             + "OUTPUT INSERTED.MethodID "
-                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6)"
+                                                            + "VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7)"
                                                             , con))
                 {
                     try
@@ -2408,7 +2413,8 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p3", method.OwnerID);
                         command.Parameters.AddWithValue("@p4", method.ProjectID);
                         command.Parameters.AddWithValue("@p5", method.IsPublic);
-                        command.Parameters.AddWithValue("@p6", method.IsAuto); 
+                        command.Parameters.AddWithValue("@p6", method.IsAuto);
+                        command.Parameters.AddWithValue("@p7", (int)method.ImagePlateBarcodeReset);
 
                         method.MethodID = (int)command.ExecuteScalar();
                     }
@@ -2434,8 +2440,8 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("UPDATE Method SET Description=@p1,BravoMethodFile=@p2,OwnerID=@p3,ProjectID=@p4,IsPublic=@p5,IsAuto=@p6 " +
-                                                            "WHERE MethodID=@p7", con))
+                using (SqlCommand command = new SqlCommand("UPDATE Method SET Description=@p1,BravoMethodFile=@p2,OwnerID=@p3,ProjectID=@p4,IsPublic=@p5,IsAuto=@p6,ImagePlateBarcodeReset=@p7 " +
+                                                            "WHERE MethodID=@p8", con))
                 {
                     try
                     {
@@ -2445,7 +2451,8 @@ namespace Waveguide
                         command.Parameters.AddWithValue("@p4", method.ProjectID);
                         command.Parameters.AddWithValue("@p5", method.IsPublic);
                         command.Parameters.AddWithValue("@p6", method.IsAuto);
-                        command.Parameters.AddWithValue("@p7", method.MethodID);                       
+                        command.Parameters.AddWithValue("@p7", (int)method.ImagePlateBarcodeReset);
+                        command.Parameters.AddWithValue("@p8", method.MethodID);                       
 
                         command.ExecuteNonQuery();
                     }
@@ -3491,6 +3498,7 @@ namespace Waveguide
                             cont.CompoundPlateID = reader.GetInt32(0);
                             cont.MethodID = reader.GetInt32(1);
                             cont.Description = reader.GetString(2);
+                            cont.BarcodeReset = (PLATE_ID_RESET_BEHAVIOR)reader.GetInt32(3);
                             
                             m_compoundPlateList.Add(cont);
                         }
@@ -3533,7 +3541,8 @@ namespace Waveguide
 
                             plate.CompoundPlateID = reader.GetInt32(0);
                             plate.MethodID = reader.GetInt32(1);
-                            plate.Description = reader.GetString(2);                            
+                            plate.Description = reader.GetString(2);
+                            plate.BarcodeReset = (PLATE_ID_RESET_BEHAVIOR)reader.GetInt32(3);
                         }
                     }
                     catch (Exception e)
@@ -3558,15 +3567,16 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("INSERT INTO CompoundPlate (MethodID,Description) "
+                using (SqlCommand command = new SqlCommand("INSERT INTO CompoundPlate (MethodID,Description,BarcodeReset) "
                                                             + "OUTPUT INSERTED.CompoundPlateID "
-                                                            + "VALUES(@p1,@p2)"
+                                                            + "VALUES(@p1,@p2,@p3)"
                                                             , con))
                 {
                     try
                     {
                         command.Parameters.AddWithValue("@p1", plate.MethodID);
                         command.Parameters.AddWithValue("@p2", plate.Description);
+                        command.Parameters.AddWithValue("@p3", (int)plate.BarcodeReset);
 
                         plate.CompoundPlateID = (int)command.ExecuteScalar();
                     }
@@ -3592,14 +3602,15 @@ namespace Waveguide
             {
                 con.Open();
 
-                using (SqlCommand command = new SqlCommand("UPDATE CompoundPlate SET MethodID=@p1,Description=@p2 " +
-                                                            "WHERE CompoundPlateID=@p3", con))
+                using (SqlCommand command = new SqlCommand("UPDATE CompoundPlate SET MethodID=@p1,Description=@p2,BarcodeReset=@p3 " +
+                                                            "WHERE CompoundPlateID=@p4", con))
                 {
                     try
                     {
                         command.Parameters.AddWithValue("@p1", plate.MethodID);
-                        command.Parameters.AddWithValue("@p2", plate.Description);                        
-                        command.Parameters.AddWithValue("@p3", plate.CompoundPlateID);
+                        command.Parameters.AddWithValue("@p2", plate.Description);
+                        command.Parameters.AddWithValue("@p3", plate.BarcodeReset);
+                        command.Parameters.AddWithValue("@p4", plate.CompoundPlateID);
 
                         command.ExecuteNonQuery();
                     }

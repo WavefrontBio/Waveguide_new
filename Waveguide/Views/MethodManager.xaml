@@ -444,6 +444,22 @@
                         </igDP:Field>
 
 
+                        <igDP:Field Name="ImagePlateBarcodeReset" Label="Barcode Reset">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditorType="{x:Type igEditors:XamComboEditor}" AllowEdit="True">
+                                    <igDP:FieldSettings.EditorStyle>
+                                        <Style TargetType="{x:Type igEditors:XamComboEditor}">
+                                            <Setter Property="ItemsSource" Value="{Binding DataItem.BarcodeResetTypeList}" />
+                                            <Setter Property="DisplayMemberPath" Value="Description" />
+                                            <Setter Property="ValuePath" Value="ProjectID"/>
+                                            <EventSetter Event="SelectedItemChanged" Handler="BarcodeReset_SelectedItemChanged"/>
+                                        </Style>
+                                    </igDP:FieldSettings.EditorStyle>
+                                </igDP:FieldSettings>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+
+
                         <igDP:Field Name="ProjectID" Label="Project">
                             <igDP:Field.Settings>
                                 <igDP:FieldSettings EditorType="{x:Type igEditors:XamComboEditor}" AllowEdit="True">
@@ -536,7 +552,24 @@
                     <igDP:FieldLayout.Fields>
                         <igDP:Field Name="CompoundPlateID" Visibility="Collapsed" />
                         <igDP:Field Name="MethodID" Visibility="Collapsed" />
-                        <igDP:Field Name="Description" Label="Description"/>                                       
+                        <igDP:Field Name="Description" Label="Description"/>
+
+                        <igDP:Field Name="BarcodeReset" Label="Barcode Reset Bahavior">
+                            <igDP:Field.Settings>
+                                <igDP:FieldSettings EditorType="{x:Type igEditors:XamComboEditor}" AllowEdit="True">
+                                    <igDP:FieldSettings.EditorStyle>
+                                        <Style TargetType="{x:Type igEditors:XamComboEditor}">
+                                            <Setter Property="ItemsSource" Value="{Binding DataItem.BarcodeResetTypeList}" />
+                                            <Setter Property="DisplayMemberPath" Value="Description" />
+                                            <Setter Property="ValuePath" Value="Value"/>
+                                            <EventSetter Event="SelectedItemChanged" Handler="BarcodeResetType_SelectedItemChanged"/>
+                                        </Style>
+                                    </igDP:FieldSettings.EditorStyle>
+                                </igDP:FieldSettings>
+                            </igDP:Field.Settings>
+                        </igDP:Field>
+
+
                     </igDP:FieldLayout.Fields>
                 </igDP:FieldLayout>
                 

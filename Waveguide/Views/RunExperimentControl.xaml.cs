@@ -30,7 +30,7 @@ using System.Windows.Threading;
 using System.Threading.Tasks.Dataflow;
 using System.Threading;
 using Infragistics.Windows.Controls;
-
+using WPFTools;
 
 namespace Waveguide
 {
@@ -333,7 +333,7 @@ namespace Waveguide
 
             VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT;
 
-
+                     
 
             // Initialize Reset Behavior            
             //ImagePlateBarcode_ConstantRB.IsChecked = true;
@@ -343,6 +343,21 @@ namespace Waveguide
             //}
 
         }
+
+
+
+        void m_imager_m_optimizeEvent(object sender, OptimizeEventArgs e)
+        {
+            AutoOptimizeViewer.IsOptimizing(e.IndicatorID);
+            AutoOptimizeViewer.UpdateData(e.IndicatorID, e.Exposure, e.Gain, e.PreAmpGain, e.Binning);
+            if(e.ImageData != null)
+            {
+                AutoOptimizeViewer.UpdateImage(e.IndicatorID, e.ImageWidth, e.ImageHeight, e.ImageData);
+                AutoOptimizeViewer.FinishedOptimizing(); // stops all wait spinners
+            }
+        }
+
+
 
         void m_timer_Tick(object sender, EventArgs e)
         {
@@ -530,6 +545,16 @@ namespace Waveguide
 
                     m_vworks.VWorks_PauseProtocol();  // pause the VWorks protocol (this should already be paused inside the VWorks protocol)
 
+
+                    AutoOptimizeViewer.Reset();
+                    foreach(ExperimentIndicatorContainer eic in VM.ExpParams.indicatorList)
+                    {
+                        AutoOptimizeViewer.AddIndicator(eic.ExperimentIndicatorID, eic.Description, 1, 1, 0, 1, eic.ExcitationFilterDesc, eic.EmissionFilterDesc);
+                    }
+
+
+                    VM.RunningAutoVerify = true;
+
                     if(m_imager.AutoOptimizeAllIndicators(VM.ExpParams.cameraSettings))
                     {
                         // successfully optimized imaging
@@ -539,7 +564,10 @@ namespace Waveguide
                     {
                         // failed to optimize imaging
                         m_vworks.VWorks_AbortProtocol();
-                    }                    
+                    }
+
+                    VM.RunningAutoVerify = false;
+
                     break;
                 case VWORKS_COMMAND.PlateComplete:
                     // VWorks should have paused the protocol right after sending this, so it will wait until we resume it when we're done
@@ -662,8 +690,7 @@ namespace Waveguide
                     }
                     // handle last word is not a number, so add number to end                      
                     else
-                    {
-                        int val;
+                    {                       
                         try
                         {
                             if (Convert.ToInt32(wordList[wordList.Count - 1]) < 1)
@@ -671,7 +698,7 @@ namespace Waveguide
                                 wordList.Add("0");
                             }
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             wordList.Add("0");
                         }
@@ -782,6 +809,8 @@ namespace Waveguide
                 //BuildChartArray();  
 
                 m_imager.SetMask(VM.ExpParams.mask);
+
+                m_imager.m_optimizeEvent += m_imager_m_optimizeEvent;
             }
 
        
@@ -3055,7 +3084,9 @@ namespace Waveguide
                         VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
                         SetState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
                         PostMessageRunExperimentPanel("Starting VWorks Method: " + VM.ExpParams.method.BravoMethodFile);
-                        m_vworks.StartMethod(VM.ExpParams.method.BravoMethodFile);
+                        if (!VM.ExpParams.method.IsAuto) VM.ExpParams.experimentRunPlateCount = 1;
+                        if (VM.ExpParams.experimentRunPlateCount<1) VM.ExpParams.experimentRunPlateCount = 1;
+                        m_vworks.StartMethod(VM.ExpParams.method.BravoMethodFile, VM.ExpParams.experimentRunPlateCount);
                     }
                     break;
 
@@ -3458,6 +3489,13 @@ namespace Waveguide
             PostMessageRunExperimentPanel(ecpc.Description + " set to " + ecpc.PlateIDResetBehavior.ToString());
         }
 
+        private void AutoOptimizePB_Click(object sender, RoutedEventArgs e)
+        {
+            VM.RunningAutoVerify = true;
+            m_imager.AutoOptimizeAllIndicators(null);
+            VM.RunningAutoVerify = false;
+        }
+
 
     }
 
@@ -3498,6 +3536,25 @@ namespace Waveguide
                 if (value != this._runState)
                 {
                     this._runState = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+
+        private bool _runningAutoVerify;
+        public bool RunningAutoVerify
+        {
+            get
+            {
+                return this._runningAutoVerify;
+            }
+
+            set
+            {
+                if (value != this._runningAutoVerify)
+                {
+                    this._runningAutoVerify = value;
                     NotifyPropertyChanged();
                 }
             }
@@ -3772,6 +3829,8 @@ namespace Waveguide
             _overlay = BitmapFactory.New(800, 450);
             _gridLines = BitmapFactory.New(800, 450);
 
+            _runningAutoVerify = false;
+
             InsideHeaterEnabled = false;
         }
 
@@ -3830,19 +3889,27 @@ namespace Waveguide
 
             if(ExpParams.experimentPlate.BarcodeValid || ExpParams.experimentPlate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS)
             {
-                bool allIndicatorsVerified = true;
-                if (!ExpParams.method.IsAuto)
+                bool allIndicatorsVerified = false;
+                if (ExpParams.method != null)
                 {
-                    foreach (ExperimentIndicatorContainer ind in ExpParams.indicatorList)
+                    allIndicatorsVerified = true;
+                    if (!ExpParams.method.IsAuto)
                     {
-                        if (!ind.Verified) allIndicatorsVerified = false;
+                        foreach (ExperimentIndicatorContainer ind in ExpParams.indicatorList)
+                        {
+                            if (!ind.Verified) allIndicatorsVerified = false;
+                        }
                     }
                 }
 
-                bool allCompoundPlatesVerified = true;
-                foreach(ExperimentCompoundPlateContainer cp in ExpParams.compoundPlateList)
+                bool allCompoundPlatesVerified = false;
+                if (ExpParams.compoundPlateList != null)
                 {
-                    if (!cp.BarcodeValid && cp.PlateIDResetBehavior != PLATE_ID_RESET_BEHAVIOR.VWORKS) allCompoundPlatesVerified = false;
+                    allCompoundPlatesVerified = true;
+                    foreach (ExperimentCompoundPlateContainer cp in ExpParams.compoundPlateList)
+                    {
+                        if (!cp.BarcodeValid && cp.PlateIDResetBehavior != PLATE_ID_RESET_BEHAVIOR.VWORKS) allCompoundPlatesVerified = false;
+                    }
                 }
 
                 if (allIndicatorsVerified && allCompoundPlatesVerified && CameraTemperatureReady && InsideTemperatureReady) RunState = RUN_STATE.READY_TO_RUN;
@@ -3939,164 +4006,5 @@ namespace Waveguide
 
 
 
-
-
-
-
-    public class VisualTreeHelpers
-    {
-        /// <summary>
-        /// Returns the first ancester of specified type
-        /// </summary>
-        public static T FindAncestor<T>(DependencyObject current)
-        where T : DependencyObject
-        {
-            current = VisualTreeHelper.GetParent(current);
-
-            while (current != null)
-            {
-                if (current is T)
-                {
-                    return (T)current;
-                }
-                current = VisualTreeHelper.GetParent(current);
-            };
-            return null;
-        }
-
-        /// <summary>
-        /// Returns a specific ancester of an object
-        /// </summary>
-        public static T FindAncestor<T>(DependencyObject current, T lookupItem)
-        where T : DependencyObject
-        {
-            while (current != null)
-            {
-                if (current is T && current == lookupItem)
-                {
-                    return (T)current;
-                }
-                current = VisualTreeHelper.GetParent(current);
-            };
-            return null;
-        }
-
-        /// <summary>
-        /// Finds an ancestor object by name and type
-        /// </summary>
-        public static T FindAncestor<T>(DependencyObject current, string parentName)
-        where T : DependencyObject
-        {
-            while (current != null)
-            {
-                if (!string.IsNullOrEmpty(parentName))
-                {
-                    var frameworkElement = current as FrameworkElement;
-                    if (current is T && frameworkElement != null && frameworkElement.Name == parentName)
-                    {
-                        return (T)current;
-                    }
-                }
-                else if (current is T)
-                {
-                    return (T)current;
-                }
-                current = VisualTreeHelper.GetParent(current);
-            };
-
-            return null;
-
-        }
-
-        /// <summary>
-        /// Looks for a child control within a parent by name
-        /// </summary>
-        public static T FindChild<T>(DependencyObject parent, string childName)
-        where T : DependencyObject
-        {
-            // Confirm parent and childName are valid.
-            if (parent == null) return null;
-
-            T foundChild = null;
-
-            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < childrenCount; i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                // If the child is not of the request child type child
-                T childType = child as T;
-                if (childType == null)
-                {
-                    // recursively drill down the tree
-                    foundChild = FindChild<T>(child, childName);
-
-                    // If the child is found, break so we do not overwrite the found child.
-                    if (foundChild != null) break;
-                }
-                else if (!string.IsNullOrEmpty(childName))
-                {
-                    var frameworkElement = child as FrameworkElement;
-                    // If the child's name is set for search
-                    if (frameworkElement != null && frameworkElement.Name == childName)
-                    {
-                        // if the child's name is of the request name
-                        foundChild = (T)child;
-                        break;
-                    }
-                    else
-                    {
-                        // recursively drill down the tree
-                        foundChild = FindChild<T>(child, childName);
-
-                        // If the child is found, break so we do not overwrite the found child.
-                        if (foundChild != null) break;
-                    }
-                }
-                else
-                {
-                    // child element found.
-                    foundChild = (T)child;
-                    break;
-                }
-            }
-
-            return foundChild;
-        }
-
-        /// <summary>
-        /// Looks for a child control within a parent by type
-        /// </summary>
-        public static T FindChild<T>(DependencyObject parent)
-            where T : DependencyObject
-        {
-            // Confirm parent is valid.
-            if (parent == null) return null;
-
-            T foundChild = null;
-
-            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < childrenCount; i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                // If the child is not of the request child type child
-                T childType = child as T;
-                if (childType == null)
-                {
-                    // recursively drill down the tree
-                    foundChild = FindChild<T>(child);
-
-                    // If the child is found, break so we do not overwrite the found child.
-                    if (foundChild != null) break;
-                }
-                else
-                {
-                    // child element found.
-                    foundChild = (T)child;
-                    break;
-                }
-            }
-            return foundChild;
-        }
-    }
 
 }

@@ -26,6 +26,7 @@ namespace Waveguide
     public delegate void CameraTemperatureEventHandler(object sender, TemperatureEventArgs e);
     public delegate void InsideTemperatureEventHandler(object sender, TemperatureEventArgs e);
     public delegate void ImagerEventHandler(object sender, ImagerEventArgs e);
+    public delegate void OptimizeEventHandler(object sender, OptimizeEventArgs e);
  
 
     public struct ImagingParamsStruct
@@ -142,6 +143,12 @@ namespace Waveguide
         protected virtual void OnInsideTemperatureEvent(TemperatureEventArgs e)
         {
             m_insideTemperatureEvent(this, e);
+        }
+
+        public event OptimizeEventHandler m_optimizeEvent;
+        protected virtual void OnOptimizeEvent(OptimizeEventArgs e)
+        {
+            m_optimizeEvent(this, e);
         }
 
 
@@ -1804,6 +1811,11 @@ namespace Waveguide
                             m_mask.CheckImageLevelsInMask(grayFullImage, wellsToOptimizeOver, minPercentOfPixelsAboveLowLimit, lowPixelValueThreshold,
                                    maxPercentOfPixelsAboveHighLimit, highPixelValueThreshold, ref tooDim, ref tooBright);
 
+                            // fire event after every image                           
+                            OnOptimizeEvent(new OptimizeEventArgs(indicatorID,exposure, m_camera.m_cameraParams.EMGain, 
+                                                                    m_camera.m_cameraParams.PreAmpGainIndex, m_camera.m_acqParams.HBin, 
+                                                                    m_camera.m_acqParams.BinnedFullImageWidth,m_camera.m_acqParams.BinnedFullImageHeight,null));
+
                             if (tooBright)
                             {
                                 int hbin = m_camera.m_acqParams.HBin;
@@ -1925,10 +1937,19 @@ namespace Waveguide
                     
 
                     // check to see if the optimization was successful at current binning level
-                    if(!success)
+                    if(success)                    
+                    {
+                        byte[] colorImageOnCpu;
+                        m_cudaToolBox.Download_ColorImage(out colorImageOnCpu, (ushort)m_camera.m_acqParams.BinnedFullImageWidth, (ushort)m_camera.m_acqParams.BinnedFullImageHeight);
+                        OnOptimizeEvent(new OptimizeEventArgs(indicatorID, exposure, m_camera.m_cameraParams.EMGain,
+                                                                m_camera.m_cameraParams.PreAmpGainIndex, m_camera.m_acqParams.HBin,
+                                                                m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, colorImageOnCpu));
+                    }
+                    else
                     {
                         break;  // exit foreach loop if any one of the indicators could not be optimized at current binning level
                     }
+
                     
                 }  // END -- foreach loop over all indicators
 
@@ -3401,8 +3422,79 @@ namespace Waveguide
             GoodReading = goodReading;
             Temperature = temperature;
         }
+    }
 
 
+
+    public class OptimizeEventArgs : EventArgs
+    {        
+        private int _indicatorID;
+        public int IndicatorID
+        {
+            get { return _indicatorID; }
+            set { _indicatorID = value; }
+        }
+
+        private int _exposure;
+        public int Exposure
+        {
+            get { return _exposure; }
+            set { _exposure = value; }
+        }
+
+        private int _gain;
+        public int Gain
+        {
+            get { return _gain; }
+            set { _gain = value; }
+        }
+
+        private int _preAmpGain;
+        public int PreAmpGain
+        {
+            get { return _preAmpGain; }
+            set { _preAmpGain = value; }
+        }
+
+        private int _binning;
+        public int Binning
+        {
+            get { return _binning; }
+            set { _binning = value; }
+        }
+
+        private int _imageWidth;
+        public int ImageWidth
+        {
+            get { return _imageWidth; }
+            set { _imageWidth = value; }
+        }
+
+        private int _imageHeight;
+        public int ImageHeight
+        {
+            get { return _imageHeight; }
+            set { _imageHeight = value; }
+        }
+
+        private byte[] _imageData;
+        public byte[] ImageData
+        {
+            get { return _imageData; }
+            set { _imageData = value; }
+        }
+
+        public OptimizeEventArgs(int indicatorID, int exposure, int gain, int preAmpGain, int binning, int imageWidth, int imageHeight, byte[] imageData)
+        {
+            IndicatorID = indicatorID;
+            Exposure = exposure;
+            Gain = gain;
+            PreAmpGain = preAmpGain;
+            Binning = binning;
+            ImageWidth = imageWidth;
+            ImageHeight = imageHeight;
+            ImageData = imageData;        
+        }
     }
 
     #endregion

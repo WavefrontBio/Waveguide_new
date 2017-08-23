@@ -221,6 +221,7 @@ namespace Waveguide
                         expCpdPlate.Description = cpdPlate.Description;
                         expCpdPlate.ExperimentCompoundPlateID = 0;
                         expCpdPlate.ExperimentID = 0;
+                        expCpdPlate.PlateIDResetBehavior = cpdPlate.BarcodeReset;
 
                         VM.ExpParams.compoundPlateList.Add(expCpdPlate);
                     }

@@ -106,18 +106,18 @@
 	</UserControl.Triggers>
 
 	    <Canvas x:Name="spinner_1" HorizontalAlignment="Center" Width="160" Height="160">
-            <Ellipse x:Name="ellipse01" Fill="Blue" Height="24" Width="24" Canvas.Top="60"   Canvas.Left="120"         Opacity="0" />
-            <Ellipse x:Name="ellipse02" Fill="Blue" Height="24" Width="24" Canvas.Top="90"   Canvas.Left="112"   Opacity="0" />
-            <Ellipse x:Name="ellipse03" Fill="Blue" Height="24" Width="24" Canvas.Top="112"   Canvas.Left="90"         Opacity="0" />
-            <Ellipse x:Name="ellipse04" Fill="Blue" Height="24" Width="24" Canvas.Top="120"   Canvas.Left="60"        Opacity="0" />
-            <Ellipse x:Name="ellipse05" Fill="Blue" Height="24" Width="24" Canvas.Top="112"   Canvas.Left="30"        Opacity="0" />
-            <Ellipse x:Name="ellipse06" Fill="Blue" Height="24" Width="24" Canvas.Top="90"   Canvas.Left="8"   Opacity="0" />
-            <Ellipse x:Name="ellipse07" Fill="Blue" Height="24" Width="24" Canvas.Top="60"   Canvas.Left="0"        Opacity="0" />
-            <Ellipse x:Name="ellipse08" Fill="Blue" Height="24" Width="24" Canvas.Top="30"   Canvas.Left="8"      Opacity="0" />
-            <Ellipse x:Name="ellipse09" Fill="Blue" Height="24" Width="24" Canvas.Top="8"    Canvas.Left="30"        Opacity="0"/>
-            <Ellipse x:Name="ellipse10" Fill="Blue" Height="24" Width="24" Canvas.Top="0"    Canvas.Left="60"        Opacity="0"/>
-            <Ellipse x:Name="ellipse11" Fill="Blue" Height="24" Width="24" Canvas.Top="8"    Canvas.Left="90"         Opacity="0"/>
-            <Ellipse x:Name="ellipse12" Fill="Blue" Height="24" Width="24" Canvas.Top="30"   Canvas.Left="112"       Opacity="0"/>
+            <Ellipse x:Name="ellipse01" Fill="#083072" Height="24" Width="24" Canvas.Top="60"   Canvas.Left="120"         Opacity="0" />
+            <Ellipse x:Name="ellipse02" Fill="#083072" Height="24" Width="24" Canvas.Top="90"   Canvas.Left="112"   Opacity="0" />
+            <Ellipse x:Name="ellipse03" Fill="#083072" Height="24" Width="24" Canvas.Top="112"   Canvas.Left="90"         Opacity="0" />
+            <Ellipse x:Name="ellipse04" Fill="#083072" Height="24" Width="24" Canvas.Top="120"   Canvas.Left="60"        Opacity="0" />
+            <Ellipse x:Name="ellipse05" Fill="#083072" Height="24" Width="24" Canvas.Top="112"   Canvas.Left="30"        Opacity="0" />
+            <Ellipse x:Name="ellipse06" Fill="#083072" Height="24" Width="24" Canvas.Top="90"   Canvas.Left="8"   Opacity="0" />
+            <Ellipse x:Name="ellipse07" Fill="#083072" Height="24" Width="24" Canvas.Top="60"   Canvas.Left="0"        Opacity="0" />
+            <Ellipse x:Name="ellipse08" Fill="#083072" Height="24" Width="24" Canvas.Top="30"   Canvas.Left="8"      Opacity="0" />
+            <Ellipse x:Name="ellipse09" Fill="#083072" Height="24" Width="24" Canvas.Top="8"    Canvas.Left="30"        Opacity="0"/>
+            <Ellipse x:Name="ellipse10" Fill="#083072" Height="24" Width="24" Canvas.Top="0"    Canvas.Left="60"        Opacity="0"/>
+            <Ellipse x:Name="ellipse11" Fill="#083072" Height="24" Width="24" Canvas.Top="8"    Canvas.Left="90"         Opacity="0"/>
+            <Ellipse x:Name="ellipse12" Fill="#083072" Height="24" Width="24" Canvas.Top="30"   Canvas.Left="112"       Opacity="0"/>
         </Canvas>
 
   

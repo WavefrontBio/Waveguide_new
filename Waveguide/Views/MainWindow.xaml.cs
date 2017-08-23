@@ -331,8 +331,11 @@ namespace Waveguide
                 if(m_imager.m_camera != null)
                     m_imager.m_camera.CoolerON(false);
 
-                if(m_imager.m_omegaTempController != null)
+                if (m_imager.m_omegaTempController != null)
+                {
+                    m_imager.m_omegaTempController.updateSetPoint(1, 15);
                     m_imager.m_omegaTempController.EnableHeater(false);
+                }
 
                 if(m_imager.m_ethernetIO != null)
                     m_imager.m_ethernetIO.DoorLockON(false);

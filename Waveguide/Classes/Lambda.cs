@@ -90,8 +90,7 @@ namespace Waveguide
         }
 
         public bool Initialize()
-        {
-           
+        {           
             SystemInitialized = false;
 
             myFtdiDevice = new FTDI();
@@ -142,10 +141,7 @@ namespace Waveguide
                 }
 
             }
-
-
-            
-                       
+                                   
                 // Open the Lambda device found
                 ftStatus = myFtdiDevice.OpenBySerialNumber(ftdiDeviceList[index].SerialNumber);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)

@@ -1198,6 +1198,9 @@ namespace Waveguide
         private int _projectID;
         private bool _isPublic;
         private bool _isAuto;
+        private PLATE_ID_RESET_BEHAVIOR _imagePlateBarcodeReset;
+
+       
 
         public int MethodID
         {
@@ -1244,6 +1247,12 @@ namespace Waveguide
         public string IsAutoString
         {
             get { if (IsAuto) return "Automated Protocol"; else return "Manual Protocol"; }
+        }
+
+        public PLATE_ID_RESET_BEHAVIOR ImagePlateBarcodeReset
+        {
+            get { return _imagePlateBarcodeReset; }
+            set { _imagePlateBarcodeReset = value; NotifyPropertyChanged("ImagePlateBarcodeReset"); }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -1786,7 +1795,7 @@ namespace Waveguide
 
         public ExperimentCompoundPlateContainer()
         {
-            _plateIDResetBehavior = PLATE_ID_RESET_BEHAVIOR.CLEAR;
+            _plateIDResetBehavior = PLATE_ID_RESET_BEHAVIOR.CONSTANT;
         }
 
 
@@ -1868,7 +1877,13 @@ namespace Waveguide
         private int _compoundPlateID;
         private int _methodID;
         private string _description;
-        
+        private PLATE_ID_RESET_BEHAVIOR _barcodeReset;
+       
+        public CompoundPlateContainer()
+        {
+            _barcodeReset = PLATE_ID_RESET_BEHAVIOR.CONSTANT;
+        }
+
         public int CompoundPlateID
         {
             get { return _compoundPlateID; }
@@ -1885,6 +1900,12 @@ namespace Waveguide
         {
             get { return _description; }
             set { _description = value; NotifyPropertyChanged("Description"); }
+        }
+
+        public PLATE_ID_RESET_BEHAVIOR BarcodeReset
+        {
+            get { return _barcodeReset; }
+            set { _barcodeReset = value; NotifyPropertyChanged("BarcodeReset"); }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

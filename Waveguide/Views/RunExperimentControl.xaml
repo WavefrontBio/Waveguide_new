@@ -3,8 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Waveguide"
+             xmlns:myLocal="clr-namespace:Waveguide"
              xmlns:convert="clr-namespace:Waveguide;assembly=Waveguide"
+             xmlns:WpfTools="clr-namespace:WPFTools"
              xmlns:ig="http://schemas.infragistics.com/xaml"
              xmlns:igPrim="http://schemas.infragistics.com/xaml/primitives"             
              xmlns:igDP="http://infragistics.com/DataPresenter"
@@ -20,9 +21,9 @@
 
 
         <ResourceDictionary>
-            <local:BoolToVisibilityConverter x:Key="BoolToVis" />
-            <local:BoolToInvertVisibilityConverter x:Key="BoolToInvertVis" />
-            <local:ValidationErrorsToStringConverter x:Key="validationErrorToStringConverter"/>
+            <myLocal:BoolToVisibilityConverter x:Key="BoolToVis" />
+            <myLocal:BoolToInvertVisibilityConverter x:Key="BoolToInvertVis" />
+            <myLocal:ValidationErrorsToStringConverter x:Key="validationErrorToStringConverter"/>
 
             
 
@@ -360,16 +361,16 @@
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -403,7 +404,7 @@
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
                                             <Condition Binding="{Binding Path=ExpParams.method.IsAuto}" Value="True" />
-                                            <Condition Binding="{Binding Path=ExpParams.experimentPlate.PlateIDResetBehavior}" Value="{x:Static local:PLATE_ID_RESET_BEHAVIOR.VWORKS}" />
+                                            <Condition Binding="{Binding Path=ExpParams.experimentPlate.PlateIDResetBehavior}" Value="{x:Static myLocal:PLATE_ID_RESET_BEHAVIOR.VWORKS}" />
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Source" Value="/Images/green_check_small.png"/>                                      
                                     </MultiDataTrigger>                                    
@@ -483,6 +484,8 @@
                                HorizontalAlignment="Center" VerticalAlignment="Top" 
                                Mask="{}{number:1-12}" ValueType="sys:Int32"
                                Value="{Binding Path=ExpParams.experimentRunPlateCount,UpdateSourceTrigger=PropertyChanged}" />
+                            
+                            <Button x:Name="AutoOptimizePB" Width="100" Height="24" Content="Auto Opt." Margin="10,0,0,0" VerticalAlignment="Center" Click="AutoOptimizePB_Click"/>
                         </StackPanel>
                         
                         <GroupBox.Style>
@@ -500,6 +503,7 @@
                     </GroupBox>
 
 
+
                 </Grid>
           
                 
@@ -513,8 +517,8 @@
 
                
                     <igDP:XamDataGrid.Resources>
-                        <local:BindingProxy x:Key="proxy" Data="{Binding}" />
-                        <local:EnumToBoolConverter x:Key="IDResetTypeConverter" />
+                        <myLocal:BindingProxy x:Key="proxy" Data="{Binding}" />
+                        <myLocal:EnumToBoolConverter x:Key="IDResetTypeConverter" />
                     </igDP:XamDataGrid.Resources>
 
 
@@ -616,7 +620,7 @@
                                                                     <MultiDataTrigger>
                                                                         <MultiDataTrigger.Conditions>
                                                                             <Condition Binding="{Binding Path=Data.ExpParams.method.IsAuto,Source={StaticResource proxy}}" Value="True" />
-                                                                            <Condition Binding="{Binding Path=DataItem.PlateIDResetBehavior}" Value="{x:Static local:PLATE_ID_RESET_BEHAVIOR.VWORKS}" />
+                                                                            <Condition Binding="{Binding Path=DataItem.PlateIDResetBehavior}" Value="{x:Static myLocal:PLATE_ID_RESET_BEHAVIOR.VWORKS}" />
                                                                         </MultiDataTrigger.Conditions>
                                                                         <Setter TargetName="ValidIcon" Property="Visibility" Value="Visible" />
                                                                         <Setter TargetName="InvalidIcon" Property="Visibility" Value="Hidden" />
@@ -715,7 +719,7 @@
                     <!-- Row for each Indicator in the selected method, Columns: Description, Exposure  -->
 
                     <igDP:XamDataGrid.Resources>
-                        <local:BindingProxy x:Key="proxy" Data="{Binding}" />                        
+                        <myLocal:BindingProxy x:Key="proxy" Data="{Binding}" />                        
                     </igDP:XamDataGrid.Resources>
 
 
@@ -764,7 +768,8 @@
                                             <igDP:FieldSettings.EditorStyle>
                                                 <Style TargetType="{x:Type igEditors:XamNumericEditor}" >
                                                     <Setter Property="Mask" Value="nnnnn" />
-                                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center"/> 
+                                                    <Setter Property="IsReadOnly" Value="False"/>
                                                 </Style>
                                             </igDP:FieldSettings.EditorStyle>
                                         </igDP:FieldSettings>
@@ -934,7 +939,7 @@
             <!-- ************************************************************* -->
             <!-- ************************************************************* -->
 
-            <!-- RunTime Image Grid -->
+            <!-- BOTTOM Panel - RunTime Image Grid -->
             <Grid Grid.Row="2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -944,16 +949,16 @@
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -990,6 +995,26 @@
                 </ig:XamNumericRangeSlider>
 
             </Grid>
+
+            <!-- BOTTOM Panel - RunTime Auto-Verify (Auto Optimization) -->
+            <Grid Grid.Row="2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="5">                
+                <Grid.Style>
+                    <Style TargetType="{x:Type Grid}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Path=RunningAutoVerify}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Path=RunningAutoVerify}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <WpfTools:AutoOptimizeViewerControl Grid.Row="0" x:Name="AutoOptimizeViewer" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+            </Grid>
+
 
 
             <Grid Grid.Row="3" x:Name="ButtonGrid">
@@ -1039,22 +1064,22 @@
                     <Button.Style>
                         <Style TargetType="Button">
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
 
@@ -1074,27 +1099,27 @@
                     <Button.Style>
                         <Style TargetType="Button">
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Content" Value="Close"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Content" Value="Close"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Content" Value="Close"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Setter Property="Content" Value="Close"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Content" Value="Close"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Content" Value="Close"/>
                                 </DataTrigger>
@@ -1113,27 +1138,27 @@
                     <Button.Style>
                         <Style TargetType="Button">
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Setter Property="Content" Value=""/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.NEEDS_INPUT}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Setter Property="Content" Value=""/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Content" Value="Run"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Content" Value="Abort"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Setter Property="Content" Value=""/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.ERROR}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Setter Property="Content" Value=""/>
                                 </DataTrigger>
@@ -1151,11 +1176,11 @@
                         <Style TargetType="{x:Type Image}">
                             <Style.Triggers>
 
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.READY_TO_RUN}">
                                     <Setter Property="Source" Value="/Images/blank.png"/>
                                 </DataTrigger>
 
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUNNING}">
                                     <Setter Property="Source" Value="/Images/refresh.png"/>
 
                                     <DataTrigger.EnterActions>
@@ -1168,14 +1193,14 @@
 
                                 </DataTrigger>
 
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
                                     <Setter Property="Source" Value="/Images/red_x.png"/>
                                     <DataTrigger.EnterActions>
                                         <StopStoryboard BeginStoryboardName="RotateAnimation_BeginStoryboard"/>
                                     </DataTrigger.EnterActions>
                                 </DataTrigger>
 
-                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static local:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
+                                <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
                                     <Setter Property="Source" Value="/Images/green_check.png"/>
                                     <DataTrigger.EnterActions>
                                         <StopStoryboard BeginStoryboardName="RotateAnimation_BeginStoryboard"/>
@@ -1192,7 +1217,12 @@
 
 
             </Grid>
-
+            
+            
+            
+           
+            
+            
 
         </Grid>
 

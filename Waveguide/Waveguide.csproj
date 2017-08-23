@@ -197,12 +197,16 @@
     <Compile Include="Classes\ReportWriter.cs" />
     <Compile Include="Classes\Thor.cs" />
     <Compile Include="Classes\ValidationRules.cs" />
+    <Compile Include="Classes\VisualTreeHelpers.cs" />
     <Compile Include="Classes\WaveguideDB.cs" />
     <Compile Include="Classes\CircularBuffer.cs" />
     <Compile Include="Classes\Imager.cs" />
     <Compile Include="Classes\Converters.cs" />
     <Compile Include="Classes\GlobalVars.cs" />
     <Compile Include="Classes\ImageFileManager.cs" />
+    <Compile Include="Views\AutoOptimizeViewerControl.xaml.cs">
+      <DependentUpon>AutoOptimizeViewerControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\CameraSettingsManager.xaml.cs">
       <DependentUpon>CameraSettingsManager.xaml</DependentUpon>
     </Compile>
@@ -321,6 +325,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\Camera.cs" />
+    <Page Include="Views\AutoOptimizeViewerControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\CameraSettingsManager.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

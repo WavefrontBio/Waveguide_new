@@ -158,8 +158,11 @@ namespace Waveguide
         // Start Method
 
 
-        public void StartMethod(string bravoMethodFileName)
+        public void StartMethod(string bravoMethodFileName, int repeatProtocolCount)
         {
+            // bravoMethodFileName = the full path and filename of the VWorks protocol file to be executed
+            // repeatProtocolCount = when starting a protocol in VWorks, it always asks how many times to repeat the protocol.  This parameters answers that question.
+
             ShowVWorks();
 
             m_protocolAborted = false;
@@ -189,7 +192,7 @@ namespace Waveguide
 
             // Start the protocol running
             m_protocolStartTime = DateTime.Now; 
-            VWorks_.RunProtocol(bravoMethodFileName, 1);
+            VWorks_.RunProtocol(bravoMethodFileName, repeatProtocolCount);
 
             // Again subscribe to events
             //VWorks_.LogMessage += logEventHandler;

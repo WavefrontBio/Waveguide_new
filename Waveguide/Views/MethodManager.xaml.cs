@@ -112,6 +112,7 @@ namespace Waveguide
                 mc.MethodID = method.MethodID;
                 mc.OwnerID = method.OwnerID;
                 mc.ProjectID = method.ProjectID;
+                mc.ImagePlateBarcodeReset = method.ImagePlateBarcodeReset;
 
                 wgDB.UpdateMethod(mc);
             }
@@ -133,6 +134,7 @@ namespace Waveguide
             mc.OwnerID = method.OwnerID;
             mc.ProjectID = method.ProjectID;
             mc.IsAuto = method.IsAuto;
+            mc.ImagePlateBarcodeReset = method.ImagePlateBarcodeReset;
 
             wgDB.UpdateMethod(mc);
         }
@@ -152,6 +154,7 @@ namespace Waveguide
             mc.OwnerID = method.OwnerID;
             mc.ProjectID = method.ProjectID;
             mc.IsAuto = method.IsAuto;
+            mc.ImagePlateBarcodeReset = method.ImagePlateBarcodeReset;
 
             wgDB.UpdateMethod(mc);
         }
@@ -173,9 +176,10 @@ namespace Waveguide
             RefreshSignalTypeList();
             RefreshFilterList();
             RefreshProjectList();
+            RefreshBarcodeResetTypeList();
                      
              //Initialize data in the XamDataGrid - NOTE: A blank record is added FIRST, this is key to this approach for the XamDataGrid
-            MethodItem blank = new MethodItem(0,"","",GlobalVars.UserID,VM.ProjectList.Count > 0 ? VM.ProjectList.ElementAt(0).ProjectID:0,false,false,ref projectList);
+            MethodItem blank = new MethodItem(0,"","",GlobalVars.UserID,VM.ProjectList.Count > 0 ? VM.ProjectList.ElementAt(0).ProjectID:0,false,false,PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref projectList);
             
             VM.Methods.Add(blank);
             
@@ -213,10 +217,9 @@ namespace Waveguide
 
                     // load all compound plates for the method
                         // add blank Compound Plate container to hold the AddRecord
-                    CompoundPlateItem blankCP = new CompoundPlateItem();
-                    blankCP.CompoundPlateID = 0;
-                    blankCP.MethodID = mi.MethodID;
-                    blankCP.Description = "";
+                    ObservableCollection<BarcodeResetContainer> brcList = VM.BarcodeResetTypeList;
+                    CompoundPlateItem blankCP = new CompoundPlateItem(0,mi.MethodID,"",PLATE_ID_RESET_BEHAVIOR.CONSTANT,ref brcList);
+                    
                     mi.CompoundPlates.Add(blankCP);
 
                     success = wgDB.GetAllCompoundPlatesForMethod(mc.MethodID);
@@ -224,11 +227,9 @@ namespace Waveguide
                     {
                         foreach (CompoundPlateContainer cpc in wgDB.m_compoundPlateList)
                         {
-                            CompoundPlateItem cpi = new CompoundPlateItem();
-                            cpi.CompoundPlateID = cpc.CompoundPlateID;
-                            cpi.MethodID = cpc.MethodID;
-                            cpi.Description = cpc.Description;
-
+                            ObservableCollection<BarcodeResetContainer> brList = VM.BarcodeResetTypeList;
+                            CompoundPlateItem cpi = new CompoundPlateItem(cpc.CompoundPlateID, cpc.MethodID, cpc.Description, cpc.BarcodeReset, ref brcList);
+                            
                             mi.CompoundPlates.Add(cpi);
                         }
                     }
@@ -244,6 +245,22 @@ namespace Waveguide
 
           
         }
+
+
+        public void RefreshBarcodeResetTypeList()
+        {
+            if (VM.BarcodeResetTypeList == null) VM.BarcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+            else VM.BarcodeResetTypeList.Clear();
+
+            foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
+            {
+                BarcodeResetContainer brc = new BarcodeResetContainer();
+                brc.Description = st.ToString();
+                brc.Value = st;
+                VM.BarcodeResetTypeList.Add(brc);
+            }
+        }
+
 
         public void RefreshSignalTypeList()
         {
@@ -347,6 +364,7 @@ namespace Waveguide
                     mc.IsPublic = mi.IsPublic;
                     mc.IsAuto = mi.IsAuto;
                     mc.ProjectID = mi.ProjectID;
+                    mc.ImagePlateBarcodeReset = mi.ImagePlateBarcodeReset;
 
                     bool success = wgDB.UpdateMethod(mc);
                 }
@@ -379,6 +397,7 @@ namespace Waveguide
                     cpc.CompoundPlateID = cpi.CompoundPlateID;
                     cpc.MethodID = cpi.MethodID;
                     cpc.Description = cpi.Description;
+                    cpc.BarcodeReset = cpi.BarcodeReset;
 
                     bool success = wgDB.UpdateCompoundPlate(cpc);
                 }
@@ -418,12 +437,54 @@ namespace Waveguide
                         mc.MethodID = mi.MethodID;
                         mc.OwnerID = mi.OwnerID;
                         mc.ProjectID = proj.ProjectID;
+                        mc.ImagePlateBarcodeReset = mi.ImagePlateBarcodeReset;
 
                         bool success = wgDB.UpdateMethod(mc);
                     }
                 }
             }
         }
+
+
+
+        private void BarcodeReset_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            XamComboEditor xce = (XamComboEditor)sender;
+            DataRecord record = (DataRecord)xce.DataContext;
+            if (record == null) return;
+            
+            MethodItem m = (MethodItem)record.DataItem;
+
+            if (xamDataGrid.ActiveDataItem == null) return;
+
+            if (xamDataGrid.ActiveDataItem.GetType() == typeof(MethodItem))
+            {
+                MethodItem mi = (MethodItem)xamDataGrid.ActiveDataItem;
+
+                if (e.NewValue == null) return;
+
+                if (e.NewValue.GetType() == typeof(BarcodeResetContainer)) 
+                {
+                    BarcodeResetContainer brc = (BarcodeResetContainer)e.NewValue;
+
+                    if (mi.MethodID != 0 && mi.MethodID == m.MethodID)  // the 2nd condition makes sure the event is for the currently active Method
+                    {
+                        MethodContainer mc = new MethodContainer();
+                        mc.BravoMethodFile = mi.BravoMethodFile;
+                        mc.Description = mi.Description;
+                        mc.IsPublic = mi.IsPublic;
+                        mc.IsAuto = mi.IsAuto;
+                        mc.MethodID = mi.MethodID;
+                        mc.OwnerID = mi.OwnerID;
+                        mc.ProjectID = mi.ProjectID;
+                        mc.ImagePlateBarcodeReset = brc.Value;
+
+                        bool success = wgDB.UpdateMethod(mc);
+                    }
+                }
+            }
+        }
+
 
 
 
@@ -535,6 +596,43 @@ namespace Waveguide
         }
 
 
+
+
+        private void BarcodeResetType_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {          
+            XamComboEditor xce = (XamComboEditor)sender;
+            DataRecord record = (DataRecord)xce.DataContext;
+            if (record == null) return;
+            
+            CompoundPlateItem cpItem = (CompoundPlateItem)record.DataItem;
+
+            if (xamDataGrid.ActiveDataItem == null) return;
+
+            if (xamDataGrid.ActiveDataItem.GetType() == typeof(CompoundPlateItem))
+            {
+                CompoundPlateItem compoundPlate = (CompoundPlateItem)xamDataGrid.ActiveDataItem;
+
+                if (e.NewValue == null) return;
+
+                if (e.NewValue.GetType() == typeof(BarcodeResetContainer))
+                {
+                    BarcodeResetContainer st = (BarcodeResetContainer)e.NewValue;
+
+                    if(compoundPlate.CompoundPlateID != 0 && compoundPlate.CompoundPlateID == cpItem.CompoundPlateID) // the 2nd condition makes sure the event is for the currently active Compound Plate
+                    {
+                        CompoundPlateContainer cpc = new CompoundPlateContainer();
+                        cpc.BarcodeReset = compoundPlate.BarcodeReset;
+                        cpc.CompoundPlateID = compoundPlate.CompoundPlateID;
+                        cpc.Description = compoundPlate.Description;
+                        cpc.MethodID = compoundPlate.MethodID;
+                       
+                        bool success = wgDB.UpdateCompoundPlate(cpc);
+                    }
+                }
+            }
+        }
+
+
        
 
         private void xamDataGrid_RecordUpdated(object sender, Infragistics.Windows.DataPresenter.Events.RecordUpdatedEventArgs e)
@@ -556,6 +654,7 @@ namespace Waveguide
                     newMethod.IsPublic = mi.IsPublic;
                     newMethod.IsAuto = mi.IsAuto;
                     newMethod.ProjectID = mi.ProjectID;
+                    newMethod.ImagePlateBarcodeReset = mi.ImagePlateBarcodeReset;
                   
                     bool success = wgDB.InsertMethod(ref newMethod);
                     if (success)
@@ -564,7 +663,7 @@ namespace Waveguide
 
                         UnMarkAddNewRecord(methodRecord);
                         
-                        MethodItem miNew = new MethodItem(mi.MethodID,"","",mi.OwnerID,mi.ProjectID,false,false,ref projectList);
+                        MethodItem miNew = new MethodItem(mi.MethodID,"","",mi.OwnerID,mi.ProjectID,false,false,PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref projectList);
                         
                         VM.Methods.Insert(0, miNew);
 
@@ -593,11 +692,9 @@ namespace Waveguide
 
 
                         // add the AddRecord CompoundPlate for this new method
-                        CompoundPlateItem cpi = new CompoundPlateItem();
-                        cpi.CompoundPlateID = 0;
-                        cpi.MethodID = mi.MethodID;
-                        cpi.Description = "";
-
+                        ObservableCollection<BarcodeResetContainer> brcList = VM.BarcodeResetTypeList;
+                        CompoundPlateItem cpi = new CompoundPlateItem(0, mi.MethodID, "", PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref brcList);
+                      
                         mi.CompoundPlates.Add(cpi);
 
                         // mark the new CompoundPlate as the AddRecord
@@ -652,6 +749,7 @@ namespace Waveguide
                     cpc.CompoundPlateID = cpi.CompoundPlateID;
                     cpc.Description = cpi.Description;
                     cpc.MethodID = cpi.MethodID;
+                    cpc.BarcodeReset = cpi.BarcodeReset;
 
                     bool success = wgDB.InsertCompoundPlate(ref cpc);
 
@@ -661,10 +759,9 @@ namespace Waveguide
 
                         UnMarkAddNewRecord(e.Record);
 
-                        CompoundPlateItem cpiNew = new CompoundPlateItem();
-                        cpiNew.Description = "";                        
-                        cpiNew.CompoundPlateID = 0;
-                        cpiNew.MethodID = cpc.MethodID;
+                        ObservableCollection<BarcodeResetContainer> brcList = VM.BarcodeResetTypeList;
+                        CompoundPlateItem cpiNew = new CompoundPlateItem(0, cpc.MethodID, "", PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref brcList);
+
 
                         MethodItem mi = (MethodItem)(((DataRecord)e.Record.ParentRecord.ParentRecord).DataItem);
 
@@ -785,6 +882,7 @@ namespace Waveguide
             private ObservableCollection<FilterContainer> _excitationFilters;
             private ObservableCollection<FilterContainer> _emissionsFilters;
             private ObservableCollection<SignalTypeContainer> _signalTypeList;
+            private ObservableCollection<BarcodeResetContainer> _barcodeResetTypeList;
 
             private ObservableCollection<ProjectContainer> _projectList;            
 
@@ -831,6 +929,8 @@ namespace Waveguide
             }
 
 
+           
+
             public ObservableCollection<ProjectContainer> ProjectList
             {
                 get { return _projectList; }
@@ -838,6 +938,16 @@ namespace Waveguide
                 {
                     _projectList = value;
                     NotifyPropertyChanged("ProjectList");
+                }
+            }
+
+            public ObservableCollection<BarcodeResetContainer> BarcodeResetTypeList
+            {
+                get { return _barcodeResetTypeList; }
+                set
+                {
+                    _barcodeResetTypeList = value;
+                    NotifyPropertyChanged("BarcodeResetTypeList");
                 }
             }
 
@@ -866,6 +976,15 @@ namespace Waveguide
             {
                 _methods = new ObservableCollection<MethodItem>();
                 LoadProjectList();
+
+                _barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+                foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
+                {
+                    BarcodeResetContainer brc = new BarcodeResetContainer();
+                    brc.Description = st.ToString();
+                    brc.Value = st;
+                    _barcodeResetTypeList.Add(brc);
+                }
             }
 
 
@@ -889,12 +1008,14 @@ namespace Waveguide
             private int _projectID;
             private bool _isPublic;
             private bool _isAuto;
+            private PLATE_ID_RESET_BEHAVIOR _imagePlateBarcodeReset;
 
             private ObservableCollection<IndicatorItem> _indicators;
             private ObservableCollection<CompoundPlateItem> _compoundPlates;
             private ObservableCollection<ProjectContainer> _projectList;
+            private ObservableCollection<BarcodeResetContainer> _barcodeResetTypeList;
 
-            public MethodItem(int methodID, string description, string bravoMethodFile, int ownerID, int projectID, bool isPublic, bool isAuto,
+            public MethodItem(int methodID, string description, string bravoMethodFile, int ownerID, int projectID, bool isPublic, bool isAuto, PLATE_ID_RESET_BEHAVIOR imagePlateBarcodeReset,
                 ref ObservableCollection<ProjectContainer> projectList)
             {
                 _methodID = methodID;
@@ -903,11 +1024,22 @@ namespace Waveguide
                 _ownerID = ownerID;
                 _projectID = projectID;
                 _isPublic = isPublic;
-                _isAuto = isAuto;     
+                _isAuto = isAuto;
+                _imagePlateBarcodeReset = imagePlateBarcodeReset;
 
                 _indicators = new ObservableCollection<IndicatorItem>();
                 _compoundPlates = new ObservableCollection<CompoundPlateItem>();
                 _projectList = projectList;
+
+                _barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+                foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
+                {
+                    BarcodeResetContainer brc = new BarcodeResetContainer();
+                    brc.Description = st.ToString();
+                    brc.Value = st;
+                    _barcodeResetTypeList.Add(brc);
+                }
+
             }
 
             public MethodItem(MethodContainer mc, ref ObservableCollection<ProjectContainer> projectList)
@@ -919,10 +1051,20 @@ namespace Waveguide
                 _projectID = mc.ProjectID;
                 _isPublic = mc.IsPublic;
                 _isAuto = mc.IsAuto;
+                _imagePlateBarcodeReset = mc.ImagePlateBarcodeReset;
 
                 _indicators = new ObservableCollection<IndicatorItem>();
                 _compoundPlates = new ObservableCollection<CompoundPlateItem>();
                 _projectList = projectList;
+
+                _barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+                foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
+                {
+                    BarcodeResetContainer brc = new BarcodeResetContainer();
+                    brc.Description = st.ToString();
+                    brc.Value = st;
+                    _barcodeResetTypeList.Add(brc);
+                }
             }
 
 
@@ -952,6 +1094,11 @@ namespace Waveguide
             public bool IsAuto
             { get { return _isAuto; } set { _isAuto = value; NotifyPropertyChanged("IsAuto"); } }
 
+            public PLATE_ID_RESET_BEHAVIOR ImagePlateBarcodeReset
+            { get { return _imagePlateBarcodeReset; } set { _imagePlateBarcodeReset = value; NotifyPropertyChanged("ImagePlateBarcodeReset"); } }
+
+
+
             public ObservableCollection<IndicatorItem> Indicators
             { get { return _indicators; } set { _indicators = value; NotifyPropertyChanged("Indicators"); } }
 
@@ -960,6 +1107,9 @@ namespace Waveguide
 
             public ObservableCollection<ProjectContainer> ProjectList
             { get { return _projectList; } set { _projectList = value; NotifyPropertyChanged("ProjectList"); } }
+
+            public ObservableCollection<BarcodeResetContainer> BarcodeResetTypeList
+            { get { return _barcodeResetTypeList; } set { _barcodeResetTypeList = value; NotifyPropertyChanged("BarcodeResetTypeList"); } }
 
             public event PropertyChangedEventHandler PropertyChanged;
             private void NotifyPropertyChanged(String info)
@@ -984,6 +1134,27 @@ namespace Waveguide
                 if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(info)); }
             }
         }
+
+
+        class BarcodeResetContainer: INotifyPropertyChanged
+        {
+            private PLATE_ID_RESET_BEHAVIOR _value;
+             public PLATE_ID_RESET_BEHAVIOR Value
+            { get { return _value; } set { _value = value; NotifyPropertyChanged("Value"); } }
+
+            private string _description;
+            public string Description
+            { get { return _description; } set { _description = value; NotifyPropertyChanged("Description"); } }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+            private void NotifyPropertyChanged(String info)
+            {
+                if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(info)); }
+            }
+        }
+
+
+
 
         class IndicatorItem : INotifyPropertyChanged
         {
@@ -1150,10 +1321,51 @@ namespace Waveguide
             private int _compoundPlateID;
             private int _methodID;            
             private string _description;
+            private PLATE_ID_RESET_BEHAVIOR _barcodeReset;
+            private ObservableCollection<BarcodeResetContainer> _barcodeResetTypeList;
+
+         
 
             public CompoundPlateItem()
-            {            
+            {
+                _barcodeReset = PLATE_ID_RESET_BEHAVIOR.CONSTANT;
+                _barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
             }
+
+
+            public CompoundPlateItem(int cpID, int methodID, string description, PLATE_ID_RESET_BEHAVIOR bcReset, ref ObservableCollection<BarcodeResetContainer> barcodeResetTypeList)
+            {
+                _compoundPlateID = cpID;
+                _methodID = methodID;
+                _description = description;
+                _barcodeReset = bcReset;
+                _barcodeResetTypeList = barcodeResetTypeList;
+            }
+
+        
+            public CompoundPlateItem(int cpID, int methodID, string description, ref ObservableCollection<BarcodeResetContainer> barcodeResetTypeList)
+            {
+                 _compoundPlateID = cpID;
+                _methodID = methodID;
+                _description = description;
+                _barcodeResetTypeList = barcodeResetTypeList;
+
+                _barcodeReset = PLATE_ID_RESET_BEHAVIOR.CONSTANT;                
+            }
+
+            public void LoadBarcodeResetTypes()
+            {
+                BarcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+                foreach (PLATE_ID_RESET_BEHAVIOR br in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
+                {
+                    BarcodeResetContainer brc = new BarcodeResetContainer();
+                    brc.Value = br;
+                    brc.Description = br.ToString();
+                    BarcodeResetTypeList.Add(brc);
+                }
+            }
+
+
 
             public int CompoundPlateID
             { get { return _compoundPlateID; } set { _compoundPlateID = value; NotifyPropertyChanged("CompoundPlateID"); } }
@@ -1164,6 +1376,15 @@ namespace Waveguide
             public string Description
             { get { return _description; } set { _description = value; NotifyPropertyChanged("Description"); } }
 
+            public PLATE_ID_RESET_BEHAVIOR BarcodeReset
+            { get { return _barcodeReset; } set { _barcodeReset = value; NotifyPropertyChanged("BarcodeReset"); } }
+
+
+            public ObservableCollection<BarcodeResetContainer> BarcodeResetTypeList
+            {
+                get { return _barcodeResetTypeList; }
+                set { _barcodeResetTypeList = value; NotifyPropertyChanged("BarcodeResetTypeList"); }
+            }
 
             public event PropertyChangedEventHandler PropertyChanged;
             private void NotifyPropertyChanged(String info)

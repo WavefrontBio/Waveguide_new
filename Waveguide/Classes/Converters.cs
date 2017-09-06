@@ -370,4 +370,50 @@ namespace Waveguide
     }
 
 
+    public class ResetTypeToBooleanConverter : IValueConverter
+    {
+        #region IValueConverter Members
+
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            if (value == null)
+                return Binding.DoNothing;
+
+            PLATE_ID_RESET_BEHAVIOR resetBehavior = (PLATE_ID_RESET_BEHAVIOR)Enum.Parse(typeof(PLATE_ID_RESET_BEHAVIOR), value.ToString());
+
+            if (parameter.ToString() == "rbConstant" && resetBehavior == PLATE_ID_RESET_BEHAVIOR.CONSTANT)
+                return true;
+            if (parameter.ToString() == "rbIncrement" && resetBehavior == PLATE_ID_RESET_BEHAVIOR.INCREMENT)
+                return true;
+            if (parameter.ToString() == "rbClear" && resetBehavior == PLATE_ID_RESET_BEHAVIOR.CLEAR)
+                return true;
+            if (parameter.ToString() == "rbVWorks" && resetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS)
+                return true;
+
+            return false;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            if (value == null)
+                return Binding.DoNothing;
+
+            bool isChecked = (bool)value;
+
+            if (parameter.ToString() == "rbConstant" && isChecked)
+                return PLATE_ID_RESET_BEHAVIOR.CONSTANT;
+            if (parameter.ToString() == "rbIncrement" && isChecked)
+                return PLATE_ID_RESET_BEHAVIOR.INCREMENT;
+            if (parameter.ToString() == "rbClear" && isChecked)
+                return PLATE_ID_RESET_BEHAVIOR.CLEAR;
+            if (parameter.ToString() == "rbVWorks" && isChecked)
+                return PLATE_ID_RESET_BEHAVIOR.VWORKS;
+
+            return false;
+        }
+
+        #endregion
+    }
+
+
 }

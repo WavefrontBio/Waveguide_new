@@ -90,64 +90,111 @@ namespace Waveguide
         }
 
         public bool Initialize()
-        {           
+        {
             SystemInitialized = false;
 
             myFtdiDevice = new FTDI();
 
             UInt32 index = 0;  // this is the index of the Lambda device found in the list of USB devices connected
 
-            // Determine the number of FTDI devices connected to the machine
-            ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
 
-            // Check if devices found
-            if (ftStatus == FTDI.FT_STATUS.FT_OK)
+            bool useNew = true;
+
+            if (useNew)
             {
-                if (ftdiDeviceCount == 0)
-                {
-                    PostError("No USB devices found (Lambda Filter Controller)");
-                    return false; // no devices found
-                }
+                // use new method of initialization
+
+                // Order of initialization from Sutter's test program: LamTest
+                
+                uint baudRate = 9600;
+                myFtdiDevice.SetBaudRate(baudRate);
+
+                myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
+
+                FTDI.FT_DEVICE_INFO_NODE[] deviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
+                myFtdiDevice.GetDeviceList(deviceList);
+
+                string mySerialNum = "No Device";
+                try {
+                        mySerialNum = deviceList[0].SerialNumber.ToString();
+                    }
+                catch(Exception e){}
+
+                myFtdiDevice.OpenBySerialNumber(mySerialNum);
+
+                myFtdiDevice.SetLatency(2);
+
+                myFtdiDevice.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
+
+                myFtdiDevice.SetTimeouts(10,0);
+
+                myFtdiDevice. SetBaudRate(baudRate);
+
+                myFtdiDevice.Purge(0);
+                myFtdiDevice.Purge(1);
+
+                UInt32 test = 0;
+                byte[] command = { 0xEE }; // this is the "Go Online" command
+                myFtdiDevice.Write(command,(uint)1,ref test); 
+
             }
             else
             {
-                PostError("Error Communicating with FTDI Device");
-                return false; // no devices found
-            }
-            
+                // use the old method of initialization
 
-            // Allocate storage for device info list
-            FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
+             
 
-            // Populate our device list
-            ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);  
+                // Determine the number of FTDI devices connected to the machine
+                ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
 
-            // Search list for Lambda device
-            if (ftStatus == FTDI.FT_STATUS.FT_OK)
-            {
-                index = 100;
-                for (UInt32 i = 0; i < ftdiDeviceCount; i++)
+                // Check if devices found
+                if (ftStatus == FTDI.FT_STATUS.FT_OK)
                 {
-                    if (ftdiDeviceList[i].Description.ToString().Contains("Lambda"))
+                    if (ftdiDeviceCount == 0)
                     {
-                        index = i;
+                        PostError("No USB devices found (Lambda Filter Controller)");
+                        return false; // no devices found
                     }
                 }
-
-                if (index == 100)
+                else
                 {
-                    PostError("Lambda Filter Controller not found");
-                    return false; // no Lambda devices found
+                    PostError("Error Communicating with FTDI Device");
+                    return false; // no devices found
                 }
 
-            }
-                                   
+
+                // Allocate storage for device info list
+                FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
+
+                // Populate our device list
+                ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
+
+                // Search list for Lambda device
+                if (ftStatus == FTDI.FT_STATUS.FT_OK)
+                {
+                    index = 100;
+                    for (UInt32 i = 0; i < ftdiDeviceCount; i++)
+                    {
+                        if (ftdiDeviceList[i].Description.ToString().Contains("Lambda"))
+                        {
+                            index = i;
+                        }
+                    }
+
+                    if (index == 100)
+                    {
+                        PostError("Lambda Filter Controller not found");
+                        return false; // no Lambda devices found
+                    }
+
+                }
+
                 // Open the Lambda device found
                 ftStatus = myFtdiDevice.OpenBySerialNumber(ftdiDeviceList[index].SerialNumber);
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                 {
                     PostError("Failed to open Lambda Filter Controller");
-                   // return false;  // failed to open device
+                    // return false;  // failed to open device
                 }
 
                 // Set up device data parameters
@@ -180,9 +227,9 @@ namespace Waveguide
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                 {
                     PostError("Failed to set Lambda Filter Controller read/write timeout durations");
-                   // return false;  // failed to set read/write timeout durations
+                    // return false;  // failed to set read/write timeout durations
                 }
-            
+            } // !useNew
 
             SystemInitialized = true;
 

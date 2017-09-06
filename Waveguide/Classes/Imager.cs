@@ -27,6 +27,7 @@ namespace Waveguide
     public delegate void InsideTemperatureEventHandler(object sender, TemperatureEventArgs e);
     public delegate void ImagerEventHandler(object sender, ImagerEventArgs e);
     public delegate void OptimizeEventHandler(object sender, OptimizeEventArgs e);
+    public delegate void OptimizeStateHandler(object sender, OptimizeStateEventArgs e);
  
 
     public struct ImagingParamsStruct
@@ -149,6 +150,12 @@ namespace Waveguide
         protected virtual void OnOptimizeEvent(OptimizeEventArgs e)
         {
             m_optimizeEvent(this, e);
+        }
+
+        public event OptimizeStateHandler m_optimizeStateEvent;
+        protected virtual void OnOptimizeStateEvent(OptimizeStateEventArgs e)
+        {
+            m_optimizeStateEvent(this, e);
         }
 
 
@@ -1645,6 +1652,66 @@ namespace Waveguide
 
 
 
+        public async void StartAutoOptimization(CameraSettingsContainer cameraSettings)
+        {
+            bool returnVal = false;
+
+            if (m_kineticImagingON)
+            {
+                // a kinetic imaging task is already running.  Don't start another one.
+                MessageBox.Show("A Imaging Task is already running.  Cannot start optimization until the active imaging task completes or is aborted.",
+                                "Cannot Start Optimization Task", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+
+                OnImagerEvent(new ImagerEventArgs("Optimization Stopped", ImagerState.Idle));
+            }
+            else
+            {
+                m_camera.PrepForKineticImaging();
+
+                m_kineticImagingON = true;
+                m_cancelTokenSource = new CancellationTokenSource();
+
+                OnImagerEvent(new ImagerEventArgs("Kinetic Imaging Started", ImagerState.Busy));
+
+                try
+                {
+                    returnVal = await Task.Run(() => AutoOptimizeAllIndicators(cameraSettings), m_cancelTokenSource.Token);
+                }
+                catch (AggregateException aggEx)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append("Exception(s) occurred: ");
+                    foreach (Exception ex in aggEx.InnerExceptions)
+                    {
+                        sb.Append(ex.Message);
+                        sb.Append(", ");
+                    }
+
+                    m_kineticImagingON = false;
+                    OnCameraEvent(new CameraEventArgs(sb.ToString(), false));
+                }
+                catch (OperationCanceledException)
+                {
+                    m_kineticImagingON = false;
+                    OnCameraEvent(new CameraEventArgs("Auto Optimization Cancelled", false));
+                }
+                catch (Exception ex)
+                {
+                    m_kineticImagingON = false;
+                    OnCameraEvent(new CameraEventArgs(ex.Message, false));
+                }
+                finally
+                {
+                    m_kineticImagingON = false;
+                    OnImagerEvent(new ImagerEventArgs("Auto Optimizing Stopped", ImagerState.Idle));
+                    OptimizationResult_Success = returnVal;
+
+                }
+            }           
+        }
+
+
+
         public bool AutoOptimizeAllIndicators(CameraSettingsContainer cameraSettings)
         {
             // make sure ImagingDictionary has been initialized
@@ -1721,7 +1788,9 @@ namespace Waveguide
 
             bool DoneWithAllBinningLevels = false;
             string errMsg = "No Error";
-           
+
+
+            OnOptimizeStateEvent(new OptimizeStateEventArgs(true));
 
 
             while (!DoneWithAllBinningLevels)
@@ -1749,10 +1818,7 @@ namespace Waveguide
                     int indicatorID = pair.Key;
                     ImagingParamsStruct dps = pair.Value;
 
-                    // reset DirectX display panel for new size of image 
-                    ConfigImageDisplaySurface((int)indicatorID, pixelWidth, pixelHeight, false);
-
-
+            
                     // Initialize optimization settings
                     startingExposure = cameraSettings.StartingExposure;
                     exposureLimit = cameraSettings.ExposureLimit;
@@ -1812,9 +1878,7 @@ namespace Waveguide
                                    maxPercentOfPixelsAboveHighLimit, highPixelValueThreshold, ref tooDim, ref tooBright);
 
                             // fire event after every image                           
-                            OnOptimizeEvent(new OptimizeEventArgs(indicatorID,exposure, m_camera.m_cameraParams.EMGain, 
-                                                                    m_camera.m_cameraParams.PreAmpGainIndex, m_camera.m_acqParams.HBin, 
-                                                                    m_camera.m_acqParams.BinnedFullImageWidth,m_camera.m_acqParams.BinnedFullImageHeight,null));
+                            OnOptimizeEvent(new OptimizeEventArgs(indicatorID,exposure, m_camera.m_cameraParams.EMGain, m_camera.m_cameraParams.PreAmpGainIndex, m_camera.m_acqParams.HBin,m_camera.m_acqParams.BinnedFullImageWidth,m_camera.m_acqParams.BinnedFullImageHeight,null));
 
                             if (tooBright)
                             {
@@ -1982,8 +2046,10 @@ namespace Waveguide
 
             } // END -- while(!DoneWithAll)
 
+            Thread.Sleep(3000); // this just allows the AutoOptimizeControl panel to be displayed for a few seconds before it closes (remove it if it bothers you!)
 
             OnImagerEvent(new ImagerEventArgs("Optimization Complete", ImagerState.Idle));
+            OnOptimizeStateEvent(new OptimizeStateEventArgs(false));
 
             return success;
         }
@@ -3426,8 +3492,28 @@ namespace Waveguide
 
 
 
+    public class OptimizeStateEventArgs : EventArgs
+    {
+        // used to signal start/stop of auto-optimize
+
+        private bool _running;
+        public bool Running
+        {
+            get { return _running; }
+            set { _running = value; }
+        }
+
+        public OptimizeStateEventArgs(bool running)
+        {
+            _running = running;
+        }
+    }
+
+
     public class OptimizeEventArgs : EventArgs
-    {        
+    {   
+        // used to update that results of single optimization cycle (one image)
+
         private int _indicatorID;
         public int IndicatorID
         {

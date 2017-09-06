@@ -218,7 +218,7 @@
                                             </igDP:Field.Settings>
                                         </igDP:Field>
 
-                                    </igDP:FieldLayout.Fields>
+                                </igDP:FieldLayout.Fields>
                                 </igDP:FieldLayout>
                             </igDP:XamDataGrid.FieldLayouts>
 

@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Waveguide;
 
 namespace WPFTools
 {
@@ -23,7 +24,7 @@ namespace WPFTools
     {
 
         public AutoOptimize_ViewModel vm;
-
+        public Imager m_imager;
       
         public AutoOptimizeViewerControl()
         {
@@ -32,18 +33,84 @@ namespace WPFTools
       
             vm = new AutoOptimize_ViewModel();
             DataContext = vm;
-      
+
+         
+            foreach(ExperimentIndicatorContainer eic in vm.ExpParams.indicatorList)
+            {
+                AddIndicator(eic.ExperimentIndicatorID, eic.Description, eic.Exposure, eic.Gain, eic.PreAmpGain, 1, eic.ExcitationFilterDesc, eic.EmissionFilterDesc);
+            }
+
         }
+
+        public void Configure(Imager imager)
+        {
+            m_imager = imager;
+
+            if(m_imager != null)
+                m_imager.m_optimizeEvent += m_imager_m_optimizeEvent;
+        }
+
+        public void Init()
+        {
+            vm.OptimizeIndicatorList.Clear();
+
+            foreach(ExperimentIndicatorContainer eic in vm.ExpParams.indicatorList)
+            {
+                vm.OptimizeIndicatorList.Add(new OptimizeIndicatorItem(eic.ExperimentIndicatorID, eic.Description, eic.Exposure, eic.Gain, eic.PreAmpGain, 1, eic.ExcitationFilterDesc, eic.EmissionFilterDesc));
+            }
+        }
+
+        void m_imager_m_optimizeEvent(object sender, OptimizeEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+
+                foreach (OptimizeIndicatorItem oii in vm.OptimizeIndicatorList)
+                {
+                    if (oii.IndicatorID == e.IndicatorID)
+                    {
+                        if (e.ImageData != null)
+                            oii.SetImage(e.ImageWidth, e.ImageHeight, e.ImageData);
+                        oii.Exposure = e.Exposure;
+                        oii.Gain = e.Gain;
+                        oii.Binning = e.Binning;
+                        oii.PreAmpGain = e.PreAmpGain;
+                        break;
+                    }
+                }
+
+                foreach (ExperimentIndicatorContainer eic in vm.ExpParams.indicatorList)
+                {
+                    if (eic.ExperimentIndicatorID == e.IndicatorID)
+                    {
+                        eic.Exposure = e.Exposure;
+                        eic.Gain = e.Gain;
+                        eic.PreAmpGain = e.PreAmpGain;
+                        break;
+                    }
+                }
+
+            }));
+
+        }
+
+      
 
         public void Reset()
         {
-            vm.OptimizeIndicatorList.Clear();
+            Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                vm.OptimizeIndicatorList.Clear();
+            }));
         }
 
 
         public void AddIndicator(int indicatorID, string indicatorName, int exposure, int gain, int preAmpGain, int binning, string excitationFilter, string emissionFilter)
         {
-            vm.OptimizeIndicatorList.Add(new OptimizeIndicatorItem(indicatorID, indicatorName,exposure,gain,preAmpGain,binning,excitationFilter,emissionFilter));
+            Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                vm.OptimizeIndicatorList.Add(new OptimizeIndicatorItem(indicatorID, indicatorName,exposure,gain,preAmpGain,binning,excitationFilter,emissionFilter));
+            }));
         }
 
 
@@ -104,6 +171,8 @@ namespace WPFTools
 
     public class OptimizeIndicatorItem : INotifyPropertyChanged
     {
+      
+
         private int _indicatorID;
         public int IndicatorID
         {
@@ -235,6 +304,10 @@ namespace WPFTools
     public class AutoOptimize_ViewModel : INotifyPropertyChanged
     {
 
+        // make ExperimentParams Singleton part of view model (used to store selections made by user)
+        private ExperimentParams _expParams;
+        public ExperimentParams ExpParams { get { return _expParams; } }
+
         private ObservableCollection<OptimizeIndicatorItem> _optimizeIndicatorList;
         public ObservableCollection<OptimizeIndicatorItem> OptimizeIndicatorList
         {
@@ -248,9 +321,11 @@ namespace WPFTools
             if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(info)); }
         }
 
+        
         public AutoOptimize_ViewModel()
         {
             _optimizeIndicatorList = new ObservableCollection<OptimizeIndicatorItem>();
+            _expParams = ExperimentParams.GetExperimentParams;
         }
 
     }

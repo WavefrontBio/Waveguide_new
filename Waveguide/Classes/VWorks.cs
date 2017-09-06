@@ -296,7 +296,7 @@ namespace Waveguide
 
             else if (String.Compare(caption.Trim(), "Barcode", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.Barcode, "Barcode", message);                
+                PostVWorksCommand(VWORKS_COMMAND.Barcode, "Barcode", message);
             }
            
             else if (String.Compare(caption.Trim(), "VerifyImaging", true) == 0)
@@ -338,8 +338,18 @@ namespace Waveguide
 
         void VWorks__ProtocolComplete(int session, string protocol, string protocol_type)
         {
-            PostVWorksCommand(VWORKS_COMMAND.Protocol_Complete, protocol, protocol_type);
-            VWorks_.CloseProtocol(m_bravoMethodFile);
+            PostVWorksCommand(VWORKS_COMMAND.Protocol_Complete, protocol, protocol_type);            
+
+            switch (protocol_type)
+            {
+                case "Startup":                    
+                    break;
+                case "Main":
+                    VWorks_.CloseProtocol(m_bravoMethodFile);
+                    break;
+                default:
+                    break;
+            }
         }
 
         void VWorks__ProtocolAborted(int session, string protocol, string protocol_type)

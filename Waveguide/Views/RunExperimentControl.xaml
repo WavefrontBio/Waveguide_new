@@ -24,6 +24,7 @@
             <myLocal:BoolToVisibilityConverter x:Key="BoolToVis" />
             <myLocal:BoolToInvertVisibilityConverter x:Key="BoolToInvertVis" />
             <myLocal:ValidationErrorsToStringConverter x:Key="validationErrorToStringConverter"/>
+            <myLocal:EnumToBoolConverter x:Key="EnumToBool"/>
 
             
 
@@ -373,10 +374,20 @@
                             <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_FINISHED}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
+                            <DataTrigger Binding="{Binding Path=RunState}" Value="{x:Static myLocal:ViewModel_RunExperimentControl+RUN_STATE.RUN_ABORTED}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <!--<DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged}" Value="False">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>-->
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
-                
+
+
                 <!-- Experiment Plate Barcode Entry and Binning GroupBox -->
                 <Grid Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="2,10,2,0">
                     <Grid.RowDefinitions>
@@ -519,6 +530,7 @@
                     <igDP:XamDataGrid.Resources>
                         <myLocal:BindingProxy x:Key="proxy" Data="{Binding}" />
                         <myLocal:EnumToBoolConverter x:Key="IDResetTypeConverter" />
+                        <myLocal:ResetTypeToBooleanConverter x:Key="IDResetTypeConverter2"/>
                     </igDP:XamDataGrid.Resources>
 
 
@@ -657,13 +669,16 @@
                                                                 
                                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-                                                                    <RadioButton Content="Constant" x:Name="CompoundPlateBarcode_ConstantRB"  HorizontalAlignment="Center" Checked="CompoundPlateBarcode_ConstantRB_Checked"  Margin="5,2,0,2" IsChecked="True"
-                                                                                 GroupName="{Binding Path=Index}"/>
+                                                                    <RadioButton Content="Constant" x:Name="CompoundPlateBarcode_ConstantRB"  HorizontalAlignment="Center" Checked="CompoundPlateBarcode_ConstantRB_Checked"  Margin="5,2,0,2" 
+                                                                                 IsChecked="{Binding Path=Value, Converter={StaticResource IDResetTypeConverter2}, ConverterParameter=rbConstant, RelativeSource={RelativeSource TemplatedParent}}"
+                                                                        GroupName="{Binding Path=Index}"/>
                                                                     
                                                                     <RadioButton Content="Increment" x:Name="CompoundPlateBarcode_IncrementRB" HorizontalAlignment="Center" Checked="CompoundPlateBarcode_IncrementRB_Checked"  Margin="5,2,0,2"
+                                                                                 IsChecked="{Binding Path=Value, Converter={StaticResource IDResetTypeConverter2}, ConverterParameter=rbIncrement, RelativeSource={RelativeSource TemplatedParent}}"
                                                                                  GroupName="{Binding Path=Index}"/>
                                                                     
                                                                     <RadioButton Content="Clear" x:Name="CompoundPlateBarcode_ClearRB" HorizontalAlignment="Center" Checked="CompoundPlateBarcode_ClearRB_Checked"  Margin="5,2,0,2"
+                                                                                 IsChecked="{Binding Path=Value, Converter={StaticResource IDResetTypeConverter2}, ConverterParameter=rbClear, RelativeSource={RelativeSource TemplatedParent}}"
                                                                                  GroupName="{Binding Path=Index}">
                                                                         <RadioButton.Style>
                                                                             <Style TargetType="{x:Type RadioButton}">
@@ -680,6 +695,7 @@
                                                                     </RadioButton>
                                                                     
                                                                     <RadioButton Content="VWorks" x:Name="CompoundPlateBarcode_VWorksRB" HorizontalAlignment="Center" Checked="CompoundPlateBarcode_VWorksRB_Checked"  Margin="5,2,0,2"
+                                                                                 IsChecked="{Binding Path=Value, Converter={StaticResource IDResetTypeConverter2}, ConverterParameter=rbVWorks, RelativeSource={RelativeSource TemplatedParent}}"
                                                                                  GroupName="{Binding Path=Index}">
                                                                         <RadioButton.Style>
                                                                             <Style TargetType="{x:Type RadioButton}">
@@ -1001,17 +1017,23 @@
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Path=RunningAutoVerify}" Value="True">
+                            <DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged}" Value="True">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunningAutoVerify}" Value="False">
+                            <DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged}" Value="False">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="25"/>
+                </Grid.RowDefinitions>
 
                 <WpfTools:AutoOptimizeViewerControl Grid.Row="0" x:Name="AutoOptimizeViewer" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                
+                <Button Grid.Row="1" x:Name="HideAutoOptimizeViewer" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Content="Hide" Width="60" Height="22" Click="HideAutoOptimizeViewer_Click"/>
 
             </Grid>
 

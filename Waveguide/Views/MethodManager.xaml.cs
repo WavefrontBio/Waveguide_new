@@ -478,6 +478,7 @@ namespace Waveguide
                         mc.OwnerID = mi.OwnerID;
                         mc.ProjectID = mi.ProjectID;
                         mc.ImagePlateBarcodeReset = brc.Value;
+                        mi.ImagePlateBarcodeReset = brc.Value;  
 
                         bool success = wgDB.UpdateMethod(mc);
                     }

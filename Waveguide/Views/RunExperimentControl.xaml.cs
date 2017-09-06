@@ -348,15 +348,24 @@ namespace Waveguide
 
         void m_imager_m_optimizeEvent(object sender, OptimizeEventArgs e)
         {
-            AutoOptimizeViewer.IsOptimizing(e.IndicatorID);
-            AutoOptimizeViewer.UpdateData(e.IndicatorID, e.Exposure, e.Gain, e.PreAmpGain, e.Binning);
-            if(e.ImageData != null)
-            {
-                AutoOptimizeViewer.UpdateImage(e.IndicatorID, e.ImageWidth, e.ImageHeight, e.ImageData);
-                AutoOptimizeViewer.FinishedOptimizing(); // stops all wait spinners
-            }
+            Application.Current.Dispatcher.Invoke(new Action(() => { 
+                
+                AutoOptimizeViewer.IsOptimizing(e.IndicatorID);
+                AutoOptimizeViewer.UpdateData(e.IndicatorID, e.Exposure, e.Gain, e.PreAmpGain, e.Binning);
+                if (e.ImageData != null)
+                {
+                    AutoOptimizeViewer.UpdateImage(e.IndicatorID, e.ImageWidth, e.ImageHeight, e.ImageData);
+                }
+                   
+            }));
+          
         }
 
+
+        void m_imager_m_optimizeStateEvent(object sender, OptimizeStateEventArgs e)
+        {
+            VM.RunningAutoVerify = e.Running;
+        }
 
 
         void m_timer_Tick(object sender, EventArgs e)
@@ -447,20 +456,34 @@ namespace Waveguide
                     }));
                     break;
                 case VWORKS_COMMAND.Protocol_Complete:
-                    PostMessageRunExperimentPanel("VWorks Protocol Complete");
-                    m_dispatcher.Invoke((Action)(() =>
+                    switch (e.Description)
                     {
-                        m_timer.Stop();
-                        VM.DelayText = "";
-                        VM.DelayHeaderVisible = false;
-                        m_cancelTokenSource.Cancel(); // make sure the imaging task stops
-                        VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.RUN_FINISHED;
+                        case "Startup":
+                            PostMessageRunExperimentPanel("VWorks Startup Protocol Complete");
+                            break;
+                        case "Main":
+                            PostMessageRunExperimentPanel("VWorks Main Protocol Complete");
+                            m_dispatcher.Invoke((Action)(() =>
+                            {
+                                m_timer.Stop();
+                                VM.DelayText = "";
+                                VM.DelayHeaderVisible = false;
+                                m_cancelTokenSource.Cancel(); // make sure the imaging task stops
+                                VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.RUN_FINISHED;
 
-                        ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
-                                                            VM.ExpParams.experiment,
-                                                            VM.ExpParams.indicatorList);
-                        dlg.ShowDialog();
-                    }));
+                                if (!VM.ExpParams.method.IsAuto) // on present Report Dialog if this is a Manual method
+                                {
+                                    ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
+                                                                        VM.ExpParams.experiment,
+                                                                        VM.ExpParams.indicatorList);
+                                    dlg.ShowDialog();
+                                }
+                            }));
+                            break;
+                        default:
+                            break;
+                    }
+                    
                     break;
                 case VWORKS_COMMAND.Protocol_Paused:
                     PostMessageRunExperimentPanel("VWorks Protocol Paused");
@@ -526,6 +549,9 @@ namespace Waveguide
                     if (VM.ExpParams.experimentPlate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS && VM.ExpParams.experimentPlate.Barcode == "")
                     {
                         VM.ExpParams.experimentPlate.Barcode = e.Description;
+                        // update database
+                        success = wgDB.UpdatePlate(VM.ExpParams.experimentPlate);
+                        if (!success) MessageBox.Show("Failed to update Experiment Plate in database after receiving barcode from VWorks.", "Database Error", MessageBoxButton.OK);
                     }
                     // Step 2
                     else
@@ -535,6 +561,9 @@ namespace Waveguide
                             if (plate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS && plate.Barcode == "")
                             {
                                 plate.Barcode = e.Description;
+                                // update database
+                                success = wgDB.UpdateExperimentCompoundPlate(plate);
+                                if (!success) MessageBox.Show("Failed to update Experiment Compound Plate in database after receiving barcode from VWorks.", "Database Error", MessageBoxButton.OK);
                                 break;
                             }
                         }
@@ -559,11 +588,14 @@ namespace Waveguide
                     {
                         // successfully optimized imaging
                         m_vworks.VWorks_ResumeProtcol();
+                        PostMessageRunExperimentPanel("Auto-Optimized All Indicators Successfully");
                     }
                     else
                     {
                         // failed to optimize imaging
                         m_vworks.VWorks_AbortProtocol();
+                        AbortExperiment();
+                        PostMessageRunExperimentPanel("Auto-Opitimization Failed! Aborting Experiment Run and VWorks Protocol.");
                     }
 
                     VM.RunningAutoVerify = false;
@@ -576,7 +608,7 @@ namespace Waveguide
                     //  2 - Clear the data and reset the barcodes
                     //  3 - Resume the VWorks protocol
 
-                    m_vworks.VWorks_PauseProtocol();  // pause the VWorks protocol (this should already be paused inside the VWorks protocol)
+                    m_vworks.VWorks_PauseProtocol();  // pause the VWorks protocol 
 
                     // stop all timers, timer messages, and imaging tasks
                     m_timer.Stop();
@@ -587,16 +619,20 @@ namespace Waveguide
 
                     // 1 - write report
                     {
-                        ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
+                        Application.Current.Dispatcher.Invoke(new Action(() =>
+                        {
+                            ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
                                                             VM.ExpParams.experiment,
                                                             VM.ExpParams.indicatorList);
 
-                        bool reportSuccess = dlg.WriteReportFiles(true, true);
+                            bool reportSuccess = dlg.WriteReportFiles(true, true);
 
-                        if (!reportSuccess)
-                        {
-                            PostMessageRunExperimentPanel("Error writing Reports: " + dlg.GetLastError());
-                        }
+                            if (!reportSuccess)
+                            {
+                                PostMessageRunExperimentPanel("Error writing Reports: " + dlg.GetLastError());
+                            }
+
+                        }));                        
                     }
 
 
@@ -755,6 +791,7 @@ namespace Waveguide
         public void Reset()
         {
             VM.Reset();
+            ResetBarcodes();
             ClearPlotData();
 
             CameraSettingsContainer csc;
@@ -802,6 +839,8 @@ namespace Waveguide
         {
             m_imager = imager;
 
+            AutoOptimizeViewer.Configure(m_imager);
+
             if(m_imager != null)
             {
                 VM.InsideHeaterEnabled = m_imager.m_insideHeatingON;
@@ -811,6 +850,7 @@ namespace Waveguide
                 m_imager.SetMask(VM.ExpParams.mask);
 
                 m_imager.m_optimizeEvent += m_imager_m_optimizeEvent;
+                m_imager.m_optimizeStateEvent += m_imager_m_optimizeStateEvent;
             }
 
        
@@ -821,6 +861,8 @@ namespace Waveguide
             m_vworks.ShowVWorks();
 
         }
+
+        
 
 
 
@@ -3077,16 +3119,22 @@ namespace Waveguide
                     break;
 
                 case ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN:
+                    VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
+                    SetState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
 
                     if (PrepForRun())
                     {                      
-                        // RUN EXPERIMENT !!
-                        VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
-                        SetState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
+                        // RUN EXPERIMENT !!                        
                         PostMessageRunExperimentPanel("Starting VWorks Method: " + VM.ExpParams.method.BravoMethodFile);
                         if (!VM.ExpParams.method.IsAuto) VM.ExpParams.experimentRunPlateCount = 1;
                         if (VM.ExpParams.experimentRunPlateCount<1) VM.ExpParams.experimentRunPlateCount = 1;
                         m_vworks.StartMethod(VM.ExpParams.method.BravoMethodFile, VM.ExpParams.experimentRunPlateCount);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Failed to Run Experiment");
+                        VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
+                        SetState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
                     }
                     break;
 
@@ -3118,15 +3166,13 @@ namespace Waveguide
 
 
 
-
-
         private bool PrepForRun()
         {
 
             //////////////////////////////////////////////////////////////////
             // Create ExperimentPlate, if doesn't already exist 
             bool success;
-            string barcode = VM.ExpParams.experimentPlate.Barcode;
+            string barcode = VM.ExpParams.experimentPlate.Barcode; // if VM.ExpParams.method.ImagePlateBarcodeReset == PLATE_ID_RESET_BEHAVIOR.VWORKS, then barcode will be empty.  Don't worry, it will be set during the run.
 
             if (GetExperimentPlate(barcode))
             {
@@ -3239,6 +3285,29 @@ namespace Waveguide
                     else
                     {
                         ips.ImageControl = imageDisplay;
+                    }
+
+                    // set up the optimize well list
+                    if(VM.ExpParams.method.IsAuto)
+                    {
+                        int rows = VM.ExpParams.plateType.Rows;
+                        int cols = VM.ExpParams.plateType.Cols;
+                        string desc = "Select Optimize Wells for Indicator: " + eic.Description;
+                        WellSelectionDialog dlg = new WellSelectionDialog(rows, cols, desc, true);
+
+                         dlg.ShowDialog();
+
+                        if (dlg.m_accepted)
+                        {                   
+                            if (ips.optimizeWellList == null)
+                            {
+                                ips.optimizeWellList = new ObservableCollection<Tuple<int, int>>();
+                            }
+
+                            ips.optimizeWellList.Clear();
+                            foreach (Tuple<int, int> well in dlg.m_wellList)
+                                ips.optimizeWellList.Add(well);
+                        }              
                     }
 
                     m_imager.m_ImagingDictionary.Add(ips.experimentIndicatorID, ips);
@@ -3381,6 +3450,28 @@ namespace Waveguide
 
 
 
+        public void InitBarcodeResetRadioButtons()
+        {
+            switch(VM.ExpParams.method.ImagePlateBarcodeReset)
+            {
+                case PLATE_ID_RESET_BEHAVIOR.CLEAR:
+                    ImagePlateBarcode_ClearRB.IsChecked = true;
+                    break;
+                case PLATE_ID_RESET_BEHAVIOR.CONSTANT:
+                    ImagePlateBarcode_ConstantRB.IsChecked = true;
+                    break;
+                case PLATE_ID_RESET_BEHAVIOR.INCREMENT:
+                    ImagePlateBarcode_IncrementRB.IsChecked = true;
+                    break;
+                case PLATE_ID_RESET_BEHAVIOR.VWORKS:
+                    ImagePlateBarcode_VWorksRB.IsChecked = true;
+                    break;
+            }
+
+         
+        }
+
+
         private void ImagePlateBarcode_ConstantRB_Checked(object sender, RoutedEventArgs e)
         {
             VM.ExpParams.experimentPlate.PlateIDResetBehavior = PLATE_ID_RESET_BEHAVIOR.CONSTANT;
@@ -3489,10 +3580,18 @@ namespace Waveguide
             PostMessageRunExperimentPanel(ecpc.Description + " set to " + ecpc.PlateIDResetBehavior.ToString());
         }
 
+
+
+
         private void AutoOptimizePB_Click(object sender, RoutedEventArgs e)
+        {          
+            AutoOptimizeViewer.Init();  // loads all current indicators
+            m_imager.StartAutoOptimization(null);  // passing null uses current camera settings
+
+        }
+
+        private void HideAutoOptimizeViewer_Click(object sender, RoutedEventArgs e)
         {
-            VM.RunningAutoVerify = true;
-            m_imager.AutoOptimizeAllIndicators(null);
             VM.RunningAutoVerify = false;
         }
 

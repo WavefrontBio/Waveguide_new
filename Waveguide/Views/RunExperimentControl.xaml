@@ -989,10 +989,9 @@
                         <ColumnDefinition Width="30"/>
                     </Grid.ColumnDefinitions>
                     
-                    <Grid Grid.Column="0" Name="ImageGrid"></Grid>                                      
+                    <Grid Grid.Column="0" Name="ImageGrid" ></Grid>                                      
                    
-                    <Image Grid.Column="1" Name="ColorMapImage" Stretch="Fill" Margin="3" Source="{Binding}" 
-                           MouseLeftButtonUp="ColorMapImage_MouseLeftButtonUp"/>                    
+                    <Image Grid.Column="1" Name="ColorMapImage" Stretch="Fill" Margin="3" Source="{Binding}" MouseLeftButtonUp="ColorMapImage_MouseLeftButtonUp"/>                    
                 </Grid>
 
                 <ig:XamNumericRangeSlider Grid.Row="1" x:Name="RangeSlider" MinValue="0" MaxValue="100"  

@@ -548,6 +548,7 @@ namespace Waveguide
 
                     if (VM.ExpParams.experimentPlate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS && VM.ExpParams.experimentPlate.Barcode == "")
                     {
+                        PostMessageRunExperimentPanel("Barcode for Image Plate: " + e.Description);
                         VM.ExpParams.experimentPlate.Barcode = e.Description;
                         // update database
                         success = wgDB.UpdatePlate(VM.ExpParams.experimentPlate);
@@ -560,6 +561,7 @@ namespace Waveguide
                         {
                             if (plate.PlateIDResetBehavior == PLATE_ID_RESET_BEHAVIOR.VWORKS && plate.Barcode == "")
                             {
+                                PostMessageRunExperimentPanel("Barcode for " + plate.Description + ": " + e.Description);
                                 plate.Barcode = e.Description;
                                 // update database
                                 success = wgDB.UpdateExperimentCompoundPlate(plate);
@@ -607,41 +609,42 @@ namespace Waveguide
                     //  1 - Write the report for this plate
                     //  2 - Clear the data and reset the barcodes
                     //  3 - Resume the VWorks protocol
-
-                    m_vworks.VWorks_PauseProtocol();  // pause the VWorks protocol 
-
-                    // stop all timers, timer messages, and imaging tasks
-                    m_timer.Stop();
-                    VM.DelayText = "";
-                    VM.DelayHeaderVisible = false;
-                    m_cancelTokenSource.Cancel(); // make sure the imaging task stops
-
-
-                    // 1 - write report
+                    if (VM.ExpParams.method.IsAuto)
                     {
-                        Application.Current.Dispatcher.Invoke(new Action(() =>
+                        m_vworks.VWorks_PauseProtocol();  // pause the VWorks protocol 
+
+                        // stop all timers, timer messages, and imaging tasks
+                        m_timer.Stop();
+                        VM.DelayText = "";
+                        VM.DelayHeaderVisible = false;
+                        m_cancelTokenSource.Cancel(); // make sure the imaging task stops
+
+
+                        // 1 - write report
                         {
-                            ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
-                                                            VM.ExpParams.experiment,
-                                                            VM.ExpParams.indicatorList);
-
-                            bool reportSuccess = dlg.WriteReportFiles(true, true);
-
-                            if (!reportSuccess)
+                            Application.Current.Dispatcher.Invoke(new Action(() =>
                             {
-                                PostMessageRunExperimentPanel("Error writing Reports: " + dlg.GetLastError());
-                            }
+                                ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
+                                                                VM.ExpParams.experiment,
+                                                                VM.ExpParams.indicatorList);
 
-                        }));                        
+                                bool reportSuccess = dlg.WriteReportFiles(VM.ExpParams.writeWaveguideReport, VM.ExpParams.writeExcelReport);
+
+                                if (!reportSuccess)
+                                {
+                                    PostMessageRunExperimentPanel("Error writing Reports: " + dlg.GetLastError());
+                                }
+
+                            }));
+                        }
+
+
+                        // 2 - clear data and reset barcodes
+                        Reset();  // clears plot data
+
+                        // 3 - resume VWorks protocol
+                        m_vworks.VWorks_ResumeProtcol();
                     }
-
-
-                    // 2 - clear data and reset barcodes
-                    Reset();  // clears plot data
-                    ResetBarcodes();
-
-                    // 3 - resume VWorks protocol
-                    m_vworks.VWorks_ResumeProtcol();
 
                     break;
             }

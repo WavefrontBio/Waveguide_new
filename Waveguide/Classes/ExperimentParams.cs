@@ -32,6 +32,9 @@ namespace Waveguide
             _indicatorList = new System.Collections.ObjectModel.ObservableCollection<ExperimentIndicatorContainer>();
             _experimentRunPlateCount = 2;
 
+            _writeExcelReport = true;
+            _writeWaveguideReport = true;
+
             m_wgDB = new WaveguideDB();
             bool success = m_wgDB.GetCameraSettingsDefault(out _cameraSettings);
             if (!success)
@@ -88,6 +91,13 @@ namespace Waveguide
 
         private int _experimentRunPlateCount;
         public int experimentRunPlateCount { get { return _experimentRunPlateCount; } set { if (value != _experimentRunPlateCount) { _experimentRunPlateCount = value; NotifyPropertyChanged("experimentRunPlateCount"); } } }
+
+
+        private bool _writeWaveguideReport;
+        public bool writeWaveguideReport { get { return _writeWaveguideReport; } set { if (value != _writeWaveguideReport) { _writeWaveguideReport = value; NotifyPropertyChanged("writeWaveguideReport"); } } }
+
+        private bool _writeExcelReport;
+        public bool writeExcelReport { get { return _writeExcelReport; } set { if (value != _writeExcelReport) { _writeExcelReport = value; NotifyPropertyChanged("writeExcelReport"); } } }
 
 
         /////////////////////////////

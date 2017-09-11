@@ -1652,7 +1652,7 @@ namespace Waveguide
 
 
 
-        public async void StartAutoOptimization(CameraSettingsContainer cameraSettings)
+        public async Task<bool> StartAutoOptimization(CameraSettingsContainer cameraSettings)
         {
             bool returnVal = false;
 
@@ -1707,7 +1707,10 @@ namespace Waveguide
                     OptimizationResult_Success = returnVal;
 
                 }
-            }           
+            }
+
+            return returnVal;
+
         }
 
 

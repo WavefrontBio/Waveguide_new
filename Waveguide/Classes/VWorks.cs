@@ -313,11 +313,9 @@ namespace Waveguide
                 PostVWorksCommand(VWORKS_COMMAND.PlateComplete, "PlateComplete", message);
             }
 
-            else if (String.Compare(caption.Trim(), "GetPlateCount", true) == 0)
+            else if (String.Compare(caption.Trim(), "PlateStart", true) == 0)
             {
-                userData = m_expParams.experimentRunPlateCount.ToString();
-
-                PostVWorksCommand(VWORKS_COMMAND.GetPlateCount, "Plate Count to VWorks:", "  Count = " + userData);
+                PostVWorksCommand(VWORKS_COMMAND.PlateStart, "PlateStart", message);
             }
 
             else 
@@ -450,8 +448,9 @@ namespace Waveguide
         Message,
         Barcode,        // results of a barcode read was received
         VerifyImaging,  // run verification on all indicators
-        PlateComplete,  // signals that experiment is complete with this plate: write report and reset data/graphs/etc.
-        GetPlateCount   // pass back the plate count to VWorks
+        PlateStart,     // signals that the experiment is beginning for this plate 
+        PlateComplete  // signals that experiment is complete with this plate: write report and reset data/graphs/etc.
+        
     };
 
 

@@ -388,7 +388,7 @@ namespace Waveguide
 
        
 
-        public void m_vworks_PostVWorksCommandEvent(object sender, WaveGuideEvents.VWorksCommandEventArgs e)
+        public async void m_vworks_PostVWorksCommandEvent(object sender, WaveGuideEvents.VWorksCommandEventArgs e)
         {
             VWORKS_COMMAND command = e.Command;
             int param1 = e.Param1;
@@ -588,7 +588,9 @@ namespace Waveguide
 
                     VM.RunningAutoVerify = true;
 
-                    if(m_imager.AutoOptimizeAllIndicators(VM.ExpParams.cameraSettings))
+                   
+                    bool allIndicatorsPassed = await m_imager.StartAutoOptimization(VM.ExpParams.cameraSettings);
+                    if(allIndicatorsPassed)
                     {
                         // successfully optimized imaging
                         m_vworks.VWorks_ResumeProtcol();
@@ -604,6 +606,22 @@ namespace Waveguide
 
                     VM.RunningAutoVerify = false;
 
+                    break;
+                case VWORKS_COMMAND.PlateStart:
+                     Application.Current.Dispatcher.Invoke(new Action(() =>
+                            {
+                                if (PrepForRun())
+                                {
+
+                                }
+                                else
+                                {
+                                    MessageBox.Show("Failed to PrepForRun.  Aborting Experiment.");
+                                    m_vworks.VWorks_AbortProtocol();
+                                    VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
+                                    SetState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
+                                }
+                            }));
                     break;
                 case VWORKS_COMMAND.PlateComplete:
                     // VWorks should have paused the protocol right after sending this, so it will wait until we resume it when we're done
@@ -644,17 +662,9 @@ namespace Waveguide
                                 // 2 - clear data and reset barcodes
                                 Reset();  // clears plot data
 
-                                // 3 - prep for run and resume VWorks protocol
-                                if (PrepForRun())
-                                {
-                                    m_vworks.VWorks_ResumeProtcol();
-                                }
-                                else
-                                {
-                                    MessageBox.Show("Failed to Run Experiment");
-                                    VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
-                                    SetState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
-                                }
+                                // 3 - resume VWorks protocol
+                                m_vworks.VWorks_ResumeProtcol();
+                               
                             }));
                     }
 
@@ -809,7 +819,7 @@ namespace Waveguide
         {
             VM.Reset();
             ResetBarcodes();
-            ClearPlotData();
+            //ClearPlotData();
 
             CameraSettingsContainer csc;
             bool success = wgDB.GetCameraSettingsDefault(out csc);
@@ -3124,6 +3134,7 @@ namespace Waveguide
 
         private void ClosePB_Click(object sender, RoutedEventArgs e)
         {
+            ResetPB_Click(null, null);
             CloseRunExperimentPanel();
         }
 
@@ -3365,7 +3376,7 @@ namespace Waveguide
                 m_optimizeWellsAlreadySet = true;
 
                 BuildChartArray();
-            
+                            
                 BuildDisplayGrid();
 
       

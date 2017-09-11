@@ -1202,9 +1202,9 @@ namespace Waveguide
                             loopCount++;  // this instruction added to this loop seems to make it work!  weird, but dont' remove it!!
                         }
 
-                        timeList.Add(Tuple.Create<int, int, int, int, int,int>((int)sw.ElapsedMilliseconds, (int)acqTimer.ElapsedMilliseconds, currentIndicatorID,
-                                            (int)(m_ImagingDictionary[currentIndicatorID].exposure*1000),
-                                            m_ImagingDictionary[currentIndicatorID].excitationFilterPos, m_ImagingDictionary[currentIndicatorID].emissionFilterPos));
+                        //timeList.Add(Tuple.Create<int, int, int, int, int,int>((int)sw.ElapsedMilliseconds, (int)acqTimer.ElapsedMilliseconds, currentIndicatorID,
+                        //                    (int)(m_ImagingDictionary[currentIndicatorID].exposure*1000),
+                        //                    m_ImagingDictionary[currentIndicatorID].excitationFilterPos, m_ImagingDictionary[currentIndicatorID].emissionFilterPos));
 
 
                         // if there are more than one indicators, wait here until the Task started earlier completes first before moving on.

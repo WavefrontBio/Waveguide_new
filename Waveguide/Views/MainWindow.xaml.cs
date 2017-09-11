@@ -208,6 +208,7 @@ namespace Waveguide
         {
             MyRunExperimentControl.Configure(m_imager);
             MyRunExperimentControl.InitBarcodeResetRadioButtons();
+            
             VM.ShowRunExperimentPanel = true;
         }
 

@@ -1615,6 +1615,7 @@ namespace Waveguide
         private int _flatFieldRefImageID;
         private int _darkFieldRefImageID;
         private int _cycleTime;
+        public ObservableCollection<Tuple<int, int>> _optimizeWellList;
 
         
 
@@ -1718,6 +1719,17 @@ namespace Waveguide
         {
             get { return _cycleTime; }
             set { _cycleTime = value; NotifyPropertyChanged("CycleTime"); }
+        }
+
+        public ObservableCollection<Tuple<int, int>> OptimizeWellList
+        {
+            get { return _optimizeWellList; }
+            set { _optimizeWellList = value; NotifyPropertyChanged("OptimizeWellList"); }
+        }
+
+        public ExperimentIndicatorContainer()
+        {
+            _optimizeWellList = new ObservableCollection<Tuple<int, int>>();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

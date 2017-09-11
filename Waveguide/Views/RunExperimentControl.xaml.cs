@@ -236,6 +236,7 @@ namespace Waveguide
 
         bool m_createDisplayForEachIndicator;
 
+        public bool m_optimizeWellsAlreadySet;
        
         public RunExperimentControl()
         {
@@ -333,6 +334,7 @@ namespace Waveguide
 
             VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.NEEDS_INPUT;
 
+            m_optimizeWellsAlreadySet = false;
                      
 
             // Initialize Reset Behavior            
@@ -619,31 +621,41 @@ namespace Waveguide
                         VM.DelayHeaderVisible = false;
                         m_cancelTokenSource.Cancel(); // make sure the imaging task stops
 
-
-                        // 1 - write report
-                        {
-                            Application.Current.Dispatcher.Invoke(new Action(() =>
+                         Application.Current.Dispatcher.Invoke(new Action(() =>
                             {
-                                ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
-                                                                VM.ExpParams.experiment,
-                                                                VM.ExpParams.indicatorList);
-
-                                bool reportSuccess = dlg.WriteReportFiles(VM.ExpParams.writeWaveguideReport, VM.ExpParams.writeExcelReport);
-
-                                if (!reportSuccess)
+                                // 1 - write report
                                 {
-                                    PostMessageRunExperimentPanel("Error writing Reports: " + dlg.GetLastError());
+                           
+                                        ReportDialog dlg = new ReportDialog(VM.ExpParams.project,
+                                                                        VM.ExpParams.experiment,
+                                                                        VM.ExpParams.indicatorList);
+
+                                        bool reportSuccess = dlg.WriteReportFiles(VM.ExpParams.writeWaveguideReport, VM.ExpParams.writeExcelReport);
+
+                                        if (!reportSuccess)
+                                        {
+                                            PostMessageRunExperimentPanel("Error writing Reports: " + dlg.GetLastError());
+                                        }
+
+                           
                                 }
 
+
+                                // 2 - clear data and reset barcodes
+                                Reset();  // clears plot data
+
+                                // 3 - prep for run and resume VWorks protocol
+                                if (PrepForRun())
+                                {
+                                    m_vworks.VWorks_ResumeProtcol();
+                                }
+                                else
+                                {
+                                    MessageBox.Show("Failed to Run Experiment");
+                                    VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
+                                    SetState(ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN);
+                                }
                             }));
-                        }
-
-
-                        // 2 - clear data and reset barcodes
-                        Reset();  // clears plot data
-
-                        // 3 - resume VWorks protocol
-                        m_vworks.VWorks_ResumeProtcol();
                     }
 
                     break;
@@ -705,6 +717,8 @@ namespace Waveguide
 
         public void IncrementBarcode(ref string barcode)
         {
+            if (barcode == null) return;
+
             if (barcode.Length < 1)
             {   // handle barcode = "", so give a default barcode and start numbering at 1.  Here, the default barcode is "Barcode"
                 barcode = "Barcode_1";
@@ -841,6 +855,8 @@ namespace Waveguide
         public void Configure(Imager imager)
         {
             m_imager = imager;
+
+            m_optimizeWellsAlreadySet = false;
 
             AutoOptimizeViewer.Configure(m_imager);
 
@@ -3090,7 +3106,14 @@ namespace Waveguide
 
         private void EnclosureCameraPB_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-
+            try
+            {
+                System.Diagnostics.Process.Start(@"C:/Users/greenwb1/Documents/Visual Studio 2013/Projects/CameraViewer/CameraViewer/bin/Debug/CameraViewer.exe");
+            }
+            catch(Exception exp)
+            {
+                MessageBox.Show("Failed to Start Camera Viewer: " + exp.Message, "Error");
+            }
         }
 
         private void ResetPB_Click(object sender, RoutedEventArgs e)
@@ -3221,6 +3244,7 @@ namespace Waveguide
                         comp.Barcode = cp.Barcode;
                         comp.Description = cp.Description;
                         comp.ExperimentID = VM.ExpParams.experiment.ExperimentID;
+                        cp.ExperimentID = VM.ExpParams.experiment.ExperimentID;
 
                         success = wgDB.InsertExperimentCompoundPlate(ref comp);
 
@@ -3293,30 +3317,52 @@ namespace Waveguide
                     // set up the optimize well list
                     if(VM.ExpParams.method.IsAuto)
                     {
-                        int rows = VM.ExpParams.plateType.Rows;
-                        int cols = VM.ExpParams.plateType.Cols;
-                        string desc = "Select Optimize Wells for Indicator: " + eic.Description;
-                        WellSelectionDialog dlg = new WellSelectionDialog(rows, cols, desc, true);
+                        if (!m_optimizeWellsAlreadySet)
+                        {
+                            int rows = VM.ExpParams.plateType.Rows;
+                            int cols = VM.ExpParams.plateType.Cols;
+                            string desc = "Select Optimize Wells for Indicator: " + eic.Description;
+                            WellSelectionDialog dlg = new WellSelectionDialog(rows, cols, desc, true);
 
-                         dlg.ShowDialog();
+                            dlg.ShowDialog();
 
-                        if (dlg.m_accepted)
-                        {                   
+                            if (dlg.m_accepted)
+                            {
+                                if (ips.optimizeWellList == null)
+                                {
+                                    ips.optimizeWellList = new ObservableCollection<Tuple<int, int>>();
+                                }
+
+                                eic.OptimizeWellList.Clear();
+                                ips.optimizeWellList.Clear();
+                                foreach (Tuple<int, int> well in dlg.m_wellList)
+                                {
+                                    eic.OptimizeWellList.Add(well);
+                                    ips.optimizeWellList.Add(well);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // optimize well list was already set at the start of this experiment, so  just copy them from the ExpParams.indicatorList
                             if (ips.optimizeWellList == null)
                             {
                                 ips.optimizeWellList = new ObservableCollection<Tuple<int, int>>();
                             }
-
                             ips.optimizeWellList.Clear();
-                            foreach (Tuple<int, int> well in dlg.m_wellList)
+                            foreach (Tuple<int, int> well in eic.OptimizeWellList)
+                            {                                
                                 ips.optimizeWellList.Add(well);
-                        }              
+                            }
+                        }
                     }
 
                     m_imager.m_ImagingDictionary.Add(ips.experimentIndicatorID, ips);
+                    
                 }
 
 
+                m_optimizeWellsAlreadySet = true;
 
                 BuildChartArray();
             
@@ -3938,19 +3984,15 @@ namespace Waveguide
 
         public void Reset()
         {
-            ExpParams.experimentPlate.Barcode = "";
-
-            foreach (ExperimentIndicatorContainer ind in ExpParams.indicatorList)
+            if (!ExpParams.method.IsAuto)
             {
-                ind.Verified = false;
+                foreach (ExperimentIndicatorContainer ind in ExpParams.indicatorList)
+                {
+                    ind.Verified = false;
+                }
+                
+                SetRunState(RUN_STATE.NEEDS_INPUT);
             }
-
-            foreach (ExperimentCompoundPlateContainer cp in ExpParams.compoundPlateList)
-            {
-                cp.Barcode = "";
-            }
-
-            SetRunState(RUN_STATE.NEEDS_INPUT);
         }
 
 

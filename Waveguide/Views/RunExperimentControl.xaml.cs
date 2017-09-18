@@ -3048,8 +3048,7 @@ namespace Waveguide
 
             dlg.CameraSetupControl.CameraSettingsCB.IsEnabled = true;
             dlg.CameraSetupControl.StartVideoPB.Visibility = System.Windows.Visibility.Hidden;
-            dlg.CameraSetupControl.SaveImagePB.Visibility = System.Windows.Visibility.Hidden;           
-
+            dlg.CameraSetupControl.SaveImagePB.Visibility = System.Windows.Visibility.Hidden;    
            
 
             dlg.ShowDialog();

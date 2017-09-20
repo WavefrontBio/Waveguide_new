@@ -187,7 +187,12 @@ namespace Waveguide
                    
             m_cudaToolBox = new CudaToolBox();
 
-            m_lambda = new Lambda();
+
+            m_lambda = new Lambda(GlobalVars.LambdaComPortName);
+            m_lambda.SerialPortEvent += m_lambda_SerialPortEvent;
+
+
+
             m_thor = new Thor();
 
             m_filterChangeSpeed = (byte)GlobalVars.FilterChangeSpeed;
@@ -202,6 +207,22 @@ namespace Waveguide
                 m_camera.ConfigureCamera(cameraSettings);
             }
            
+        }
+
+        void m_lambda_SerialPortEvent(object sender, SerialPortEventArgs e)
+        {
+            switch (e.EventType)
+            {
+                case SerialPortEventType.DATA:
+                    var str = System.Text.Encoding.Default.GetString(e.Data);                   
+                    break;
+                case SerialPortEventType.ERROR:
+                    OnImagerEvent(new ImagerEventArgs(e.Message, ImagerState.Error));
+                    break;
+                case SerialPortEventType.MESSAGE:
+                    OnImagerEvent(new ImagerEventArgs(e.Message, ImagerState.Busy));
+                    break;
+            }
         }
 
         public void SetInsideHeatingON(bool turnON)
@@ -263,7 +284,7 @@ namespace Waveguide
             else
             {
                  //Initialize Lambda (filter controller)
-                if (!m_lambda.SystemInitialized)
+                if (!m_lambda.IsSystemInitialized())
                 {
                     success = m_lambda.Initialize();
                     if (!success)

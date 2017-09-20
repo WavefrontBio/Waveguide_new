@@ -343,6 +343,15 @@ namespace Waveguide
             set { _insideTempReady = value; }
         }
 
+
+        private static string _lambdaComPortName;
+        public static string LambdaComPortName
+        {
+            get { return _lambdaComPortName; }
+            set { _lambdaComPortName = value; }
+        }
+
+
         public static void LoadConfiguration()
         {
             try
@@ -365,6 +374,9 @@ namespace Waveguide
 
                         switch (key)
                         {
+                            case "LambdaComPortName":
+                                LambdaComPortName = appSettings[key];
+                                break;
                             case "DBServerName":
                                 DBServerName = appSettings[key];
                                 break;

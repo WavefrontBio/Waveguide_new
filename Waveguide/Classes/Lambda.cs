@@ -2,497 +2,321 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using FTDI64_NET;
-using System.ComponentModel;
-using System.Diagnostics;
+using System.Threading.Tasks;
+using System.IO.Ports;
+using System.IO;
 
 namespace Waveguide
 {
-   
     public class Lambda
     {
-        public bool SystemInitialized = false;
-
-        private const int NOT_INITIALIZED = -100;
-
-        UInt32 ftdiDeviceCount = 0;
-        FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
-
-        FTDI myFtdiDevice = new FTDI();
-
-        byte[] cmd = new byte[5];
-        UInt32 numBytesWritten = 0;
-
-        BackgroundWorker m_bw;
-        private static System.Timers.Timer m_timer;
-        private bool m_timeout;
-
-
-        // /////////////////////////////////////////////////////////////       
-        /// Events
-
-        /////////////////////////////////////////////////////////////////////////////////////////////
-        // Class Events
-
-        public delegate void PostMessageEventHandler(object sender, WaveGuideEvents.StringMessageEventArgs e);
-        public delegate void PostErrorEventHandler(object sender, WaveGuideEvents.ErrorEventArgs e);             
-
-        public event PostMessageEventHandler PostMessageEvent;
-        public event PostErrorEventHandler   PostErrorEvent;
-        public event PostMessageEventHandler PostCommandCompleteEvent;
-
-        protected virtual void OnPostMessage(WaveGuideEvents.StringMessageEventArgs e)
+        // Events
+        public delegate void SerialPortEventHandler(object sender, SerialPortEventArgs e);
+        public event SerialPortEventHandler SerialPortEvent;
+        protected virtual void OnSerialPortEvent(SerialPortEventArgs e)
         {
-            if (PostMessageEvent != null) PostMessageEvent(this, e);
-        }
-
-        protected virtual void OnPostError(WaveGuideEvents.ErrorEventArgs e)
-        {
-            if (PostErrorEvent != null) PostErrorEvent(this, e);
-        }
-
-        protected virtual void OnPostCommandComplete(WaveGuideEvents.StringMessageEventArgs e)
-        {
-            if (PostCommandCompleteEvent != null) PostCommandCompleteEvent(this, e);
-        }
-
-        public void PostMessage(string msg)
-        {
-            WaveGuideEvents.StringMessageEventArgs e = new WaveGuideEvents.StringMessageEventArgs(msg);
-            OnPostMessage(e);
-        }
-
-        public void PostError(string errMsg)
-        {
-            WaveGuideEvents.ErrorEventArgs e = new WaveGuideEvents.ErrorEventArgs(errMsg);
-            OnPostError(e);
-        }
-
-        public void PostCommandComplete(string msg)
-        {
-            WaveGuideEvents.StringMessageEventArgs e = new WaveGuideEvents.StringMessageEventArgs(msg);
-            OnPostCommandComplete(e);
+            if (SerialPortEvent != null) SerialPortEvent(this, e);
         }
 
 
+        // Class Variables
+        SerialPort m_port;
+        const int mc_blockLimit = 1024;
+        byte[] m_cmd = new byte[5];
+        bool m_systemInitialized;
 
-        // ////////////////////////////////////////////////////////////
-    
-        public Lambda()
+
+        // Constructor
+        public Lambda(string portName)
         {
-            SystemInitialized = false;
+            int baudRate = 9600;
+            Parity parity = Parity.None;
+            int dataBits = 8;
+            m_port = new SerialPort(portName, baudRate, parity, dataBits);
+            StopBits sb = m_port.StopBits;
 
-            ftdiDeviceCount = 0;
-            ftStatus = FTDI.FT_STATUS.FT_OK;           
+            m_port.DataReceived += m_port_DataReceived;
+            m_port.ErrorReceived += m_port_ErrorReceived;
 
-            cmd = new byte[5];
-            numBytesWritten = 0;
+            m_systemInitialized = false;
         }
+
+        void m_port_ErrorReceived(object sender, SerialErrorReceivedEventArgs e)
+        {
+            OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.ERROR, "", e.ToString(), null));
+        }
+
+       
+
+        // Destructor
+        ~Lambda()
+        {
+            if(m_port != null)
+                m_port.Close();
+        }
+
 
         public bool Initialize()
         {
-            SystemInitialized = false;
-
-            myFtdiDevice = new FTDI();
-
-            UInt32 index = 0;  // this is the index of the Lambda device found in the list of USB devices connected
-
-
-            bool useNew = true;
-
-            if (useNew)
+            bool success = false;
+            if (Open())
             {
-                // use new method of initialization
-
-                // Order of initialization from Sutter's test program: LamTest
-                
-                uint baudRate = 9600;
-                myFtdiDevice.SetBaudRate(baudRate);
-
-                myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
-
-                FTDI.FT_DEVICE_INFO_NODE[] deviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
-                myFtdiDevice.GetDeviceList(deviceList);
-
-                string mySerialNum = "No Device";
-                try {
-                        mySerialNum = deviceList[0].SerialNumber.ToString();
-                    }
-                catch(Exception e){}
-
-                myFtdiDevice.OpenBySerialNumber(mySerialNum);
-
-                myFtdiDevice.SetLatency(2);
-
-                myFtdiDevice.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
-
-                myFtdiDevice.SetTimeouts(10,0);
-
-                myFtdiDevice. SetBaudRate(baudRate);
-
-                myFtdiDevice.Purge(0);
-                myFtdiDevice.Purge(1);
-
-                UInt32 test = 0;
-                byte[] command = { 0xEE }; // this is the "Go Online" command
-                myFtdiDevice.Write(command,(uint)1,ref test); 
-
+                success = true;
+                GoOnLine();
+                m_systemInitialized = true;
             }
+
+            return success;
+        }
+
+        public bool IsSystemInitialized()
+        {
+            return m_systemInitialized;
+        }
+
+
+        public bool Open()
+        {
+            try
+            {
+                m_port.Open();                
+            }
+            catch (Exception e)
+            {
+                OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.ERROR, "", "Error opening port: " + e.Message, null));
+            }
+
+            if (m_port != null)
+                return m_port.IsOpen;
             else
-            {
-                // use the old method of initialization
-
-             
-
-                // Determine the number of FTDI devices connected to the machine
-                ftStatus = myFtdiDevice.GetNumberOfDevices(ref ftdiDeviceCount);
-
-                // Check if devices found
-                if (ftStatus == FTDI.FT_STATUS.FT_OK)
-                {
-                    if (ftdiDeviceCount == 0)
-                    {
-                        PostError("No USB devices found (Lambda Filter Controller)");
-                        return false; // no devices found
-                    }
-                }
-                else
-                {
-                    PostError("Error Communicating with FTDI Device");
-                    return false; // no devices found
-                }
-
-
-                // Allocate storage for device info list
-                FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
-
-                // Populate our device list
-                ftStatus = myFtdiDevice.GetDeviceList(ftdiDeviceList);
-
-                // Search list for Lambda device
-                if (ftStatus == FTDI.FT_STATUS.FT_OK)
-                {
-                    index = 100;
-                    for (UInt32 i = 0; i < ftdiDeviceCount; i++)
-                    {
-                        if (ftdiDeviceList[i].Description.ToString().Contains("Lambda"))
-                        {
-                            index = i;
-                        }
-                    }
-
-                    if (index == 100)
-                    {
-                        PostError("Lambda Filter Controller not found");
-                        return false; // no Lambda devices found
-                    }
-
-                }
-
-                // Open the Lambda device found
-                ftStatus = myFtdiDevice.OpenBySerialNumber(ftdiDeviceList[index].SerialNumber);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                {
-                    PostError("Failed to open Lambda Filter Controller");
-                    // return false;  // failed to open device
-                }
-
-                // Set up device data parameters
-                // Set Baud rate to 9600 or 128000, may have to check to see what the speed is set at on the filter controller (this is the speed used by the USB to RS232 converter inside the filter controller)
-                ftStatus = myFtdiDevice.SetBaudRate(9600);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                {
-                    PostError("Failed to set Lambda Filter Controller baud rate");
-                    //return false;  // failed to set baud rate
-                }
-
-                // Set data characteristics - Data bits, Stop bits, Parity
-                ftStatus = myFtdiDevice.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                {
-                    PostError("Failed to Lambda Filter Controller data characteristics");
-                    //return false;  // failed to set data characteristics (data bits, stop bits, parity)
-                }
-
-                // Set flow control - set RTS/CTS flow control
-                ftStatus = myFtdiDevice.SetFlowControl(FTDI.FT_FLOW_CONTROL.FT_FLOW_RTS_CTS, 0x11, 0x13);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                {
-                    PostError("Failed to set Lambda Filter Controller flow control");
-                    //return false;  // failed to set flow control
-                }
-
-                // Set read timeout to 5 seconds, write timeout to infinite
-                ftStatus = myFtdiDevice.SetTimeouts(5000, 0);
-                if (ftStatus != FTDI.FT_STATUS.FT_OK)
-                {
-                    PostError("Failed to set Lambda Filter Controller read/write timeout durations");
-                    // return false;  // failed to set read/write timeout durations
-                }
-            } // !useNew
-
-            SystemInitialized = true;
-
-            PostMessage("Lambda Filter Controller initialized");
-
-            return true;
-        }
-
-        public int ShutterAFast()
-        {
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 220;
-            cmd[1] = 1;
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-
-        public int OpenShutterA()
-        {
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 170;
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-        public int OpenShutterA_Conditional()
-        {
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 171;
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-        public int CloseShutterA()
-        {
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 172;
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-
-        public int OpenShutterB()
-        {
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 186;
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-        public int OpenShutterB_Conditional()
-        {
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 187;
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-        public int CloseShutterB()
-        {
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 188;
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-        public int MoveFilterA(byte pos, byte speed)
-        {
-            ClearBuffer();
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = (byte)((speed * 16) + pos);
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-        public int MoveFilterB(byte pos, byte speed)
-        {
-            ClearBuffer();
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = (byte)(128 + (speed * 16) + pos);
-            ftStatus = myFtdiDevice.Write(cmd, 1, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-        public int MoveFilterAB(byte posA, byte posB, byte aSpeed, byte bSpeed)
-        {
-            ClearBuffer();
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 189;  // batch start (valid only for Lambda 10-3
-            cmd[1] = (byte)((aSpeed * 16) + posA);
-            cmd[2] = (byte)(128 + (bSpeed * 16) + posB);
-            cmd[3] = 190;  // batch end
-            PostMessage("Moving Filters");
-            ftStatus = myFtdiDevice.Write(cmd, 4, ref numBytesWritten);            
-
-            return (int)ftStatus;
-        }
-
-
-        public int MoveFilterABandCloseShutterA(byte posA, byte posB, byte aSpeed, byte bSpeed)
-        {
-            ClearBuffer();
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 189;  // batch start (valid only for Lambda 10-3
-            cmd[1] = 172;  // close shutter A
-            cmd[2] = (byte)((aSpeed * 16) + posA);  // move filter A
-            cmd[3] = (byte)(128 + (bSpeed * 16) + posB);  // move filter B
-            cmd[4] = 190;  // batch end
-            PostMessage("Moving Filters");
-            ftStatus = myFtdiDevice.Write(cmd, 5, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-
-        public int MoveFilterABandOpenShutterA(byte posA, byte posB, byte aSpeed, byte bSpeed)
-        {
-            ClearBuffer();
-            if (!SystemInitialized) return NOT_INITIALIZED;
-
-            cmd[0] = 189;  // batch start (valid only for Lambda 10-3
-            cmd[1] = 170;  // open shutter A
-            cmd[2] = (byte)((aSpeed * 16) + posA);  // move filter A
-            cmd[3] = (byte)(128 + (bSpeed * 16) + posB);  // move filter B
-            cmd[4] = 190;  // batch end
-            PostMessage("Moving Filters");
-            ftStatus = myFtdiDevice.Write(cmd, 5, ref numBytesWritten);
-
-            return (int)ftStatus;
-        }
-
-
-
-        public void WaitForCommandToComplete()
-        {
-            m_bw = new BackgroundWorker();
-
-            m_bw.DoWork += new DoWorkEventHandler(m_bw_DoWork);
-
-            m_bw.RunWorkerAsync();
-        }
-
-        void m_bw_DoWork(object sender, DoWorkEventArgs e)
-        {
-            byte loop = 1;
-            byte byteCR = 13; // Carriage Return
-            double waitMilliseconds = 5000;
-            m_timeout = false;
-
-            m_timer = new System.Timers.Timer(waitMilliseconds);
-            m_timer.Elapsed += new System.Timers.ElapsedEventHandler(m_timer_Elapsed);
-    
-            loop = ReadByte();
-            while (loop != byteCR && IsOpen()  && !m_timeout)
-            {
-                loop = ReadByte();                
-            }
-
-            ClearBuffer();//You might read the CR twice if you do not do this!
-            ClearBuffer();
-
-            if (!m_timeout) PostCommandComplete("Lambda Command Complete");
-            else PostError("Lambda Timeout");
-        }
-
-        void m_timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            m_timeout = true;
-        }
-
-
-       
-        public void ClearBuffer()
-        {
-            ftStatus = myFtdiDevice.Purge(0);
-            ftStatus = myFtdiDevice.Purge(1);
-        }
-
-
-        public byte ReadByte()
-        {
-            UInt32 test = 0;
-            byte[] testArray = new byte[5];
-            ftStatus = myFtdiDevice.Read(testArray, 1, ref test);
-            return testArray[0];
+                return false;
         }
 
         public bool IsOpen()
         {
-            bool isOpen = true;
-            if (ftStatus != FTDI.FT_STATUS.FT_OK)
-            {
-                isOpen = false;
-            }
-            return isOpen;
+            return m_port.IsOpen;
         }
 
-
-
-        public bool CheckLambdaResult(int code, ref string errorMsg)
+        public void Close()
         {
-            bool ok = true;
-
-            errorMsg = "SUCCESS";
-
-            if (code != (int)FTDI.FT_STATUS.FT_OK)
+            try
             {
-                ok = false;
-                switch (code)
-                {
-                    case NOT_INITIALIZED: errorMsg = "Filter Controller Not Initialized"; break;
-                    case -1: errorMsg = "No Devices Found"; break;
-                    case -2: errorMsg = "No Thor Devices"; break;
-                    case -3: errorMsg = "Failed to Open Device"; break;
-                    case -4: errorMsg = "Failed to Set Baud Rate"; break;
-                    case -5: errorMsg = "Failed to set data characteristics (data bits, stop bits, parity)"; break;
-                    case -6: errorMsg = "Failed to set flow control"; break;
-                    case -7: errorMsg = "Failed to set READ/WRITE timeout durations"; break;
-                    case 0: errorMsg = "FT_OK"; break;
-                    case 1: errorMsg = "FT_INVALID_HANDLE"; break;
-                    case 2: errorMsg = "FT_DEVICE_NOT_FOUND"; break;
-                    case 3: errorMsg = "FT_DEVICE_NOT_OPENED"; break;
-                    case 4: errorMsg = "FT_IO_ERROR"; break;
-                    case 5: errorMsg = "FT_INSUFFICIENT_RESOURCES"; break;
-                    case 6: errorMsg = "FT_INVALID_PARAMETER"; break;
-                    case 7: errorMsg = "FT_INVALID_BAUD_RATE"; break;
-                    case 8: errorMsg = "FT_DEVICE_NOT_OPENED_FOR_ERASE"; break;
-                    case 9: errorMsg = "FT_DEVICE_NOT_OPENED_FOR_WRITE"; break;
-                    case 10: errorMsg = "FT_FAILED_TO_WRITE_DEVICE"; break;
-                    case 11: errorMsg = "FT_EEPROM_READ_FAILED"; break;
-                    case 12: errorMsg = "FT_EEPROM_WRITE_FAILED"; break;
-                    case 13: errorMsg = "FT_EEPROM_ERASE_FAILED"; break;
-                    case 14: errorMsg = "FT_EEPROM_NOT_PRESENT"; break;
-                    case 15: errorMsg = "FT_EEPROM_NOT_PROGRAMMED"; break;
-                    case 16: errorMsg = "FT_INVALID_ARGS"; break;
-                    case 17: errorMsg = "FT_OTHER_ERROR"; break;
-
-                }
+                m_port.Close();
             }
-
-            return ok;
+            catch (Exception e)
+            {
+                OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.ERROR, "", "Error closing port: " + e.Message, null));
+            }
         }
 
+        public void Write(byte[] data)
+        {
+            try
+            {
+                m_port.Write(data, 0, data.Length);
+            }
+            catch(Exception e)
+            {
+                OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.ERROR, "", "Error writing data: " + e.Message, null));
+            }
+        }
+
+        public void Write(byte[] data, int numBytes)
+        {
+            try
+            {
+                m_port.Write(data, 0, numBytes);
+            }
+            catch (Exception e)
+            {
+                OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.ERROR, "", "Error writing data: " + e.Message, null));
+            }
+        }
+
+
+        public void Write(string str)
+        {
+            try
+            {
+                m_port.Write(str);
+            }
+            catch (Exception e)
+            {
+                OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.ERROR, "", "Error writing data: " + e.Message, null));
+            }
+        }
+
+
+
+        void m_port_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            byte[] buffer = new byte[mc_blockLimit];
+
+            Action kickoffRead = null;
+            kickoffRead = delegate
+            {
+                m_port.BaseStream.BeginRead(buffer, 0, buffer.Length, delegate(IAsyncResult ar)
+                {
+                    try
+                    {
+                        int actualLength = m_port.BaseStream.EndRead(ar);
+                        byte[] received = new byte[actualLength];
+                        Buffer.BlockCopy(buffer, 0, received, 0, actualLength);
+                        OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.DATA, "", "", received));
+                    }
+                    catch (IOException exc)
+                    {
+                        OnSerialPortEvent(new SerialPortEventArgs(SerialPortEventType.ERROR, "", exc.Message, null));
+                    }
+                    kickoffRead();
+                }, null);
+            };
+            kickoffRead();
+        }
+
+
+
+
+        // //////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////
+        //
+        //  Lambda 10-3 Commands
+
+
+        public void OpenShutterA()
+        { 
+            m_cmd[0] = 170;
+            Write(m_cmd,1);
+        }
+
+        public void OpenShutterA_Conditional()
+        {
+            m_cmd[0] = 171;
+            Write(m_cmd, 1);
+        }
+
+        public void CloseShutterA()
+        {
+            m_cmd[0] = 172;
+            Write(m_cmd, 1);
+        }
+
+
+        public void OpenShutterB()
+        {
+            m_cmd[0] = 186;
+            Write(m_cmd, 1);
+        }
+
+        public void OpenShutterB_Conditional()
+        {
+            m_cmd[0] = 187;
+            Write(m_cmd, 1);
+        }
+
+        public void CloseShutterB()
+        {
+            m_cmd[0] = 188;
+            Write(m_cmd, 1);
+        }
+
+        public void MoveFilterA(byte pos, byte speed)
+        {
+            m_cmd[0] = (byte)((speed * 16) + pos);
+            Write(m_cmd, 1);
+        }
+
+        public void MoveFilterB(byte pos, byte speed)
+        {
+            m_cmd[0] = (byte)(128 + (speed * 16) + pos);
+            Write(m_cmd, 1);
+        }
+
+        public void MoveFilterAB(byte posA, byte posB, byte aSpeed, byte bSpeed)
+        {
+            m_cmd[0] = 189;  // batch start (valid only for Lambda 10-3
+            m_cmd[1] = (byte)((aSpeed * 16) + posA);
+            m_cmd[2] = (byte)(128 + (bSpeed * 16) + posB);
+            m_cmd[3] = 190;  // batch end
+            Write(m_cmd, 4);
+        }
+
+
+        public void MoveFilterABandCloseShutterA(byte posA, byte posB, byte aSpeed, byte bSpeed)
+        {
+            m_cmd[0] = 189;  // batch start (valid only for Lambda 10-3
+            m_cmd[1] = 172;  // close shutter A
+            m_cmd[2] = (byte)((aSpeed * 16) + posA);  // move filter A
+            m_cmd[3] = (byte)(128 + (bSpeed * 16) + posB);  // move filter B
+            m_cmd[4] = 190;  // batch end
+            Write(m_cmd, 5);
+        }
+
+
+        public void MoveFilterABandOpenShutterA(byte posA, byte posB, byte aSpeed, byte bSpeed)
+        {
+            m_cmd[0] = 189;  // batch start (valid only for Lambda 10-3
+            m_cmd[1] = 170;  // open shutter A
+            m_cmd[2] = (byte)((aSpeed * 16) + posA);  // move filter A
+            m_cmd[3] = (byte)(128 + (bSpeed * 16) + posB);  // move filter B
+            m_cmd[4] = 190;  // batch end
+            Write(m_cmd, 5);
+        }
+
+
+        public void GoOnLine()
+        {
+            m_cmd[0] = 0xEE;
+            Write(m_cmd, 1);
+        }
+
+    }
+
+
+    public enum SerialPortEventType
+    {
+        ERROR,
+        DATA,
+        MESSAGE
+    }
+
+    public class SerialPortEventArgs : EventArgs
+    {
+        private SerialPortEventType _eventType;
+        public SerialPortEventType EventType
+        {
+            get { return this._eventType; }
+            set { this._eventType = value; }
+        }
+        
+        private string _message;
+        public string Message
+        {
+            get { return this._message; }
+            set { this._message = value; }
+        }
+
+        private string _errorMessage;
+        public string ErrorMessage
+        {
+            get { return this._errorMessage; }
+            set { this._errorMessage = value; }
+        }
+
+        private byte[] _data;
+        public byte[] Data
+        {
+            get { return this._data; }
+            set { this._data = value; }
+        }
+
+        public SerialPortEventArgs(SerialPortEventType type, string msg, string errMsg, byte[] data)
+        {
+            EventType = type;
+            Message = msg;
+            ErrorMessage = errMsg;
+            Data = data;
+        }
     }
 }

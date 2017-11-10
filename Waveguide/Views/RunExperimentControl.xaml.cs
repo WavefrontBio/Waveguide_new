@@ -669,6 +669,16 @@ namespace Waveguide
                     }
 
                     break;
+
+                case VWORKS_COMMAND.EnableBurstCycleTime:
+                    m_imager.EnableBurstImaging();
+                    break;
+
+                case VWORKS_COMMAND.DisableBurstCycleTime:
+                    m_imager.DisableBurstImaging();
+                    break;
+
+                   
             }
         }
 

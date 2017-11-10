@@ -47,6 +47,9 @@ namespace Waveguide
         public FLATFIELD_SELECT flatfieldType;
         public int              experimentIndicatorID;
         public ObservableCollection<Tuple<int, int>> optimizeWellList;
+
+        public bool burstCycleTimeEnabled;
+        public int burstCycleTime;
         
                                            
 
@@ -67,7 +70,10 @@ namespace Waveguide
             preAmpGainIndex = _preAmpGainIndex;
             flatfieldType = _flatfieldType;
             experimentIndicatorID = _expIndicatorID;
-            optimizeWellList = _optimizeWellList;            
+            optimizeWellList = _optimizeWellList;
+
+            burstCycleTimeEnabled = false;
+            burstCycleTime = 0;
         }
     }
 
@@ -1092,6 +1098,16 @@ namespace Waveguide
             m_camera.MyCamera.SetRingExposureTimes(expF.Count, expF.ToArray());
 
 
+            // reset burst cycletime overrides
+            for(int i = 0; i<m_ImagingDictionary.Count;i++)
+            {
+                var element = m_ImagingDictionary.ElementAt(i);
+                var value = element.Value;
+                value.burstCycleTimeEnabled = false;
+            }
+
+
+
             // Set up events used to signal from SDK
             // Define an array with two AutoResetEvent WaitHandles.
             WaitHandle[] eventHandle = new WaitHandle[] 
@@ -1154,8 +1170,12 @@ namespace Waveguide
                     if (indicatorIndex == indicatorIDList.Count) indicatorIndex = 0;
                     nextIndicatorID = indicatorIDList[indicatorIndex];
 
-                    // get data for current indicator  
-                    cycleTime = m_ImagingDictionary[currentIndicatorID].cycleTime;
+                    // get data for current indicator 
+                    if (m_ImagingDictionary[currentIndicatorID].burstCycleTimeEnabled)
+                        cycleTime = m_ImagingDictionary[currentIndicatorID].burstCycleTime;
+                    else
+                        cycleTime = m_ImagingDictionary[currentIndicatorID].cycleTime;
+
                     maxWaitDuration = cycleTime+10;  // max wait = cycleTime plus 10 msecs
                     
                     
@@ -1209,7 +1229,8 @@ namespace Waveguide
                         // post image data to be processed (convert to full image, mask, flat field correct, calc histogram, build histogram image,
                         //                                  convert to color, display, calc well sums)
 
-                        ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds));
+                        if(imageCount>0) // skip the first frame...cause it always seems to be blank
+                            ImageProcessingPipeline.Post(Tuple.Create<ushort[], int, int>(newImage, currentIndicatorID, (int)sw.ElapsedMilliseconds));
 
                         imageCount++;
                                               
@@ -1222,25 +1243,7 @@ namespace Waveguide
                             Thread.Sleep(1);
                             loopCount++;  // this instruction added to this loop seems to make it work!  weird, but dont' remove it!!
                         }
-
-                        //timeList.Add(Tuple.Create<int, int, int, int, int,int>((int)sw.ElapsedMilliseconds, (int)acqTimer.ElapsedMilliseconds, currentIndicatorID,
-                        //                    (int)(m_ImagingDictionary[currentIndicatorID].exposure*1000),
-                        //                    m_ImagingDictionary[currentIndicatorID].excitationFilterPos, m_ImagingDictionary[currentIndicatorID].emissionFilterPos));
-
-
-                        // if there are more than one indicators, wait here until the Task started earlier completes first before moving on.
-                        // Hopefully, it has already completed by this time.
-                        //if (m_ImagingDictionary.Count > 1)
-                        //{
-                        //    // TODO:
-                        //    // wait for filter changing task to complete
-                        //    bool filterChangeSucceeded = FilterChangeTask.Wait(2000, ct);
-                        //    if (!filterChangeSucceeded)
-                        //    {
-                        //        // TODO: handle filter changer error
-                        //        //Trace.TraceError("Filter Change Error at " + sw.ElapsedMilliseconds.ToString() + " msecs into experiment");                                
-                        //    }
-                        //}                       
+                  
                     }
                     else
                     {
@@ -1291,6 +1294,23 @@ namespace Waveguide
 
 
 
+        public void EnableBurstImaging()
+        { 
+            foreach(KeyValuePair<int,ImagingParamsStruct> pair in m_ImagingDictionary)
+            {
+                var ips = pair.Value;
+                ips.burstCycleTimeEnabled = true;
+            }
+        }
+
+        public void DisableBurstImaging()
+        {
+            foreach (KeyValuePair<int, ImagingParamsStruct> pair in m_ImagingDictionary)
+            {
+                var ips = pair.Value;
+                ips.burstCycleTimeEnabled = false;
+            }
+        }
 
         
         public async void StartVideo(int indicatorID, int maxNumImages)

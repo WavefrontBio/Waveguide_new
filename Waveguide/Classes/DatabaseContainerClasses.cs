@@ -591,8 +591,10 @@ namespace Waveguide
 
                     for (int i = 0; i < _numEllipseVertices; i++)
                     {
-                        xp[i] = XOffset + (int)(XSize / 2 * Math.Cos(angle) + col*XStep);
-                        yp[i] = YOffset + (int)(YSize / 2 * Math.Sin(angle) + row*YStep);
+                        //xp[i] = XOffset + (int)(XSize / 2 * Math.Cos(angle) + col*XStep);  
+                        //yp[i] = YOffset + (int)(YSize / 2 * Math.Sin(angle) + row*YStep);
+                        xp[i] = xc + (int)(XSize / 2 * Math.Cos(angle));
+                        yp[i] = yc + (int)(YSize / 2 * Math.Sin(angle));
                         angle += step;
                     }
 

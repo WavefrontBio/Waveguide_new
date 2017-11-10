@@ -318,6 +318,16 @@ namespace Waveguide
                 PostVWorksCommand(VWORKS_COMMAND.PlateStart, "PlateStart", message);
             }
 
+            else if (String.Compare(caption.Trim(), "EnableBurst", true) == 0)
+            {
+                PostVWorksCommand(VWORKS_COMMAND.EnableBurstCycleTime);
+            }
+
+            else if (String.Compare(caption.Trim(), "DisableBurst", true) == 0)
+            {
+                PostVWorksCommand(VWORKS_COMMAND.DisableBurstCycleTime);
+            }
+
             else 
                 PostVWorksCommand(VWORKS_COMMAND.Error, "Unknown Command Received", caption + ", " + message);
         }
@@ -449,8 +459,9 @@ namespace Waveguide
         Barcode,        // results of a barcode read was received
         VerifyImaging,  // run verification on all indicators
         PlateStart,     // signals that the experiment is beginning for this plate 
-        PlateComplete  // signals that experiment is complete with this plate: write report and reset data/graphs/etc.
-        
+        PlateComplete,  // signals that experiment is complete with this plate: write report and reset data/graphs/etc.
+        EnableBurstCycleTime, // signals that imaging cycle times should change to burst rates
+        DisableBurstCycleTime, // signals that imaging cycle times should change to normal rates
     };
 
 

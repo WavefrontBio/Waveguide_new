@@ -31,6 +31,7 @@ namespace Waveguide
             _controlSubtractionWellList = new System.Collections.ObjectModel.ObservableCollection<Tuple<int, int>>();
             _indicatorList = new System.Collections.ObjectModel.ObservableCollection<ExperimentIndicatorContainer>();
             _experimentRunPlateCount = 2;
+            _experimentCurrentPlateNumber = 0;
 
             _writeExcelReport = true;
             _writeWaveguideReport = true;
@@ -92,6 +93,8 @@ namespace Waveguide
         private int _experimentRunPlateCount;
         public int experimentRunPlateCount { get { return _experimentRunPlateCount; } set { if (value != _experimentRunPlateCount) { _experimentRunPlateCount = value; NotifyPropertyChanged("experimentRunPlateCount"); } } }
 
+        private int _experimentCurrentPlateNumber;
+        public int experimentCurrentPlateNumber { get { return _experimentCurrentPlateNumber; } set { if (value != _experimentCurrentPlateNumber) { _experimentCurrentPlateNumber = value; NotifyPropertyChanged("experimentCurrentPlateNumber"); } } }
 
         private bool _writeWaveguideReport;
         public bool writeWaveguideReport { get { return _writeWaveguideReport; } set { if (value != _writeWaveguideReport) { _writeWaveguideReport = value; NotifyPropertyChanged("writeWaveguideReport"); } } }

@@ -96,6 +96,7 @@ namespace Waveguide
         public void BringToFrontRunExperimentPanel()
         {
             OnBringToFrontRunExperimentPanel(null);
+            VM.RunningAutoVerify = false;
         }
 
         ////////////////////////////////////////////////////////////////////////////
@@ -408,7 +409,7 @@ namespace Waveguide
                         VM.DelayText = "";
                         VM.DelayHeaderVisible = false;
                         m_cancelTokenSource.Cancel();  // stops the imaging task
-                        VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.ERROR;
+                        //VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.ERROR;
                     }));
                     break;
                 case VWORKS_COMMAND.Event_Marker:
@@ -592,6 +593,9 @@ namespace Waveguide
                     bool allIndicatorsPassed = await m_imager.StartAutoOptimization(VM.ExpParams.cameraSettings);
                     if(allIndicatorsPassed)
                     {
+                        Thread.Sleep(3000);
+                        VM.RunningAutoVerify = false;
+
                         // successfully optimized imaging
                         m_vworks.VWorks_ResumeProtcol();
                         PostMessageRunExperimentPanel("Auto-Optimized All Indicators Successfully");
@@ -612,7 +616,8 @@ namespace Waveguide
                             {
                                 if (PrepForRun())
                                 {
-
+                                    VM.ExpParams.experimentCurrentPlateNumber++;  // increment the displayed plate count
+                                    VM.CurrentPlateNumberText = VM.ExpParams.experimentCurrentPlateNumber.ToString();
                                 }
                                 else
                                 {
@@ -741,7 +746,7 @@ namespace Waveguide
 
             if (barcode.Length < 1)
             {   // handle barcode = "", so give a default barcode and start numbering at 1.  Here, the default barcode is "Barcode"
-                barcode = "Barcode_1";
+                barcode = "Barcode_01";
             }
             else
             {
@@ -752,14 +757,14 @@ namespace Waveguide
 
                 if (wordList.Count == 1)
                 {   // handle barcode has no underscore, so has no number on end.  Start numbering.
-                    barcode = wordList[0] + "_1";
+                    barcode = wordList[0] + "_01";
                 }
                 else
                 {
                     // handle if barcode ended in "_"
                     if (wordList[wordList.Count - 1].Length < 1)
                     {
-                        wordList[wordList.Count - 1] = "0";
+                        wordList[wordList.Count - 1] = "00";
                     }
                     // handle last word is not a number, so add number to end                      
                     else
@@ -768,12 +773,12 @@ namespace Waveguide
                         {
                             if (Convert.ToInt32(wordList[wordList.Count - 1]) < 1)
                             {
-                                wordList.Add("0");
+                                wordList.Add("00");
                             }
                         }
                         catch (Exception)
                         {
-                            wordList.Add("0");
+                            wordList.Add("00");
                         }
                     }
 
@@ -782,7 +787,7 @@ namespace Waveguide
                     intValueOfLastWord++;
 
                     wordList.RemoveAt(wordList.Count - 1);
-                    wordList.Add(intValueOfLastWord.ToString());
+                    wordList.Add(intValueOfLastWord.ToString("D2"));
 
                     // build new barcode with incremented value
                     barcode = "";
@@ -807,9 +812,7 @@ namespace Waveguide
             VM.EvalInsideTemperature();
             VM.EvalRunStatus();
         }
-
-
-
+          
 
      
 
@@ -829,8 +832,9 @@ namespace Waveguide
         {
             VM.Reset();
             ResetBarcodes();
-            //ClearPlotData();
+            ClearPlotData();
 
+        
             CameraSettingsContainer csc;
             bool success = wgDB.GetCameraSettingsDefault(out csc);
             if(success)
@@ -3167,13 +3171,15 @@ namespace Waveguide
                 case ViewModel_RunExperimentControl.RUN_STATE.READY_TO_RUN:
                     VM.SetRunState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
                     SetState(ViewModel_RunExperimentControl.RUN_STATE.RUNNING);
-
+                    
                     if (PrepForRun())
                     {                      
                         // RUN EXPERIMENT !!                        
                         PostMessageRunExperimentPanel("Starting VWorks Method: " + VM.ExpParams.method.BravoMethodFile);
                         if (!VM.ExpParams.method.IsAuto) VM.ExpParams.experimentRunPlateCount = 1;
                         if (VM.ExpParams.experimentRunPlateCount<1) VM.ExpParams.experimentRunPlateCount = 1;
+                        VM.ExpParams.experimentCurrentPlateNumber = 0;
+                        VM.CurrentPlateNumberText = VM.ExpParams.experimentCurrentPlateNumber.ToString();
                         m_vworks.StartMethod(VM.ExpParams.method.BravoMethodFile, VM.ExpParams.experimentRunPlateCount);
                     }
                     else
@@ -3213,7 +3219,7 @@ namespace Waveguide
 
 
         private bool PrepForRun()
-        {
+        {         
 
             //////////////////////////////////////////////////////////////////
             // Create ExperimentPlate, if doesn't already exist 
@@ -3537,6 +3543,14 @@ namespace Waveguide
                     break;
             }
 
+            // clear barcodes
+           
+                VM.ExpParams.experimentPlate.Barcode = "";       
+          
+                foreach (ExperimentCompoundPlateContainer plate in VM.ExpParams.compoundPlateList)
+                {
+                    plate.Barcode = "";                   
+                }
          
         }
 
@@ -3652,10 +3666,10 @@ namespace Waveguide
 
 
 
-        private void AutoOptimizePB_Click(object sender, RoutedEventArgs e)
+        private async void AutoOptimizePB_Click(object sender, RoutedEventArgs e)
         {          
             AutoOptimizeViewer.Init();  // loads all current indicators
-            m_imager.StartAutoOptimization(null);  // passing null uses current camera settings
+            bool allIndicatorsPassed = await m_imager.StartAutoOptimization(null);  // passing null uses current camera settings
 
         }
 
@@ -3704,6 +3718,46 @@ namespace Waveguide
                 if (value != this._runState)
                 {
                     this._runState = value;
+                    NotifyPropertyChanged();
+
+                    switch(_runState)
+                    {
+                        case RUN_STATE.ERROR:
+                            RunStateText = "Error";
+                            break;
+                        case RUN_STATE.NEEDS_INPUT:
+                            RunStateText = "Input Required";
+                            break;
+                        case RUN_STATE.READY_TO_RUN:
+                            RunStateText = "Ready To Run";
+                            break;
+                        case RUN_STATE.RUN_ABORTED:
+                            RunStateText = "Run Aborted";
+                            break;
+                        case RUN_STATE.RUN_FINISHED:
+                            RunStateText = "Run Finished";
+                            break;
+                        case RUN_STATE.RUNNING:
+                            RunStateText = "Running...";
+                            break;
+                    }
+                }
+            }
+        }
+
+        private string _runStateText;
+        public string RunStateText
+        {
+            get
+            {
+                return this._runStateText;
+            }
+
+            set
+            {
+                if (value != this._runStateText)
+                {
+                    this._runStateText = value;
                     NotifyPropertyChanged();
                 }
             }
@@ -3948,7 +4002,27 @@ namespace Waveguide
             {
                 if (value != this._gridLines)
                 {
-                    this._overlay = value;
+                    this._gridLines = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
+
+
+        private string _currentPlateNumberText;
+        public string CurrentPlateNumberText
+        {
+            get
+            {
+                return this._currentPlateNumberText;
+            }
+
+            set
+            {
+                if (value != this._currentPlateNumberText)
+                {
+                    this._currentPlateNumberText = value;
                     NotifyPropertyChanged();
                 }
             }
@@ -3972,6 +4046,7 @@ namespace Waveguide
             }
         }
 
+                
         private bool _delayHeaderVisible;
         public bool DelayHeaderVisible
         {

@@ -208,7 +208,8 @@ namespace Waveguide
         {
             MyRunExperimentControl.Configure(m_imager);
             MyRunExperimentControl.InitBarcodeResetRadioButtons();
-            
+            MyRunExperimentControl.VM.ExpParams.experimentCurrentPlateNumber = 0;
+            MyRunExperimentControl.VM.CurrentPlateNumberText = MyRunExperimentControl.VM.ExpParams.experimentCurrentPlateNumber.ToString();
             VM.ShowRunExperimentPanel = true;
         }
 

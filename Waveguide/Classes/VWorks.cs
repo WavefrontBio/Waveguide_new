@@ -334,14 +334,15 @@ namespace Waveguide
 
         void VWorks__UnrecoverableError(int session, string description)
         {
-            PostVWorksCommand(VWORKS_COMMAND.Unrecoverable_Error, "Unrecoverable Error", description);
+            PostVWorksCommand(VWORKS_COMMAND.Unrecoverable_Error, "VWorks Unrecoverable Error", description);
             VWorks_.CloseProtocol(m_bravoMethodFile);
         }
 
         void VWorks__RecoverableError(int session, string device, string location, string description, out int actionToTake, out bool vworksHandlesError)
         {
             actionToTake = 2;
-            vworksHandlesError = true;            
+            vworksHandlesError = true;
+            PostVWorksCommand(VWORKS_COMMAND.Error, "VWorks Error", description);
         }
 
         void VWorks__ProtocolComplete(int session, string protocol, string protocol_type)

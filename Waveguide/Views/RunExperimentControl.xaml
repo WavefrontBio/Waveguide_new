@@ -489,14 +489,20 @@
                     <GroupBox Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32,0,0,0"
                           Header="Plate Count" BorderBrush="Black" BorderThickness="1" FontSize="14" x:Name="PlateCountGroupBox">
                         
-                        <StackPanel Orientation="Horizontal">                            
+                        <StackPanel Orientation="Horizontal"> 
+                            <TextBlock Text="Total Plates to Run:" Width="120" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             <ig:XamNumericInput Grid.Row="1" SpinIncrement="1" SpinButtonDisplayMode="Always"
                                Width="50" 
                                HorizontalAlignment="Center" VerticalAlignment="Top" 
-                               Mask="{}{number:1-12}" ValueType="sys:Int32"
+                               Mask="{}{number:1-99}" ValueType="sys:Int32"
                                Value="{Binding Path=ExpParams.experimentRunPlateCount,UpdateSourceTrigger=PropertyChanged}" />
-                            
-                            <Button x:Name="AutoOptimizePB" Width="100" Height="24" Content="Auto Opt." Margin="10,0,0,0" VerticalAlignment="Center" Click="AutoOptimizePB_Click"/>
+
+                            <!--<TextBlock Text="Current Plate:" Width="120" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <ig:XamNumericInput Grid.Row="1" SpinIncrement="1" SpinButtonDisplayMode="Never"
+                               Width="50" 
+                               HorizontalAlignment="Center" VerticalAlignment="Top" 
+                               Mask="{}{number:0-99}" ValueType="sys:Int32"
+                               Value="{Binding Path=ExpParams.experimentCurrentPlateNumber,UpdateSourceTrigger=PropertyChanged}" />-->
                         </StackPanel>
                         
                         <GroupBox.Style>
@@ -1016,10 +1022,10 @@
                 <Grid.Style>
                     <Style TargetType="{x:Type Grid}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged}" Value="True">
+                            <DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged,Mode=OneWay}" Value="True">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged}" Value="False">
+                            <DataTrigger Binding="{Binding Path=RunningAutoVerify,UpdateSourceTrigger=PropertyChanged,Mode=OneWay}" Value="False">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -1041,12 +1047,12 @@
             <Grid Grid.Row="3" x:Name="ButtonGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="140"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -1054,12 +1060,29 @@
                 </Grid.RowDefinitions>
 
 
-                <Image Grid.Row="1" Grid.Column="0" x:Name="EnclosureCameraPB"
+                <!--<Image Grid.Row="1" Grid.Column="0" x:Name="EnclosureCameraPB"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                             Source="/Images/eye.png" MouseLeftButtonUp="EnclosureCameraPB_MouseLeftButtonUp"/>
+                             Source="/Images/eye.png" MouseLeftButtonUp="EnclosureCameraPB_MouseLeftButtonUp"/>-->
+                
+                <TextBlock Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Text="{Binding Path=RunStateText,UpdateSourceTrigger=PropertyChanged,Mode=OneWay}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="Bold" />
+
+                <Label Grid.Row="0" Grid.Column="1" Content="Plate #"
+                       HorizontalAlignment="Center" 
+                       VerticalAlignment="Center"
+                       FontSize="18" FontWeight="Bold" 
+                       />
 
 
-                <Label Grid.Row="0" Grid.Column="1" Content="Pause" x:Name="DelayHeader"
+                <TextBlock Grid.Row="1" Grid.Column="1" 
+                       HorizontalAlignment="Center" VerticalAlignment="Stretch" Margin="10,0,0,0"
+                       Text="{Binding Path=CurrentPlateNumberText}"                 
+                       FontSize="32"
+                       FontWeight="Bold"
+                       />
+
+
+                <Label Grid.Row="0" Grid.Column="2" Content="Pause" x:Name="DelayHeader"
                        HorizontalAlignment="Center" 
                        VerticalAlignment="Center"
                        FontSize="18" FontWeight="Bold"                                              
@@ -1067,7 +1090,7 @@
                        />
 
 
-                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DelayDisplay"
+                <TextBlock Grid.Row="1" Grid.Column="2" x:Name="DelayDisplay"
                        HorizontalAlignment="Center" VerticalAlignment="Stretch"
                        Text="{Binding Path=DelayText}"
                        Visibility="{Binding Path=DelayHeaderVisible, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"                       
@@ -1076,7 +1099,7 @@
                        />
 
 
-                <Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" x:Name="ResetPB"
+                <Button Grid.Row="0" Grid.Column="3" Grid.RowSpan="2" x:Name="ResetPB"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
                     Width="80" Height="60"
                     Content="Reset" FontSize="28" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"

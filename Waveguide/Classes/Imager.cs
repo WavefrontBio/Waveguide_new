@@ -1618,6 +1618,12 @@ namespace Waveguide
             m_lambda.MoveFilterABandCloseShutterA((byte)excitationFilterPosition, (byte)emissionFilterPosition,speed,speed);
         }
 
+        private void ChangeFilterPositions(int excitationFilterPosition, int emissionFilterPosition)
+        {
+            byte speed = GlobalVars.FilterChangeSpeed;
+            m_lambda.MoveFilterAB((byte)excitationFilterPosition, (byte)emissionFilterPosition, speed, speed);
+        }
+
 
 
         #region Optimization
@@ -1815,7 +1821,6 @@ namespace Waveguide
 
 
 
-
             bool tooDim = false;
             bool tooBright = false;
 
@@ -1881,7 +1886,11 @@ namespace Waveguide
                     {
                         wellsToOptimizeOver = m_ImagingDictionary[(int)indicatorID].optimizeWellList;
                     }
-                    
+
+                    // set filters for this indicator
+                    ChangeFilterPositions(m_ImagingDictionary[(int)indicatorID].excitationFilterPos, 
+                                          m_ImagingDictionary[(int)indicatorID].emissionFilterPos);
+
 
                     ///////////////////////////////////////////////////////////
                     // optimize at current binning level
@@ -1890,7 +1899,9 @@ namespace Waveguide
                     int count = 0;
                     while (!Done)
                     {
-                        m_lambda.OpenShutterA(); Thread.Sleep(5);
+                        m_lambda.OpenShutterA(); Thread.Sleep(10);
+
+                        
 
                         // acquire image
                         if (m_camera.CheckCameraResult(m_camera.AcquireImage(exposure, ref grayRoiImage), ref errMsg))
@@ -2090,7 +2101,7 @@ namespace Waveguide
 
             } // END -- while(!DoneWithAll)
 
-            Thread.Sleep(3000); // this just allows the AutoOptimizeControl panel to be displayed for a few seconds before it closes (remove it if it bothers you!)
+         
 
             OnImagerEvent(new ImagerEventArgs("Optimization Complete", ImagerState.Idle));
             OnOptimizeStateEvent(new OptimizeStateEventArgs(false));

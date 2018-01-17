@@ -70,8 +70,20 @@ namespace Waveguide
             OnPostVWorksCommand(e);
         }
 
-        
-        
+
+        public delegate void PostVWorksMessageHandler(object sender, WaveGuideEvents.StringMessageEventArgs e);
+        public event PostVWorksMessageHandler PostVWorksMessageEvent;
+
+        protected virtual void OnPostVWorksMessage(WaveGuideEvents.StringMessageEventArgs e)
+        {
+            if (PostVWorksMessageEvent != null) PostVWorksMessageEvent(this, e);
+        }
+
+        public void PostVWorksMessage(string msg)
+        {
+            WaveGuideEvents.StringMessageEventArgs e = new WaveGuideEvents.StringMessageEventArgs(msg);
+            OnPostVWorksMessage(e);
+        }
     
 
         /////////////////////////////////////////////////////////////////////////////////////////////
@@ -209,16 +221,30 @@ namespace Waveguide
 
         public void VWorks_AbortProtocol()
         {
-            m_protocolAborted = true;
-            VWorks_.AbortProtocol();
+            try
+            {
+                m_protocolAborted = true;
+                VWorks_.AbortProtocol();
 
-            PostVWorksCommand(VWORKS_COMMAND.Protocol_Aborted);
+                PostVWorksCommand(VWORKS_COMMAND.Protocol_Aborted);
+            }
+            catch(Exception ex)
+            {
+                PostVWorksMessage("VWorks Error: " + ex.Message);
+            }
         }
 
         public void VWorks_PauseProtocol()
         {
-            VWorks_.PauseProtocol();
-            PostVWorksCommand(VWORKS_COMMAND.Protocol_Paused);
+            try
+            {
+                VWorks_.PauseProtocol();
+                PostVWorksCommand(VWORKS_COMMAND.Protocol_Paused);
+            }
+            catch(Exception ex)
+            {
+                PostVWorksMessage("VWorks Error: " + ex.Message);
+            }
         }
 
         public void VWorks_ResumeProtcol()
@@ -238,65 +264,89 @@ namespace Waveguide
             // assumes that within the Bravo's UserMessage parameters are set to: Title = "Timer" and Body = <milliseconds>
             if (String.Compare(caption.Trim(), "Timer", true) == 0)
             {
-                int timerDelay = Convert.ToInt32(message);
+                try
+                {
+                    int timerDelay = Convert.ToInt32(message);
 
-                VWorks_.PauseProtocol();
-                PostVWorksCommand(VWORKS_COMMAND.Protocol_Paused,timerDelay);
+                    VWorks_.PauseProtocol();
+                    PostVWorksCommand(VWORKS_COMMAND.Protocol_Paused, timerDelay);
 
-                WaitResumeAsync(timerDelay);
+                    WaitResumeAsync(timerDelay);
+                }
+                catch (Exception ex)
+                {
+                    PostVWorksMessage("VWorks Error: " + ex.Message);
+                }
             }
 
             else if (String.Compare(caption.Trim(), "TimeMarker", true) == 0)
             {
-                // this starts the stopwatch timer that will be used by the ResumeAfter
-                m_stopwatch.Restart();
+               
+                    // this starts the stopwatch timer that will be used by the ResumeAfter
+                    m_stopwatch.Restart();
 
-                PostVWorksCommand(VWORKS_COMMAND.Set_Time_Marker);
+                    PostVWorksCommand(VWORKS_COMMAND.Set_Time_Marker);
+               
             }
 
             else if (String.Compare(caption.Trim(), "PauseUntil", true) == 0)
             {
-                // sends a Protocol Resume after given milliseconds after last TimeMarker
-                int timerDelay = Convert.ToInt32(message);
-                if (!m_stopwatch.IsRunning)
+                try
                 {
-                    PostVWorksCommand(VWORKS_COMMAND.Error, "Time Marker Never Set", "PauseUntil will be Ignored");
+                    // sends a Protocol Resume after given milliseconds after last TimeMarker
+                    int timerDelay = Convert.ToInt32(message);
+                    if (!m_stopwatch.IsRunning)
+                    {
+                        PostVWorksCommand(VWORKS_COMMAND.Error, "Time Marker Never Set", "PauseUntil will be Ignored");
+                    }
+                    else if (m_stopwatch.ElapsedMilliseconds >= timerDelay)
+                    {
+                        PostVWorksCommand(VWORKS_COMMAND.Error, "PauseUntil time too short", "Actual Pause time: " + m_stopwatch.ElapsedMilliseconds.ToString() + " msecs");
+                    }
+                    else
+                    {
+                        VWorks_.PauseProtocol();
+                        PostVWorksCommand(VWORKS_COMMAND.Pause_Until, timerDelay - (int)m_stopwatch.ElapsedMilliseconds,
+                            "Protocol Paused", "Waiting for " + timerDelay.ToString() + " msecs past last TimerMarker");
+                        WaitResumeAsync(timerDelay - (int)m_stopwatch.ElapsedMilliseconds);
+                    }
                 }
-                else if (m_stopwatch.ElapsedMilliseconds >= timerDelay)
+                catch (Exception ex)
                 {
-                    PostVWorksCommand(VWORKS_COMMAND.Error, "PauseUntil time too short", "Actual Pause time: " + m_stopwatch.ElapsedMilliseconds.ToString() + " msecs");
-                }
-                else
-                {
-                    VWorks_.PauseProtocol();
-                    PostVWorksCommand(VWORKS_COMMAND.Pause_Until, timerDelay - (int)m_stopwatch.ElapsedMilliseconds, 
-                        "Protocol Paused", "Waiting for " + timerDelay.ToString() + " msecs past last TimerMarker");
-                    WaitResumeAsync(timerDelay - (int)m_stopwatch.ElapsedMilliseconds);
+                    PostVWorksMessage("VWorks Error: " + ex.Message);
                 }
 
             }
 
             else if (String.Compare(caption.Trim(), "EventMarker", true) == 0)
             {
-                string[] parameter = message.Split(',');
-                string name = parameter[0].Trim();
-                string desc = parameter[1].Trim();
-                PostVWorksCommand(VWORKS_COMMAND.Event_Marker, name, desc);
+               
+                    string[] parameter = message.Split(',');
+                    string name = parameter[0].Trim();
+                    string desc = parameter[1].Trim();
+                    PostVWorksCommand(VWORKS_COMMAND.Event_Marker, name, desc);
+               
             }
 
             else if (String.Compare(caption.Trim(), "StartImaging", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.Start_Imaging);
+               
+                    PostVWorksCommand(VWORKS_COMMAND.Start_Imaging);
+               
             }
 
             else if (String.Compare(caption.Trim(), "StopImaging", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.Stop_Imaging);
+               
+                    PostVWorksCommand(VWORKS_COMMAND.Stop_Imaging);
+               
             }
 
             else if (String.Compare(caption.Trim(), "Barcode", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.Barcode, "Barcode", message);
+                
+                    PostVWorksCommand(VWORKS_COMMAND.Barcode, "Barcode", message);
+                
             }
            
             else if (String.Compare(caption.Trim(), "VerifyImaging", true) == 0)
@@ -304,67 +354,99 @@ namespace Waveguide
                 // This is a signal to perform an Auto Verification (Optimization) on all indicators.  The VWorks protocol needs to be paused while this happens since we don't know 
                 // how long it might take.  
 
-                PostVWorksCommand(VWORKS_COMMAND.VerifyImaging);
+              
+                    PostVWorksCommand(VWORKS_COMMAND.VerifyImaging);
+               
 
             }
 
             else if (String.Compare(caption.Trim(), "PlateComplete", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.PlateComplete, "PlateComplete", message);
+              
+                    PostVWorksCommand(VWORKS_COMMAND.PlateComplete, "PlateComplete", message);
+               
             }
 
             else if (String.Compare(caption.Trim(), "PlateStart", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.PlateStart, "PlateStart", message);
+              
+                    PostVWorksCommand(VWORKS_COMMAND.PlateStart, "PlateStart", message);
+               
             }
 
             else if (String.Compare(caption.Trim(), "EnableBurst", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.EnableBurstCycleTime);
+               
+                    PostVWorksCommand(VWORKS_COMMAND.EnableBurstCycleTime);
+               
             }
 
             else if (String.Compare(caption.Trim(), "DisableBurst", true) == 0)
             {
-                PostVWorksCommand(VWORKS_COMMAND.DisableBurstCycleTime);
+               
+                    PostVWorksCommand(VWORKS_COMMAND.DisableBurstCycleTime);
+                
             }
 
-            else 
-                PostVWorksCommand(VWORKS_COMMAND.Error, "Unknown Command Received", caption + ", " + message);
+            else
+            {
+              
+                    PostVWorksCommand(VWORKS_COMMAND.Error, "Unknown Command Received", caption + ", " + message);
+              
+            }
         }
 
         void VWorks__UnrecoverableError(int session, string description)
         {
-            PostVWorksCommand(VWORKS_COMMAND.Unrecoverable_Error, "VWorks Unrecoverable Error", description);
-            VWorks_.CloseProtocol(m_bravoMethodFile);
+            try
+            {
+                PostVWorksCommand(VWORKS_COMMAND.Unrecoverable_Error, "VWorks Unrecoverable Error", description);
+                VWorks_.CloseProtocol(m_bravoMethodFile);
+            }
+            catch (Exception ex)
+            {
+                PostVWorksMessage("VWorks Error: " + ex.Message);
+            }
         }
 
         void VWorks__RecoverableError(int session, string device, string location, string description, out int actionToTake, out bool vworksHandlesError)
         {
-            actionToTake = 2;
-            vworksHandlesError = true;
-            PostVWorksCommand(VWORKS_COMMAND.Error, "VWorks Error", description);
+           
+                actionToTake = 2;
+                vworksHandlesError = true;
+                PostVWorksCommand(VWORKS_COMMAND.Error, "VWorks Error", description);
+          
         }
 
         void VWorks__ProtocolComplete(int session, string protocol, string protocol_type)
         {
-            PostVWorksCommand(VWORKS_COMMAND.Protocol_Complete, protocol, protocol_type);            
+           
+                PostVWorksCommand(VWORKS_COMMAND.Protocol_Complete, protocol, protocol_type);
 
-            switch (protocol_type)
-            {
-                case "Startup":                    
-                    break;
-                case "Main":
-                    VWorks_.CloseProtocol(m_bravoMethodFile);
-                    break;
-                default:
-                    break;
-            }
+                switch (protocol_type)
+                {
+                    case "Startup":
+                        break;
+                    case "Main":
+                        VWorks_.CloseProtocol(m_bravoMethodFile);
+                        break;
+                    default:
+                        break;
+                }
+            
         }
 
         void VWorks__ProtocolAborted(int session, string protocol, string protocol_type)
         {
-            PostVWorksCommand(VWORKS_COMMAND.Protocol_Aborted, protocol, protocol_type);
-            VWorks_.CloseProtocol(m_bravoMethodFile);
+            try
+            {
+                PostVWorksCommand(VWORKS_COMMAND.Protocol_Aborted, protocol, protocol_type);
+                VWorks_.CloseProtocol(m_bravoMethodFile);
+            }
+            catch (Exception ex)
+            {
+                PostVWorksMessage("VWorks Error: " + ex.Message);
+            }
         }
 
         void VWorks__MessageBoxAction(int session, int type, string message, string caption, out int actionToTake)
@@ -374,7 +456,9 @@ namespace Waveguide
 
         void VWorks__InitializationComplete(int session)
         {
-            PostVWorksCommand(VWORKS_COMMAND.Initialization_Complete);
+          
+                PostVWorksCommand(VWORKS_COMMAND.Initialization_Complete);
+          
         }
 
         void VWorks__LogMessage(int session, int logClass, string timeStamp, string device, string location, string process, string task, string fileName, string message)
@@ -386,12 +470,19 @@ namespace Waveguide
 
         async void WaitResumeAsync(int delay)
         {
-            await SleepAsync(delay);
-
-            if (!m_protocolAborted)
+            try
             {
-                VWorks_.ResumeProtocol();
-                PostVWorksCommand(VWORKS_COMMAND.Protocol_Resumed);
+                await SleepAsync(delay);
+
+                if (!m_protocolAborted)
+                {
+                    VWorks_.ResumeProtocol();
+                    PostVWorksCommand(VWORKS_COMMAND.Protocol_Resumed);
+                }
+            }
+            catch (Exception ex)
+            {
+                PostVWorksMessage("VWorks Error: " + ex.Message);
             }
         }
 
@@ -405,12 +496,19 @@ namespace Waveguide
 
         void m_timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if (!m_protocolAborted)
+            try
             {
-                VWorks_.ResumeProtocol();
-                PostVWorksCommand(VWORKS_COMMAND.Protocol_Resumed);
-                m_timer.Stop();
-                m_timer.Dispose();
+                if (!m_protocolAborted)
+                {
+                    VWorks_.ResumeProtocol();
+                    PostVWorksCommand(VWORKS_COMMAND.Protocol_Resumed);
+                    m_timer.Stop();
+                    m_timer.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                PostVWorksMessage("VWorks Error: " + ex.Message);
             }
             
         }
@@ -472,9 +570,6 @@ namespace Waveguide
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 
     //namespace WaveGuideEvents
     //{

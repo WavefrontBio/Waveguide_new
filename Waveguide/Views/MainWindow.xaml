@@ -5,7 +5,7 @@
         xmlns:ig="http://schemas.infragistics.com/xaml"
         xmlns:System="clr-namespace:System;assembly=mscorlib"
         x:Class="Waveguide.MainWindow"
-        Title="Waveguide" Height="1000" Width="1200"
+        Title="Waveguide -- TEST" Height="1000" Width="1200"
         Loaded="Window_Loaded" 
         ContentRendered="Window_ContentRendered"
         Unloaded="Window_Unloaded"

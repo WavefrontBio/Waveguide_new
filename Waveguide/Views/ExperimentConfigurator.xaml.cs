@@ -317,9 +317,10 @@ namespace Waveguide
         {
             // get selection
             VM.ExpParams.mask = (MaskContainer)MaskComboBox.SelectedItem;
+            m_imager.m_mask = VM.ExpParams.mask;
 
             VM.SetExperimentStatus();
-
+            
 
             if (VM.ExpParams.mask != null)
             {

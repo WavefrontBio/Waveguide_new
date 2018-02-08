@@ -182,7 +182,9 @@ namespace Waveguide
             else
                 vm.WellSelectionPBLabel = (m_imager.m_mask.Rows * m_imager.m_mask.Cols).ToString();
 
-            m_imager.SetMask(null);
+
+            if(m_imager.m_mask == null)
+                m_imager.SetMask(null);
 
                
             this.DataContext = vm;

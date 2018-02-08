@@ -2728,6 +2728,10 @@ namespace Waveguide
 
                     if (imagingDictionary.ContainsKey(expIndID))
                     {
+                        Stopwatch sw = new Stopwatch();
+                        sw.Start();
+
+
                         // process image
                         ImagingParamsStruct dps = imagingDictionary[expIndID];
 
@@ -2760,6 +2764,7 @@ namespace Waveguide
                         cuda.GetHistogram_512(out histogram, 16);
                         //histogram[0] = 0; // clear out the pixels that were zeroed, since they were outside the mask
 
+                        long t2= sw.ElapsedMilliseconds;
 
                         if (dps.histBitmap != null)
                         {
@@ -2789,6 +2794,10 @@ namespace Waveguide
                             dps.ImageControl.m_imageBitmap.Unlock();
                         }
 
+
+                        long t3 = sw.ElapsedMilliseconds;
+
+                        Debug.WriteLine("CudaProcessAndDisplay: " + t2.ToString() + ", " + t3.ToString());
                     }
                   
 
@@ -2860,7 +2869,7 @@ namespace Waveguide
             new ExecutionDataflowBlockOptions
             {
                 CancellationToken = cancelToken,
-                MaxDegreeOfParallelism = 1
+                MaxDegreeOfParallelism = 8
             });
 
 
@@ -3361,8 +3370,20 @@ namespace Waveguide
                     try
                     {
                         // send the data to be displayed
-                        runExperimentControl.AppendNewData(ref F, ref staticRatio, ref controlSubtraction,
-                                                 ref dynamicRatio, time, expIndicatorID);
+
+                        float[,] copy_F = null;
+                        float[,] copy_staticRatio = null;
+                        float[,] copy_controlSubtraction = null;
+                        float[,] copy_dynamicRatio = null;
+
+                        copy_F = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(F, copy_F, F.Length);
+                        if (staticRatio != null) { copy_staticRatio = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(staticRatio, copy_staticRatio, staticRatio.Length); }
+                        if (controlSubtraction != null) { copy_controlSubtraction = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(controlSubtraction, copy_controlSubtraction, controlSubtraction.Length); }
+                        if (dynamicRatio != null) { copy_dynamicRatio = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(dynamicRatio, copy_dynamicRatio, dynamicRatio.Length); }
+
+
+                        runExperimentControl.AppendNewData(copy_F, copy_staticRatio, copy_controlSubtraction,
+                                                 copy_dynamicRatio, time, expIndicatorID);
 
                         return Tuple.Create(F, staticRatio, controlSubtraction, dynamicRatio, expIndicatorID, time);
 

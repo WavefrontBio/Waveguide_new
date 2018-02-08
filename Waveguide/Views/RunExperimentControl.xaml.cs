@@ -1707,8 +1707,8 @@ namespace Waveguide
             }
 
 
-            m_aggregateChart = new LightningChartUltimate("David Weaver/Developer1 - Renewed subscription/LightningChartUltimate/KRLD2KS3KTX5YQ42P6V8Q42JKU2B355YTMEU");
-            //m_aggregateChart = new LightningChartUltimate();
+            //m_aggregateChart = new LightningChartUltimate("David Weaver/Developer1 - Renewed subscription/LightningChartUltimate/KRLD2KS3KTX5YQ42P6V8Q42JKU2B355YTMEU");
+            m_aggregateChart = new LightningChartUltimate();
           
             m_aggregateChart.BeginUpdate();
 
@@ -1730,7 +1730,7 @@ namespace Waveguide
             m_aggregateChart.ViewXY.GraphBackground.GradientDirection = 270;
             m_aggregateChart.ViewXY.GraphBackground.GradientFill = GradientFill.Linear;
 
-            m_aggregateChart.ViewXY.LegendBox.Visible = false;
+            //m_aggregateChart.ViewXY.LegendBox.Visible = false;  // comment out after install of LightningChart ver 8.2.2
 
 
             // CHANGE - comment out line below
@@ -1778,6 +1778,7 @@ namespace Waveguide
                         pls.Visible = false;
                         pls.LineStyle.Color = m_indicatorColor[expIndicatorID];
                         pls.LineStyle.AntiAliasing = LineAntialias.None;
+                        pls.ShowInLegendBox = false;
                         aggRaw[r, c] = pls;
                         m_aggregateChart.ViewXY.PointLineSeries.Add(pls);
 
@@ -1786,6 +1787,7 @@ namespace Waveguide
                         pls.Visible = false;
                         pls.LineStyle.Color = m_indicatorColor[expIndicatorID];
                         pls.LineStyle.AntiAliasing = LineAntialias.None;
+                        pls.ShowInLegendBox = false;
                         aggStaticRatio[r, c] = pls;
                         m_aggregateChart.ViewXY.PointLineSeries.Add(pls);
 
@@ -1794,6 +1796,7 @@ namespace Waveguide
                         pls.Visible = false;
                         pls.LineStyle.Color = m_indicatorColor[expIndicatorID];
                         pls.LineStyle.AntiAliasing = LineAntialias.None;
+                        pls.ShowInLegendBox = false;
                         aggControlSubtraction[r, c] = pls;
                         m_aggregateChart.ViewXY.PointLineSeries.Add(pls);
 
@@ -1802,6 +1805,7 @@ namespace Waveguide
                         pls.Visible = false;
                         pls.LineStyle.Color = m_indicatorColor[expIndicatorID];
                         pls.LineStyle.AntiAliasing = LineAntialias.None;
+                        pls.ShowInLegendBox = false;
                         aggDynamicRatio[r, c] = pls;
                         m_aggregateChart.ViewXY.PointLineSeries.Add(pls);
                     }
@@ -1838,7 +1842,8 @@ namespace Waveguide
 
                     //m_charts[iChart] = new LightningChartUltimate(LicenseKeys.LicenseKeyStrings.LightningChartUltimate, renderSettings);
 
-                    m_charts[iChart] = new LightningChartUltimate("David Weaver/Developer1 - Renewed subscription/LightningChartUltimate/KRLD2KS3KTX5YQ42P6V8Q42JKU2B355YTMEU", renderSettings);
+                    //m_charts[iChart] = new LightningChartUltimate("David Weaver/Developer1 - Renewed subscription/LightningChartUltimate/KRLD2KS3KTX5YQ42P6V8Q42JKU2B355YTMEU", renderSettings); // comment out after install of LightningChart ver 8.2.2
+                    m_charts[iChart] = new LightningChartUltimate();
                     
 
                     //m_charts[iChart] = new LightningChartUltimate("David Weaver/LicensePack1/LightningChartUltimate/F3SCJUDJ3K2AYU42BMWMP9Q2KT279YSXMN3V", renderSettings);
@@ -1851,12 +1856,12 @@ namespace Waveguide
                     m_charts[iChart].MouseDown += ChartArray_MouseLeftButtonDown;
                     m_charts[iChart].MouseUp += ChartArray_MouseLeftButtonUp;
                     Panel.SetZIndex(m_charts[iChart], 10);
-                 
+                    
 
                     m_charts[iChart].VerticalAlignment = VerticalAlignment.Top;
                     m_charts[iChart].HorizontalAlignment = HorizontalAlignment.Left;
 
-                    m_charts[iChart].ViewXY.LegendBox.Visible = false;
+                    //m_charts[iChart].ViewXY.LegendBox.Visible = false; // comment out after install of LightningChart ver 8.2.2
 
                     m_charts[iChart].ViewXY.XAxes[0].ScrollMode = XAxisScrollMode.None;
                     m_charts[iChart].ViewXY.XAxes[0].ScrollingGap = 0;
@@ -1868,7 +1873,7 @@ namespace Waveguide
                     m_charts[iChart].ViewXY.XAxes[0].Visible = false;
                     m_charts[iChart].ViewXY.XAxes[0].MouseInteraction = false;
                     m_charts[iChart].ViewXY.XAxes[0].MouseScaling = false;
-                    m_charts[iChart].ViewXY.XAxes[0].MouseScrolling = false;
+                    m_charts[iChart].ViewXY.XAxes[0].MouseScrolling = false; 
 
 
                     m_charts[iChart].ViewXY.Margins = new Thickness(0, 0, 0, 0);
@@ -1897,7 +1902,7 @@ namespace Waveguide
                     m_charts[iChart].ViewXY.AxisLayout.AutoShrinkSegmentsGap = true;
 
                     m_charts[iChart].ViewXY.AxisLayout.AutoAdjustMargins = false;
-                    m_charts[iChart].ViewXY.Margins = new Thickness(0, 0, 0, 0);
+                    m_charts[iChart].ViewXY.Margins = new Thickness(0, 0, 0, 0); 
 
                     m_charts[iChart].ChartName = m_charts[iChart].Title.Text;
 
@@ -1934,7 +1939,8 @@ namespace Waveguide
                             sds.SampleFormat = SampleFormat.SingleFloat;
                             sds.Title.Text = indicator.Description;
                             sds.Title.Visible = false;
-                            sds.LineStyle.Width = 1;
+                            sds.LineStyle.Width = 1; 
+                            sds.ShowInLegendBox = false;
                             sds.ScrollModePointsKeepLevel = 10;
                             //sds.ScrollingStabilizing = true;                   
                             sds.LineStyle.Color = m_indicatorColor[expIndicatorID];
@@ -1952,6 +1958,7 @@ namespace Waveguide
                             sds.Title.Visible = false;
                             sds.LineStyle.Width = 1;
                             sds.ScrollModePointsKeepLevel = 10;
+                            sds.ShowInLegendBox = false;
                             //sds.ScrollingStabilizing = true;                   
                             sds.LineStyle.Color = m_indicatorColor[expIndicatorID];
                             sds.LineStyle.AntiAliasing = LineAntialias.None;
@@ -1968,6 +1975,7 @@ namespace Waveguide
                             sds.Title.Visible = false;
                             sds.LineStyle.Width = 1;
                             sds.ScrollModePointsKeepLevel = 10;
+                            sds.ShowInLegendBox = false;
                             //sds.ScrollingStabilizing = true;                   
                             sds.LineStyle.Color = m_indicatorColor[expIndicatorID];
                             sds.LineStyle.AntiAliasing = LineAntialias.None;
@@ -1984,6 +1992,7 @@ namespace Waveguide
                             sds.Title.Visible = false;
                             sds.LineStyle.Width = 1;
                             sds.ScrollModePointsKeepLevel = 10;
+                            sds.ShowInLegendBox = false;
                             //sds.ScrollingStabilizing = true;                   
                             sds.LineStyle.Color = m_indicatorColor[expIndicatorID];
                             sds.LineStyle.AntiAliasing = LineAntialias.None;
@@ -1998,13 +2007,19 @@ namespace Waveguide
                         m_band[iCh, iChart] = new Band(m_charts[iChart].ViewXY, m_charts[iChart].ViewXY.XAxes[0], axisY);
                         m_band[iCh, iChart].Behind = true;
                         m_band[iCh, iChart].Fill.Color = Colors.Gray;
-                        m_band[iCh, iChart].Binding = AxisBinding.YAxis;
+                        m_band[iCh, iChart].Binding = AxisBinding.YAxis; m_band[iCh, iChart].ShowInLegendBox = false;
                         m_band[iCh, iChart].ValueBegin = 0;
                         m_band[iCh, iChart].ValueEnd = 1;
                         m_band[iCh, iChart].Visible = false;
-                        m_band[iCh, iChart].MouseInteraction = false;
+                        m_band[iCh, iChart].MouseInteraction = false; 
                         m_chartSelected[iCh, iChart] = false;
                         m_charts[iChart].ViewXY.Bands.Add(m_band[iCh, iChart]);
+
+                        foreach(LegendBoxXY lb in  m_charts[iChart].ViewXY.LegendBoxes)
+                        {
+                            lb.Visible = false;
+                        }
+
 
                     }
 
@@ -2468,12 +2483,17 @@ namespace Waveguide
 
 
 
-        public void AppendNewData(ref float[,] dataRaw, 
-                                  ref float[,] dataStaticRatio,
-                                  ref float[,] dataControlSubtraction, 
-                                  ref float[,] dataDynamicRatio,
+        public void AppendNewData(float[,] dataRaw, 
+                                  float[,] dataStaticRatio,
+                                  float[,] dataControlSubtraction, 
+                                  float[,] dataDynamicRatio,
                                   int sequenceNumber, int indicatorID)
         {
+            
+            Stopwatch sw = new Stopwatch();
+
+            sw.Start();
+
             SeriesPoint[] points = new SeriesPoint[1];
             float[] sample = new float[1];
 
@@ -2519,29 +2539,31 @@ namespace Waveguide
             int numPoints = caRaw[0,0].PointCount;
 
 
+            long t1 = sw.ElapsedMilliseconds;
+
             m_aggregateChart.BeginUpdate();
 
-            for(int c = 0; c<m_cols; c++)
-            {                
+            for (int c = 0; c < m_cols; c++)
+            {
                 m_charts[c].BeginUpdate();
 
-                for (int r = 0; r < m_rows; r++ )
+                for (int r = 0; r < m_rows; r++)
                 {
                     // RAW
-                        // add point in chart array
-                        sample[0] = dataRaw[r, c];
-                        caRaw[r, c].AddSamples(sample, false);  // indicatorNum came in as 57! 
-                        
-                        // add point in aggregate chart
-                        points[0].Y = dataRaw[r, c];
-                        points[0].X = (double)sequenceNumber;
-                        aggRaw[r, c].AddPoints(points, false);
+                    // add point in chart array
+                    sample[0] = dataRaw[r, c];
+                    caRaw[r, c].AddSamples(sample, false);  // indicatorNum came in as 57! 
 
-                        // check range
-                        if (points[0].X < m_Raw_Range.xMin) { m_Raw_Range.xMin = points[0].X * 0.9; resizeRaw = true; }
-                        if (points[0].X > m_Raw_Range.xMax) { m_Raw_Range.xMax = points[0].X * 1.2; resizeRaw = true; }
-                        if (points[0].Y < m_Raw_Range.yMin) { m_Raw_Range.yMin = points[0].Y * 0.9; resizeRaw = true; }
-                        if (points[0].Y > m_Raw_Range.yMax) { m_Raw_Range.yMax = points[0].Y * 1.2; resizeRaw = true; }
+                    // add point in aggregate chart
+                    points[0].Y = dataRaw[r, c];
+                    points[0].X = (double)sequenceNumber;
+                    aggRaw[r, c].AddPoints(points, false);
+
+                    // check range
+                    if (points[0].X < m_Raw_Range.xMin) { m_Raw_Range.xMin = points[0].X * 0.9; resizeRaw = true; }
+                    if (points[0].X > m_Raw_Range.xMax) { m_Raw_Range.xMax = points[0].X * 1.2; resizeRaw = true; }
+                    if (points[0].Y < m_Raw_Range.yMin) { m_Raw_Range.yMin = points[0].Y * 0.9; resizeRaw = true; }
+                    if (points[0].Y > m_Raw_Range.yMax) { m_Raw_Range.yMax = points[0].Y * 1.2; resizeRaw = true; }
 
                     // STATIC RATIO
                     if (dataStaticRatio != null)
@@ -2610,12 +2632,14 @@ namespace Waveguide
                     }
                 }
 
-                m_charts[c].EndUpdate();                
+                m_charts[c].EndUpdate();
             }
+
+          
 
             m_aggregateChart.EndUpdate();
 
-
+            long t2 = sw.ElapsedMilliseconds;
 
             ////////////////////////////////////////////////
             //  Set Axes Ranges and location of Bands (used to show selected charts)
@@ -2636,6 +2660,13 @@ namespace Waveguide
             {
                 SetRangeForSignalType(VISIBLE_SIGNAL.DYNAMIC_RATIO);            
             }
+
+
+            sw.Stop();
+
+            long t3 = sw.ElapsedMilliseconds;
+
+            Debug.WriteLine("AppendNewData: " + t1.ToString() + ", " + t2.ToString() + ", " + t3.ToString());
             
         }
 

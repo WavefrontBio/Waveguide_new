@@ -833,7 +833,7 @@ namespace Waveguide
             VM.Reset();
             ResetBarcodes();
             ClearPlotData();
-
+            m_cancelTokenSource.Cancel();
         
             CameraSettingsContainer csc;
             bool success = wgDB.GetCameraSettingsDefault(out csc);
@@ -932,7 +932,7 @@ namespace Waveguide
             m_chartRows = rows;
             m_chartCols = cols;
 
-            //DisposeCharts();
+            DisposeCharts();
 
             m_indicatorDictionary = new Dictionary<int, ExperimentIndicatorContainer>();
 
@@ -1000,7 +1000,7 @@ namespace Waveguide
                 PointLineSeries[,] aggregateControlSubtraction = new PointLineSeries[m_rows, m_cols];
                 PointLineSeries[,] aggregateDynamicRatio = new PointLineSeries[m_rows, m_cols];
 
-                m_ChartArray_Raw_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayRaw);
+                m_ChartArray_Raw_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayRaw); 
                 m_ChartArray_StaticRatio_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayStaticRatio);
                 m_ChartArray_ControlSubtraction_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayControlSubtraction);
                 m_ChartArray_DynamicRatio_Dictionary.Add(indicator.ExperimentIndicatorID, chartArrayDynamicRatio);

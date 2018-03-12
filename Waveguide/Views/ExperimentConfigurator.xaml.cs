@@ -315,24 +315,26 @@ namespace Waveguide
 
         private void MaskComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // get selection
-            VM.ExpParams.mask = (MaskContainer)MaskComboBox.SelectedItem;
-            m_imager.m_mask = VM.ExpParams.mask;
-
-            VM.SetExperimentStatus();
-            
-
-            if (VM.ExpParams.mask != null)
+            if (m_imager != null)
             {
-                WellSelection.Init(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
+                // get selection
+                VM.ExpParams.mask = (MaskContainer)MaskComboBox.SelectedItem;
+                m_imager.m_mask = VM.ExpParams.mask;
 
-                if (VM.ExpParams.indicatorList != null)
-                    foreach (ExperimentIndicatorContainer expInd in VM.ExpParams.indicatorList)
-                    {
-                        expInd.MaskID = VM.ExpParams.mask.MaskID;
-                    }
-            }
-           
+                VM.SetExperimentStatus();
+
+
+                if (VM.ExpParams.mask != null)
+                {
+                    WellSelection.Init(VM.ExpParams.mask.Rows, VM.ExpParams.mask.Cols);
+
+                    if (VM.ExpParams.indicatorList != null)
+                        foreach (ExperimentIndicatorContainer expInd in VM.ExpParams.indicatorList)
+                        {
+                            expInd.MaskID = VM.ExpParams.mask.MaskID;
+                        }
+                }
+            }          
 
         }
 

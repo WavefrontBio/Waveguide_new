@@ -773,6 +773,8 @@ namespace Waveguide
                 ips = m_imager.m_ImagingDictionary[m_ID];
                 
                 ips.flatfieldType = vm.FlatFieldSelect.FlatField_Select;
+
+                m_imager.m_ImagingDictionary[m_ID] = ips;
             }
         }
 

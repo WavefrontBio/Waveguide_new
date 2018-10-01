@@ -874,7 +874,7 @@ namespace Waveguide
             if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
 
             // build flat field corrector for given correction type
-            ffc = new FlatFieldCorrector(imageSize, F, D);
+            ffc = new FlatFieldCorrector(GlobalVars.PixelWidth, GlobalVars.PixelHeight, F, D);
             ffc.CorrectForBinning(binning, binning);
 
             // load fluor correction arrays to GPU

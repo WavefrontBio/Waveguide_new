@@ -455,11 +455,11 @@ extern "C" DllExport void SetFlatFieldCorrectionArrays(int type, float* Gc, floa
 	case 2:
 		if (mp_d_FFC_Lumi_Gc != 0)
 		{
-			cudaError_t err = cudaFree(mp_d_FFC_Fluor_Gc);
+			cudaError_t err = cudaFree(mp_d_FFC_Lumi_Gc);
 		}
 		if (mp_d_FFC_Lumi_Dc != 0)
 		{
-			cudaError_t err = cudaFree(mp_d_FFC_Fluor_Dc);
+			cudaError_t err = cudaFree(mp_d_FFC_Lumi_Dc);
 		}
 
 		cudaMalloc(&mp_d_FFC_Lumi_Gc, numElements * sizeof(float));

@@ -160,7 +160,7 @@ namespace Waveguide
                 if (outputNumber == 2) message[3] = 0x32;
                 m_simpleClient.Send(message);
 
-                GlobalVars.InsideHeaterON = true;
+                GlobalVars.Instance.InsideHeaterON = true;
 
                 return success;
             }
@@ -179,7 +179,7 @@ namespace Waveguide
                 if (outputNumber == 2) message[3] = 0x32;
                 m_simpleClient.Send(message);
 
-                GlobalVars.InsideHeaterON = false;
+                GlobalVars.Instance.InsideHeaterON = false;
 
                 return success;
             }
@@ -221,7 +221,7 @@ namespace Waveguide
 
                 m_simpleClient.Send(message);
 
-                GlobalVars.InsideTargetTemperature = setpoint;
+                GlobalVars.Instance.InsideTargetTemperature = setpoint;
 
                 return success;
             }
@@ -247,7 +247,7 @@ namespace Waveguide
                     m_temp = (float)Convert.ToDouble(tString);
                     OnNewTemperature(new OmegaTempCtrlTempEventArgs(m_temp));
 
-                    GlobalVars.InsideTemp = (int)m_temp;
+                    GlobalVars.Instance.InsideTemp = (int)m_temp;
                 }
             }
         }
@@ -271,7 +271,7 @@ namespace Waveguide
                     m_temp = (float)Convert.ToDouble(tString);
                     OnNewTemperature(new OmegaTempCtrlTempEventArgs(m_temp));
 
-                    GlobalVars.InsideTemp = (int)m_temp;
+                    GlobalVars.Instance.InsideTemp = (int)m_temp;
                 }
             }
         }

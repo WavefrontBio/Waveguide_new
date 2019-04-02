@@ -125,7 +125,7 @@ namespace Waveguide
                 VWorks_.UserMessage += new VWorks4Lib._IVWorks4APIEvents_UserMessageEventHandler(VWorks__UserMessage);
                 
                 //TODO Change this Login this seems like a security risk.
-                VWorks_.Login(GlobalVars.VWorksUsername, GlobalVars.VWorksPassword);
+                VWorks_.Login(GlobalVars.Instance.VWorksUsername, GlobalVars.Instance.VWorksPassword);
                 VWorks_.ShowVWorks(false);
 
                 m_stopwatch = new Stopwatch();
@@ -250,7 +250,7 @@ namespace Waveguide
         public void VWorks_ResumeProtcol()
         {
             VWorks_.ResumeProtocol();
-            PostVWorksCommand(VWORKS_COMMAND.Protocol_Resumed);
+            PostVWorksCommand(VWORKS_COMMAND.Protocol_Resumed); 
         }
 
 

@@ -246,74 +246,10 @@
         </Grid.ColumnDefinitions>
         
         <!-- LEFT Panel -->
-        <Grid Grid.Column="0" x:Name="ChartGrid" IsHitTestVisible="True">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="20"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="40"/>
-            </Grid.RowDefinitions>
-            
-            <Button Name="SelectAllPB" Grid.Column="0" Grid.Row="0" Click="SelectAllPB_Click"/>
-            
-            <Grid Name="ColumnButtonGrid" Grid.Column="1" Grid.Row="0"/>
 
-            <Grid Name="RowButtonGrid" Grid.Column="0" Grid.Row="1"/>
-
-            <Grid Name="ChartArrayGrid" Grid.Column="1" Grid.Row="1"
-              MouseMove="ChartArrayGrid_MouseMove" MouseLeave="ChartArrayGrid_MouseLeave"
-              UseLayoutRounding="True" Background="Black"
-                  IsHitTestVisible="True">
-
-                <Grid Grid.Row="0" Grid.Column="0" Name="gridChart"
-                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"             
-                  SizeChanged="gridChart_SizeChanged" Panel.ZIndex="10"
-                  IsHitTestVisible="True"
-                  />
-
-                <Image Grid.Row="0" Grid.Column="0" Name="overlayBitmap" Panel.ZIndex="12"
-                   Stretch="Fill" Margin="0"
-                   Source="{Binding Path=Overlay}"
-                   IsHitTestVisible="False"               
-                   />
-
-                <Image Grid.Row="0" Grid.Column="0" Name="gridLinesBitmap" Panel.ZIndex="11"
-                   Stretch="Fill" Margin="0"
-                   Source="{Binding Path=GridLines}"
-                   IsHitTestVisible="False"               
-                   />
-
-            </Grid>
-            <!-- END ChartArrayGrid-->
-            
-            <GroupBox Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2"  Header="Analysis Type To Display"
-                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                    x:Name="AnalysisGroup">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <RadioButton GroupName="AnalysisGroup" Tag="Raw" x:Name="RawRadioButton"
-                                 Click="AnalysisRadioButton_Click" Content="Raw" Grid.Column="0"/>
-                    <RadioButton GroupName="AnalysisGroup" Tag="StaticRatio" x:Name="StaticRatioRadioButton"
-                                 Click="AnalysisRadioButton_Click" Content="Static Ratio" Grid.Column="1"/>
-                    <RadioButton GroupName="AnalysisGroup" Tag="ControlSubtraction" x:Name="ControlSubtractionRadioButton"
-                                 Click="AnalysisRadioButton_Click" Content="Control Subtraction" Grid.Column="2"/>
-                    <RadioButton GroupName="AnalysisGroup" Tag="DynamicRatio" x:Name="DynamicRatioRadioButton"
-                                 Click="AnalysisRadioButton_Click" Content="Dynamic Ratio" Grid.Column="3"/>
-                </Grid>                
-            </GroupBox>
-
-        </Grid>
-
-   
-
+        <WpfTools:MultiChartArray Grid.Column="0" x:Name="MyMultiChartArray"/>
+        
+        
         <!-- Grid Splitter -->
         <GridSplitter Grid.Column="1" 
                     HorizontalAlignment="Stretch" 
@@ -333,10 +269,11 @@
             </Grid.RowDefinitions>
 
             <!-- TOP Panel -->
-            <Grid Grid.Row="0" Name="AggregateGrid" SizeChanged="AggregateGrid_SizeChanged"
-                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                  />
+            <WpfTools:AggregateChart Grid.Row="0" x:Name="MyAggregateChart" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
+            
+            
+            
             <!-- Grid Splitter -->
             <GridSplitter Grid.Row="1"
                     HorizontalAlignment="Stretch" 

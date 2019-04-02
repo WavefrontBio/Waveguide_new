@@ -66,12 +66,12 @@ namespace Waveguide
             FolderBrowserDialog dlg = new FolderBrowserDialog();
 
             // Show the FolderBrowserDialog.
-            dlg.SelectedPath = GlobalVars.ImageFileSaveLocation;
+            dlg.SelectedPath = GlobalVars.Instance.ImageFileSaveLocation;
             DialogResult result = dlg.ShowDialog();
 
             if(result == System.Windows.Forms.DialogResult.OK)
             {
-                GlobalVars.ImageFileSaveLocation = dlg.SelectedPath;
+                GlobalVars.Instance.ImageFileSaveLocation = dlg.SelectedPath;
                 VM.Location = dlg.SelectedPath;
             }
             
@@ -130,12 +130,12 @@ namespace Waveguide
 
                 ReferenceImageContainer refCont = new ReferenceImageContainer();
 
-                refCont.CompressionAlgorithm = GlobalVars.CompressionAlgorithm;
+                refCont.CompressionAlgorithm = GlobalVars.Instance.CompressionAlgorithm;
                 refCont.Depth = 2;
                 refCont.Height = m_height;
                 refCont.Width = m_width;
                 refCont.ImageData = m_imageData;
-                refCont.MaxPixelValue = GlobalVars.MaxPixelValue;
+                refCont.MaxPixelValue = GlobalVars.Instance.MaxPixelValue;
                 refCont.NumBytes = m_imageData.Length * 2;
                 refCont.TimeStamp = DateTime.Now;
                 refCont.Description = VM.Description;
@@ -281,7 +281,7 @@ namespace Waveguide
         public VM_SaveImageDialog()
         {
             _saveAsFile = false;
-            _location = GlobalVars.ImageFileSaveLocation;
+            _location = GlobalVars.Instance.ImageFileSaveLocation;
             _filename = "";
             _description = "";
         }

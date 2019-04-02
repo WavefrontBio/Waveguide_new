@@ -1,0 +1,34 @@
+﻿<Window x:Class="Waveguide.VWorksErrorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Waveguide"
+        mc:Ignorable="d"
+        Title="VWorks Error" Height="300" Width="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="A VWorks error has occurred!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+
+        <Grid Grid.Row="1" Background="LightYellow">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="12"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="Error Description" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="1" x:Name="ErrorDescription" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"/>
+        </Grid>
+
+        <TextBlock Grid.Row="2" Text="Once the error has been cleared, click OK" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"/>
+
+        <Button Grid.Row="3" x:Name="OkPB" Width="60" Height="24" Content="OK" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0"
+               Click="OkPB_Click" />
+
+    </Grid>
+</Window>

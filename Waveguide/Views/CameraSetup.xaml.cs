@@ -39,7 +39,7 @@ namespace Waveguide
 			this.InitializeComponent();
             m_ID = -1;
             m_lowerSliderValue = 0;
-            m_upperSliderValue = (UInt16)GlobalVars.MaxPixelValue;
+            m_upperSliderValue = (UInt16)GlobalVars.Instance.MaxPixelValue;
 
             m_wgDB = new WaveguideDB();
 
@@ -134,7 +134,7 @@ namespace Waveguide
                 vm.EMGain = 1;
                 vm.Binning = 1;
                 vm.Exposure = (int)(ips.exposure * 1000);
-                vm.CycleTime = GlobalVars.CameraDefaultCycleTime;
+                vm.CycleTime = GlobalVars.Instance.CameraDefaultCycleTime;
                 vm.MinCycleTime = 100;
 
                 m_wgDB.GetAllEmissionFilters();
@@ -152,7 +152,7 @@ namespace Waveguide
                 m_imager.m_ImagingDictionary.Add(m_ID, ips);
                 m_imager.ConfigImageDisplaySurface(m_ID, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, false);
 
-                m_imager.m_lambda.MoveFilterABandCloseShutterA((byte)vm.ExFilter.PositionNumber, (byte) vm.EmFilter.PositionNumber, GlobalVars.FilterChangeSpeed, GlobalVars.FilterChangeSpeed);
+                m_imager.m_lambda.MoveFilterABandCloseShutterA((byte)vm.ExFilter.PositionNumber, (byte) vm.EmFilter.PositionNumber, GlobalVars.Instance.FilterChangeSpeed, GlobalVars.Instance.FilterChangeSpeed);
                 
             }
 
@@ -196,14 +196,14 @@ namespace Waveguide
 
             RangeSlider.RangeChanged += RangeSlider_RangeChanged;
 
-            m_imager.m_lambda.MoveFilterABandCloseShutterA((byte)vm.ExFilter.PositionNumber, (byte)vm.EmFilter.PositionNumber, GlobalVars.FilterChangeSpeed, GlobalVars.FilterChangeSpeed);
+            m_imager.m_lambda.MoveFilterABandCloseShutterA((byte)vm.ExFilter.PositionNumber, (byte)vm.EmFilter.PositionNumber, GlobalVars.Instance.FilterChangeSpeed, GlobalVars.Instance.FilterChangeSpeed);
 
         }
 
         void RangeSlider_RangeChanged(object sender, WPFTools.RangeSliderEventArgs e)
         {
-            m_lowerSliderValue = (UInt16)(e.Minimum/100.0f * (double)GlobalVars.MaxPixelValue);
-            m_upperSliderValue = (UInt16)(e.Maximum / 100.0f * (double)GlobalVars.MaxPixelValue);
+            m_lowerSliderValue = (UInt16)(e.Minimum/100.0f * (double)GlobalVars.Instance.MaxPixelValue);
+            m_upperSliderValue = (UInt16)(e.Maximum / 100.0f * (double)GlobalVars.Instance.MaxPixelValue);
 
             if (m_imager == null) return;
 

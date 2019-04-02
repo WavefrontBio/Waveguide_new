@@ -53,24 +53,33 @@ namespace Waveguide
 
         public EthernetIO(string ipAddr)
         {
-            m_connected = false;
-            m_ipAddr = ipAddr;
+            try
+            {
+                m_connected = false;
+                m_ipAddr = ipAddr;
 
-            m_device = EDDevice.Create(ipAddr);
+                m_device = EDDevice.Create(ipAddr);
 
-            m_device.DeviceStatusChangedEvent+=m_device_DeviceStatusChangedEvent;
-            
-            m_watchdogTimer = new Timer(5.0); // monitor Ethernet connection
-            m_watchdogTimer.Elapsed += m_watchdogTimer_Elapsed;
-            m_watchdogTimer.Start();
+                m_device.DeviceStatusChangedEvent += m_device_DeviceStatusChangedEvent;
 
-            m_tryingToConnect = false;
+                m_watchdogTimer = new Timer(5.0); // monitor Ethernet connection
+                m_watchdogTimer.Elapsed += m_watchdogTimer_Elapsed;
+                m_watchdogTimer.Start();
 
-            m_watchdogTimer_Elapsed(null, null);
+                m_tryingToConnect = false;
+
+                m_watchdogTimer_Elapsed(null, null);
 
 
-            m_device.Inputs.IOLineChange += Inputs_IOLineChange;
-            m_device.Outputs.IOLineChange += Outputs_IOLineChange;
+                m_device.Inputs.IOLineChange += Inputs_IOLineChange;
+                m_device.Outputs.IOLineChange += Outputs_IOLineChange;
+            }
+            catch (Exception ex)
+            {
+                OnIOMessageEvent(new IOMessageEventArgs("Could not create Ethernet IO: " + ex.Message));
+            }
+
+
         }
 
         void m_watchdogTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -144,15 +153,15 @@ namespace Waveguide
                     if (changeType == IOChangeTypes.RisingEdge)
                     {
                         if (m_device.Outputs[0].Value == 1) // magnetic latch is ON
-                            GlobalVars.DoorStatus = DOOR_STATUS.LOCKED;
+                            GlobalVars.Instance.DoorStatus = DOOR_STATUS.LOCKED;
                         else
-                            GlobalVars.DoorStatus = DOOR_STATUS.CLOSED;
+                            GlobalVars.Instance.DoorStatus = DOOR_STATUS.CLOSED;
                     }
                     else if (changeType == IOChangeTypes.FallingEdge)
                     {
-                        GlobalVars.DoorStatus = DOOR_STATUS.OPEN;
+                        GlobalVars.Instance.DoorStatus = DOOR_STATUS.OPEN;
                     }
-                    OnDoorStatusEvent(new DoorStatusEventArgs(GlobalVars.DoorStatus));                    
+                    OnDoorStatusEvent(new DoorStatusEventArgs(GlobalVars.Instance.DoorStatus));                    
                     break;
                 case 1:
                     break;
@@ -209,17 +218,17 @@ namespace Waveguide
                 {
                     m_device.Outputs[0].Value = 1;
                     if (m_device.Inputs[0].Value == 1)
-                        GlobalVars.DoorStatus = DOOR_STATUS.LOCKED;
+                        GlobalVars.Instance.DoorStatus = DOOR_STATUS.LOCKED;
                     else
-                        GlobalVars.DoorStatus = DOOR_STATUS.OPEN;
+                        GlobalVars.Instance.DoorStatus = DOOR_STATUS.OPEN;
                 }
                 else
                 {
                     m_device.Outputs[0].Value = 0;
                     if(m_device.Inputs[0].Value == 1)
-                        GlobalVars.DoorStatus = DOOR_STATUS.CLOSED;
+                        GlobalVars.Instance.DoorStatus = DOOR_STATUS.CLOSED;
                     else
-                        GlobalVars.DoorStatus = DOOR_STATUS.OPEN;
+                        GlobalVars.Instance.DoorStatus = DOOR_STATUS.OPEN;
                 }
             }
         }

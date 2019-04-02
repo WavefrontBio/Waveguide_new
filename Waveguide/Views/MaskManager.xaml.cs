@@ -87,8 +87,8 @@ namespace Waveguide
 
 
             // create default image
-            int width = GlobalVars.PixelWidth;
-            int height = GlobalVars.PixelHeight;
+            int width = GlobalVars.Instance.PixelWidth;
+            int height = GlobalVars.Instance.PixelHeight;
             
             int numpixels = width*height;
             ushort[] defaultImage = new ushort[numpixels];
@@ -133,8 +133,8 @@ namespace Waveguide
 
 
             // TODO: these values should be retrieve from the camera or from global variables
-            int imagePixelWidth = GlobalVars.PixelWidth;
-            int imagePixelHeight = GlobalVars.PixelHeight;
+            int imagePixelWidth = GlobalVars.Instance.PixelWidth;
+            int imagePixelHeight = GlobalVars.Instance.PixelHeight;
 
             
             int[] xp;
@@ -760,8 +760,8 @@ namespace Waveguide
             //m_refImage = null;
 
             // create default image
-            int width = GlobalVars.PixelWidth;
-            int height = GlobalVars.PixelHeight;
+            int width = GlobalVars.Instance.PixelWidth;
+            int height = GlobalVars.Instance.PixelHeight;
             
             int numbytes = width * height;
             ushort[] defaultImage = new ushort[numbytes];

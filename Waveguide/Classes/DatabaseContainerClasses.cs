@@ -102,6 +102,10 @@ namespace Waveguide
         {
             if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(info)); }
         }
+
+
+
+
     }
 
 

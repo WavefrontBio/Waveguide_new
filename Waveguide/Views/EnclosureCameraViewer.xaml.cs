@@ -36,7 +36,7 @@ namespace Waveguide
             // The IP address below and setting the anonymous viewer login can be 
             // done using the Axis Camera Management Client
 
-            string ipAddr = GlobalVars.EnclosureCameraIPAddress;
+            string ipAddr = GlobalVars.Instance.EnclosureCameraIPAddress;
             string uriString = "http://" + ipAddr + "/axis-cgi/mjpg/video.cgi";
 
             m_decoder.ParseStream(new Uri(uriString));

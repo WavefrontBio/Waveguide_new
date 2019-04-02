@@ -627,7 +627,7 @@ namespace Waveguide
         public ColorModel(string description, int maxPixelValue = 0, int gradientSize = 1024)
         {
             if(maxPixelValue==0)
-                maxPixelValue = GlobalVars.MaxPixelValue;
+                maxPixelValue = GlobalVars.Instance.MaxPixelValue;
 
             m_description = description;
                         
@@ -704,12 +704,12 @@ namespace Waveguide
 
 
             m_controlPts.Add(new ColorControlPoint(0, 0));
-            m_controlPts.Add(new ColorControlPoint(GlobalVars.MaxPixelValue, m_gradientSize - 1));
+            m_controlPts.Add(new ColorControlPoint(GlobalVars.Instance.MaxPixelValue, m_gradientSize - 1));
 
             m_stops.Add(new ColorStop(0, new WG_Color(0, 0, 0)));
-            m_stops.Add(new ColorStop(GlobalVars.MaxPixelValue, new WG_Color(255, 255, 255)));
+            m_stops.Add(new ColorStop(GlobalVars.Instance.MaxPixelValue, new WG_Color(255, 255, 255)));
 
-            m_maxPixelValue = GlobalVars.MaxPixelValue;
+            m_maxPixelValue = GlobalVars.Instance.MaxPixelValue;
             m_colorMap = new WG_Color[m_maxPixelValue + 1];
 
             for (int i = 0; i < m_maxPixelValue + 1; i++)
@@ -718,7 +718,7 @@ namespace Waveguide
             }
 
             //SetMaxPixelValue(maxPixelValue);
-            m_maxPixelValue = GlobalVars.MaxPixelValue;
+            m_maxPixelValue = GlobalVars.Instance.MaxPixelValue;
             m_colorMap = new WG_Color[m_maxPixelValue + 1];
 
             for (int i = 0; i < m_gradientSize; i++ )

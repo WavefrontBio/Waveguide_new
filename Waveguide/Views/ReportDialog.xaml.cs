@@ -46,13 +46,13 @@ namespace Waveguide
 
             this.DataContext = VM;
 
-            VM.WaveguideDirectory = m_reportWriter.GetFormattedString(GlobalVars.DefaultWaveGuideReportFileDirectory);
+            VM.WaveguideDirectory = m_reportWriter.GetFormattedString(GlobalVars.Instance.DefaultWaveGuideReportFileDirectory);
 
-            VM.WaveguideFilename = m_reportWriter.GetFormattedString(GlobalVars.DefaultWaveGuideFileNameFormat);
+            VM.WaveguideFilename = m_reportWriter.GetFormattedString(GlobalVars.Instance.DefaultWaveGuideFileNameFormat);
 
-            VM.ExcelDirectory = m_reportWriter.GetFormattedString(GlobalVars.DefaultExcelReportFileDirectory);
+            VM.ExcelDirectory = m_reportWriter.GetFormattedString(GlobalVars.Instance.DefaultExcelReportFileDirectory);
 
-            VM.ExcelFilename = m_reportWriter.GetFormattedString(GlobalVars.DefaultExcelFileNameFormat);
+            VM.ExcelFilename = m_reportWriter.GetFormattedString(GlobalVars.Instance.DefaultExcelFileNameFormat);
 
             VM.WaveguideSelected = true;
 

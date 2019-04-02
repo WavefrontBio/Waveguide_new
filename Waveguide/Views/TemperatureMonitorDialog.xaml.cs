@@ -33,15 +33,19 @@ namespace Waveguide
         
         int m_thresholdTemperature;
 
+        bool m_overridden;
+
         public TemperatureMonitorDialog(Camera camera)
         {
             m_camera = camera;
 
-            m_thresholdTemperature = GlobalVars.CameraTargetTemperature + GlobalVars.MaxCameraTemperatureThresholdDeviation;
+            m_thresholdTemperature = GlobalVars.Instance.CameraTargetTemperature + GlobalVars.Instance.MaxCameraTemperatureThresholdDeviation;
 
             InitializeComponent();
             VM = new TemperatureMonitorDialog_ViewModel();
             DataContext = VM;
+
+            m_overridden = false;
 
             VM.GoodZoneStart = m_thresholdTemperature;
             VM.GoodZoneEnd = m_thresholdTemperature - 20;
@@ -67,82 +71,20 @@ namespace Waveguide
 
         private void OverridePB_Click(object sender, RoutedEventArgs e)
         {
+            m_overridden = true;
             Close();
         }
 
+        public bool WasOverridden()
+        {
+            return m_overridden;
+        }
+
         /////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////////////////////////////////////////////
 
 
-        private void gauge_MouseMove_1(object sender, MouseEventArgs e)
-        {
-            var pos = e.GetPosition(gauge);
-
-            if (_dragging)
-            {
-                var value = gauge.GetValueForPoint(pos);
-
-                if ((sender as XamLinearGauge).MinimumValue < value && value < (sender as XamLinearGauge).MaximumValue)
-                {
-                    gauge.Value = Math.Round(value - mouseValueOffset, 2);
-                }
-                else
-                {
-                    gauge.Value = Math.Round(value - mouseValueOffset, 2) >= (sender as XamLinearGauge).MaximumValue ? (sender as XamLinearGauge).MaximumValue : (sender as XamLinearGauge).MinimumValue;
-                }
-            }
-
-            if (gauge.NeedleContainsPoint(pos))
-            {
-                if (!_over)
-                {
-                    _over = true;
-                    _previousBrush = gauge.NeedleBrush;
-                    gauge.NeedleBrush = new SolidColorBrush(Colors.Green);
-                }
-            }
-            else
-            {
-                if (_over)
-                {
-                    _over = false;
-                    gauge.NeedleBrush = _previousBrush;
-                    _previousBrush = null;
-                }
-            }
-        }
-
-        private bool _dragging = false;
-        double mouseValueOffset = 0;
-        private void gauge_MouseLeftButtonDown_1(object sender, MouseButtonEventArgs e)
-        {
-            if (_over)
-            {
-                if (!_dragging && gauge.CaptureMouse())
-                {
-
-                    mouseValueOffset = gauge.GetValueForPoint(e.GetPosition(gauge)) - gauge.Value;
-                    _dragging = true;
-                }
-            }
-        }
-
-        private void gauge_MouseLeftButtonUp_1(object sender, MouseButtonEventArgs e)
-        {
-            if (_dragging)
-            {
-                _dragging = false;
-                gauge.ReleaseMouseCapture();
-            }
-        }
-
-        private void gauge_LostMouseCapture_1(object sender, MouseEventArgs e)
-        {
-            if (_dragging)
-            {
-                _dragging = false;
-            }
-        }
+       
 
        
 

@@ -9,7 +9,7 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:local ="clr-namespace:Waveguide"              
              mc:Ignorable="d" 
-             d:DesignHeight="650" d:DesignWidth="950"
+             d:DesignHeight="850" d:DesignWidth="950"
              Loaded="UserControl_Loaded">
     
     <UserControl.Resources>        
@@ -502,6 +502,23 @@
                     IsEnabled="{Binding Path=RunEnabled}"                    
                     x:Name="StartExperimentPB" Margin="5"
                     Click="StartExperimentPB_Click"/>
+
+        <Button Grid.Row="6" Grid.Column="1" Content="Save Configuration" FontSize="12" Width="Auto" Height="Auto" HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Margin="10" x:Name="SaveExperimentConfigurationPB" Click="SaveExperimentConfigurationPB_Click"
+                    ToolTip="Save this configuration for use with Automated Runs">
+            <Button.Style>
+                <Style TargetType="Button">                    
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding RunEnabled}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding RunEnabled}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
 
     </Grid>
     <!--</ScrollViewer>-->

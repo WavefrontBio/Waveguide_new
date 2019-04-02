@@ -97,7 +97,7 @@
         </Grid.Resources>
 
 
-        <igDP:XamDataGrid x:Name="xamDataGrid" DataSource="{Binding Path=Methods}" Theme="IGTheme"
+        <igDP:XamDataGrid x:Name="xamDataGrid" Theme="IGTheme"
                           EditModeEnded="xamDataGrid_EditModeEnded"                          
                           RecordUpdated="xamDataGrid_RecordUpdated"
                           RecordsDeleting="xamDataGrid_RecordsDeleting"  FontSize="10"                        

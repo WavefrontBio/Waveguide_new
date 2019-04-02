@@ -135,8 +135,8 @@ namespace Waveguide
             vbin = 1;
             roiX = 0;
             roiY = 0;
-            roiW = GlobalVars.PixelWidth;
-            roiH = GlobalVars.PixelHeight;
+            roiW = GlobalVars.Instance.PixelWidth;
+            roiH = GlobalVars.Instance.PixelHeight;
             ready = false;
             UpdateBinnedSizes();
         }
@@ -182,8 +182,8 @@ namespace Waveguide
 
         private void UpdateBinnedSizes()
         {
-            binnedFullImageWidth = (UInt16)(GlobalVars.PixelWidth / HBin);
-            binnedFullImageHeight = (UInt16)(GlobalVars.PixelHeight / VBin);
+            binnedFullImageWidth = (UInt16)(GlobalVars.Instance.PixelWidth / HBin);
+            binnedFullImageHeight = (UInt16)(GlobalVars.Instance.PixelHeight / VBin);
             binnedRoiX = (UInt16)(RoiX / HBin);
             binnedRoiY = (UInt16)(RoiY / VBin);
             binnedRoiW = (UInt16)(RoiW / HBin);
@@ -344,8 +344,8 @@ namespace Waveguide
         public Camera()  // constructor
         {
             // default number of pixels in CCD; this should be set to real value in the Initialize() method below
-            XPixels = GlobalVars.PixelWidth;
-            YPixels = GlobalVars.PixelHeight;
+            XPixels = GlobalVars.Instance.PixelWidth;
+            YPixels = GlobalVars.Instance.PixelHeight;
 
 
             VSSpeeds = new ObservableCollection<VSSpeed>();
@@ -448,7 +448,7 @@ namespace Waveguide
 
 
             // ADDED by BG, 26 Mar 2014, Want camera to start cooling right away.  Also added MyCamera.CoolerOFF() in destructor
-            CameraTemperature = GlobalVars.CameraTargetTemperature;
+            CameraTemperature = GlobalVars.Instance.CameraTargetTemperature;
             SetCoolerTemp(CameraTemperature);
             MyCamera.SetImageRotate(ImageRotate); // 0 = no rotate, 1 = 90 degs CW, 2 = 90 CCW
 
@@ -676,8 +676,8 @@ namespace Waveguide
             {
                 XPixels = _xPixels;
                 YPixels = _yPixels;
-                GlobalVars.PixelWidth = XPixels;
-                GlobalVars.PixelHeight = YPixels;
+                GlobalVars.Instance.PixelWidth = XPixels;
+                GlobalVars.Instance.PixelHeight = YPixels;
             }
             else
             {

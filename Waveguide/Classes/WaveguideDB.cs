@@ -45,7 +45,7 @@ namespace Waveguide
 
         public WaveguideDB()
         {
-            m_connectionString = GlobalVars.DatabaseConnectionString;
+            m_connectionString = GlobalVars.Instance.DatabaseConnectionString;
 
             m_colorModelList = new ObservableCollection<ColorModelContainer>();
             m_maskList = new ObservableCollection<MaskContainer>();
@@ -131,7 +131,7 @@ namespace Waveguide
                             cmContainer.ColorModelID = reader.GetInt32(0);
                             cmContainer.Description = reader.GetString(1);
                             cmContainer.IsDefault = reader.GetBoolean(2);
-                            cmContainer.MaxPixelValue = GlobalVars.MaxPixelValue; // later set by image to be displayed
+                            cmContainer.MaxPixelValue = GlobalVars.Instance.MaxPixelValue; // later set by image to be displayed
                             cmContainer.GradientSize = 1024;  // fixed
                             cmContainer.Gain = 1.0;  // can be adjusted by GUI
 
@@ -267,7 +267,7 @@ namespace Waveguide
                             model.ColorModelID = reader.GetInt32(0);
                             model.Description = reader.GetString(1);
                             model.IsDefault = reader.GetBoolean(2);
-                            model.MaxPixelValue = GlobalVars.MaxPixelValue;
+                            model.MaxPixelValue = GlobalVars.Instance.MaxPixelValue;
                             model.GradientSize = 1024;
                             model.Gain = 1.0;
                         }

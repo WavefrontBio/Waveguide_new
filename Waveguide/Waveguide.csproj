@@ -51,7 +51,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\x64\Debug\</OutputPath>
+    <OutputPath>..\BuildPackage\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -60,7 +60,7 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\x64\Release\</OutputPath>
+    <OutputPath>..\BuildPackage\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -76,25 +76,21 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Arction.Wpf.Charting.LightningChartUltimate, Version=8.2.2.4001, Culture=neutral, PublicKeyToken=6484d7bb14b95dd3, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.8\LibNET4\Arction.Wpf.Charting.LightningChartUltimate.dll</HintPath>
-    </Reference>
-    <Reference Include="InfragisticsWPF4.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Editors.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DragDrop.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataVisualization.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataPresenter.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.DataManager.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Menus.XamMenu.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Layouts.XamTileManager.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Interactions.XamDialogWindow.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Gauges.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamSlider.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamMaskedInput.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamComboEditor.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Editors.XamColorPicker.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
-    <Reference Include="InfragisticsWPF4.Controls.Charts.XamDataChart.v16.2, Version=16.2.20162.2109, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Charts.XamDataChart.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamColorPicker.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamComboEditor.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamMaskedInput.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Editors.XamSlider.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Gauges.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Interactions.XamDialogWindow.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Layouts.XamTileManager.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Controls.Menus.XamMenu.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataManager.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataPresenter.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DataVisualization.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.DragDrop.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.Editors.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
+    <Reference Include="InfragisticsWPF4.v18.1, Version=18.1.20181.82, Culture=neutral, PublicKeyToken=7dd5c3163f2cd0cb, processorArchitecture=MSIL" />
     <Reference Include="ATMCD64CS">
       <HintPath>..\References\ATMCD64CS.dll</HintPath>
     </Reference>
@@ -107,6 +103,9 @@
     </Reference>
     <Reference Include="MjpegProcessor">
       <HintPath>..\References\MjpegProcessor.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleTCP">
+      <HintPath>..\References\SimpleTCP.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -126,9 +125,6 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="ViewModels">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\ViewModels.dll</HintPath>
-    </Reference>
     <Reference Include="VWorks4Lib">
       <HintPath>..\References\VWorks4Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -136,14 +132,14 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="WpfToolkit">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Arction\LightningChart Ultimate SDK v.7\LibNET4\WpfToolkit.dll</HintPath>
-    </Reference>
     <Reference Include="WriteableBitmapEx.Wpf">
       <HintPath>..\packages\WriteableBitmapEx.1.5.1.0\lib\net40\WriteableBitmapEx.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="Xceed.Wpf.Toolkit">
       <HintPath>..\packages\Extended.Wpf.Toolkit.3.0\lib\net40\Xceed.Wpf.Toolkit.dll</HintPath>
+    </Reference>
+    <Reference Include="XmlSettings">
+      <HintPath>..\References\XmlSettings.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +150,7 @@
     <Compile Include="Classes\DatabaseContainerClasses.cs" />
     <Compile Include="Classes\EthernetIO.cs" />
     <Compile Include="Classes\EventDrivenTCPClient.cs" />
+    <Compile Include="Classes\ExperimentConfiguration.cs" />
     <Compile Include="Classes\ExperimentParams.cs" />
     <Compile Include="Classes\FlatFieldCorrector.cs" />
     <Compile Include="Classes\Lambda.cs" />
@@ -168,11 +165,21 @@
     <Compile Include="Classes\Converters.cs" />
     <Compile Include="Classes\GlobalVars.cs" />
     <Compile Include="Classes\ImageFileManager.cs" />
+    <Compile Include="Classes\WaveguideMessage.cs" />
+    <Compile Include="CudaInterfaceClasses\ChartArray.cs" />
+    <Compile Include="CudaInterfaceClasses\CudaUtil.cs" />
+    <Compile Include="CudaInterfaceClasses\ImageTool.cs" />
+    <Compile Include="Views\AggregateChart.xaml.cs">
+      <DependentUpon>AggregateChart.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\AutoOptimizeViewerControl.xaml.cs">
       <DependentUpon>AutoOptimizeViewerControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\CameraSettingsManager.xaml.cs">
       <DependentUpon>CameraSettingsManager.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\MultiChartArray.xaml.cs">
+      <DependentUpon>MultiChartArray.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\RunExperimentControl.xaml.cs">
       <DependentUpon>RunExperimentControl.xaml</DependentUpon>
@@ -277,6 +284,9 @@
     <Compile Include="Views\UserManager.xaml.cs">
       <DependentUpon>UserManager.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\VWorksErrorDialog.xaml.cs">
+      <DependentUpon>VWorksErrorDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\WellSelectionControl.xaml.cs">
       <DependentUpon>WellSelectionControl.xaml</DependentUpon>
     </Compile>
@@ -289,6 +299,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\Camera.cs" />
+    <Page Include="Views\AggregateChart.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\AutoOptimizeViewerControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -296,6 +310,10 @@
     <Page Include="Views\CameraSettingsManager.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\MultiChartArray.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\RunExperimentControl.xaml">
       <SubType>Designer</SubType>
@@ -429,6 +447,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\VWorksErrorDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\WellSelectionControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -469,12 +491,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CudaToolsNet\CudaToolsNet.csproj">
-      <Project>{8c1ecec3-112e-4d52-afe7-fa332cb40c5b}</Project>
-      <Name>CudaToolsNet</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\blank.png" />

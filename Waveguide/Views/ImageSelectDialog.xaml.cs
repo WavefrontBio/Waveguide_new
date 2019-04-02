@@ -44,7 +44,7 @@ namespace Waveguide
 
         public void InitColorMap()
         {
-            colorModel = new ColorModel("Default", GlobalVars.MaxPixelValue);  // TODO:  This probably should not be a fixed number!!
+            colorModel = new ColorModel("Default", GlobalVars.Instance.MaxPixelValue);  // TODO:  This probably should not be a fixed number!!
 
             // Black to White colorMap
             colorModel.InsertColorStop(0, 0, 0, 0);

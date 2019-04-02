@@ -31,13 +31,25 @@ namespace Waveguide
 
         WaveguideDB wgDB;
 
-        MethodManagerViewModel VM;
-
+  
         public static readonly RoutedCommand BrowseButtonCommand = new RoutedCommand();
         public static readonly RoutedCommand IsPublicCheckBoxCommand = new RoutedCommand();
         public static readonly RoutedCommand IsAutoCheckBoxCommand = new RoutedCommand();
 
 
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        private ObservableCollection<MethodItem> m_methods;
+
+        private ObservableCollection<FilterContainer> m_excitationFilters;
+        private ObservableCollection<FilterContainer> m_emissionsFilters;
+        private ObservableCollection<SignalTypeContainer> m_signalTypeList;
+        private ObservableCollection<BarcodeResetContainer> m_barcodeResetTypeList;
+
+        private ObservableCollection<ProjectContainer> m_projectList;
+
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
         void IsPublicCheckBoxCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -90,7 +102,7 @@ namespace Waveguide
             // Set filter for file extension and default file extension 
             dlg.DefaultExt = ".pro";
             dlg.Filter = "Bravo Protocol Files (*.pro)|*.pro|ANY Files (*.*)|*.*";
-            dlg.InitialDirectory = GlobalVars.VWorksProtocolFileDirectory;
+            dlg.InitialDirectory = GlobalVars.Instance.VWorksProtocolFileDirectory;
             if(File.Exists(method.BravoMethodFile))
                 dlg.FileName = method.BravoMethodFile;
 
@@ -170,34 +182,45 @@ namespace Waveguide
 
             wgDB = new WaveguideDB();
 
-            VM = new MethodManagerViewModel();
+            m_methods = new ObservableCollection<MethodItem>();
+            xamDataGrid.DataSource = m_methods;
+            LoadProjectList();
 
-         
+            m_barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+            foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
+            {
+                BarcodeResetContainer brc = new BarcodeResetContainer();
+                brc.Description = st.ToString();
+                brc.Value = st;
+                m_barcodeResetTypeList.Add(brc);
+            }
+
+
             RefreshSignalTypeList();
             RefreshFilterList();
             RefreshProjectList();
             RefreshBarcodeResetTypeList();
                      
              //Initialize data in the XamDataGrid - NOTE: A blank record is added FIRST, this is key to this approach for the XamDataGrid
-            MethodItem blank = new MethodItem(0,"","",GlobalVars.UserID,VM.ProjectList.Count > 0 ? VM.ProjectList.ElementAt(0).ProjectID:0,false,false,PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref projectList);
+            MethodItem blank = new MethodItem(0,"","",GlobalVars.Instance.UserID,m_projectList.Count > 0 ? m_projectList.ElementAt(0).ProjectID:0,false,false,PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref projectList);
             
-            VM.Methods.Add(blank);
+            m_methods.Add(blank);
             
             // load all methods for user
-            bool success = wgDB.GetAllMethodsForUser(GlobalVars.UserID);
+            bool success = wgDB.GetAllMethodsForUser(GlobalVars.Instance.UserID);
             if (success)
             {                
                 foreach(MethodContainer mc in wgDB.m_methodList)
                 {
                     MethodItem mi = new MethodItem(mc,ref projectList);
                     
-                    VM.Methods.Add(mi);
+                    m_methods.Add(mi);
 
                     // load all indicators for the method
                          // add blank Indicator container to hold the AddRecord
-                    ObservableCollection<FilterContainer> exFilts = VM.ExcitationFilters;
-                    ObservableCollection<FilterContainer> emFilts = VM.EmissionsFilters;
-                    ObservableCollection<SignalTypeContainer> stList = VM.SignalTypeList;
+                    ObservableCollection<FilterContainer> exFilts = m_excitationFilters;
+                    ObservableCollection<FilterContainer> emFilts = m_emissionsFilters;
+                    ObservableCollection<SignalTypeContainer> stList = m_signalTypeList;
                     IndicatorItem blankInd = new IndicatorItem(0, mi.MethodID, "",ref stList,ref exFilts, ref emFilts);                  
                                       
                     mi.Indicators.Add(blankInd);
@@ -217,7 +240,7 @@ namespace Waveguide
 
                     // load all compound plates for the method
                         // add blank Compound Plate container to hold the AddRecord
-                    ObservableCollection<BarcodeResetContainer> brcList = VM.BarcodeResetTypeList;
+                    ObservableCollection<BarcodeResetContainer> brcList = m_barcodeResetTypeList;
                     CompoundPlateItem blankCP = new CompoundPlateItem(0,mi.MethodID,"",PLATE_ID_RESET_BEHAVIOR.CONSTANT,ref brcList);
                     
                     mi.CompoundPlates.Add(blankCP);
@@ -227,7 +250,7 @@ namespace Waveguide
                     {
                         foreach (CompoundPlateContainer cpc in wgDB.m_compoundPlateList)
                         {
-                            ObservableCollection<BarcodeResetContainer> brList = VM.BarcodeResetTypeList;
+                            ObservableCollection<BarcodeResetContainer> brList = m_barcodeResetTypeList;
                             CompoundPlateItem cpi = new CompoundPlateItem(cpc.CompoundPlateID, cpc.MethodID, cpc.Description, cpc.BarcodeReset, ref brcList);
                             
                             mi.CompoundPlates.Add(cpi);
@@ -238,41 +261,36 @@ namespace Waveguide
              
 
             }
-
-
-
-            this.DataContext = VM;
-
           
         }
 
 
         public void RefreshBarcodeResetTypeList()
         {
-            if (VM.BarcodeResetTypeList == null) VM.BarcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
-            else VM.BarcodeResetTypeList.Clear();
+            if (m_barcodeResetTypeList == null) m_barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+            else m_barcodeResetTypeList.Clear();
 
             foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
             {
                 BarcodeResetContainer brc = new BarcodeResetContainer();
                 brc.Description = st.ToString();
                 brc.Value = st;
-                VM.BarcodeResetTypeList.Add(brc);
+                m_barcodeResetTypeList.Add(brc);
             }
         }
 
 
         public void RefreshSignalTypeList()
         {
-            if (VM.SignalTypeList == null) VM.SignalTypeList = new ObservableCollection<SignalTypeContainer>();
-            else VM.SignalTypeList.Clear();
+            if (m_signalTypeList == null) m_signalTypeList = new ObservableCollection<SignalTypeContainer>();
+            else m_signalTypeList.Clear();
                         
             foreach (SIGNAL_TYPE st in Enum.GetValues(typeof(SIGNAL_TYPE)))
             {
                 SignalTypeContainer stc = new SignalTypeContainer();
                 stc.Value = st;
                 stc.Description = st.ToString();
-                VM.SignalTypeList.Add(stc);
+                m_signalTypeList.Add(stc);
             }
         }
 
@@ -282,8 +300,8 @@ namespace Waveguide
             bool success = wgDB.GetAllExcitationFilters();
             if (success)
             {
-                if (VM.ExcitationFilters == null) VM.ExcitationFilters = new ObservableCollection<FilterContainer>();
-                else VM.ExcitationFilters.Clear();
+                if (m_excitationFilters == null) m_excitationFilters = new ObservableCollection<FilterContainer>();
+                else m_excitationFilters.Clear();
 
                 foreach(FilterContainer filter in wgDB.m_filterList)
                 {
@@ -295,7 +313,7 @@ namespace Waveguide
                     newFilter.PartNumber = filter.PartNumber;
                     newFilter.PositionNumber = filter.PositionNumber;
 
-                    VM.ExcitationFilters.Add(newFilter);
+                    m_excitationFilters.Add(newFilter);
                 }
             }
 
@@ -304,8 +322,8 @@ namespace Waveguide
             success = wgDB.GetAllEmissionFilters();
             if (success)
             {
-                if (VM.EmissionsFilters == null) VM.EmissionsFilters = new ObservableCollection<FilterContainer>();
-                else VM.EmissionsFilters.Clear();
+                if (m_emissionsFilters == null) m_emissionsFilters = new ObservableCollection<FilterContainer>();
+                else m_emissionsFilters.Clear();
 
                 foreach (FilterContainer filter in wgDB.m_filterList)
                 {
@@ -317,7 +335,7 @@ namespace Waveguide
                     newFilter.PartNumber = filter.PartNumber;
                     newFilter.PositionNumber = filter.PositionNumber;
 
-                    VM.EmissionsFilters.Add(newFilter);
+                    m_emissionsFilters.Add(newFilter);
                 }
             }
         }
@@ -326,11 +344,11 @@ namespace Waveguide
 
        public void RefreshProjectList()
         {
-            VM.LoadProjectList();
+            LoadProjectList();
 
             projectList = new ObservableCollection<ProjectContainer>();
 
-            foreach(ProjectContainer pc in VM.ProjectList)
+            foreach(ProjectContainer pc in m_projectList)
             {
                 projectList.Add(pc);
             }
@@ -666,7 +684,7 @@ namespace Waveguide
                         
                         MethodItem miNew = new MethodItem(mi.MethodID,"","",mi.OwnerID,mi.ProjectID,false,false,PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref projectList);
                         
-                        VM.Methods.Insert(0, miNew);
+                        m_methods.Insert(0, miNew);
 
                         // mark the new Method as the AddRecord
                         RecordCollectionBase coll = e.Record.ParentCollection;
@@ -674,9 +692,9 @@ namespace Waveguide
                         MarkAddNewRecord(newMethodRecord);
 
                         // add the AddRecord Indicator for this new method                       
-                        ObservableCollection<FilterContainer> exFilts = VM.ExcitationFilters;
-                        ObservableCollection<FilterContainer> emFilts = VM.EmissionsFilters;
-                        ObservableCollection<SignalTypeContainer> stList = VM.SignalTypeList;
+                        ObservableCollection<FilterContainer> exFilts = m_excitationFilters;
+                        ObservableCollection<FilterContainer> emFilts = m_emissionsFilters;
+                        ObservableCollection<SignalTypeContainer> stList = m_signalTypeList;
                         IndicatorItem ii = new IndicatorItem(0, mi.MethodID, "",ref stList, ref exFilts, ref emFilts);            
 
 
@@ -693,7 +711,7 @@ namespace Waveguide
 
 
                         // add the AddRecord CompoundPlate for this new method
-                        ObservableCollection<BarcodeResetContainer> brcList = VM.BarcodeResetTypeList;
+                        ObservableCollection<BarcodeResetContainer> brcList = m_barcodeResetTypeList;
                         CompoundPlateItem cpi = new CompoundPlateItem(0, mi.MethodID, "", PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref brcList);
                       
                         mi.CompoundPlates.Add(cpi);
@@ -728,9 +746,9 @@ namespace Waveguide
 
                         UnMarkAddNewRecord(e.Record);
 
-                        ObservableCollection<FilterContainer> exFilts = VM.ExcitationFilters;
-                        ObservableCollection<FilterContainer> emFilts = VM.EmissionsFilters;
-                        ObservableCollection<SignalTypeContainer> stList = VM.SignalTypeList;
+                        ObservableCollection<FilterContainer> exFilts = m_excitationFilters;
+                        ObservableCollection<FilterContainer> emFilts = m_emissionsFilters;
+                        ObservableCollection<SignalTypeContainer> stList = m_signalTypeList;
                         IndicatorItem iiNew = new IndicatorItem(0, ic.MethodID, "",ref stList, ref exFilts, ref emFilts);           
 
 
@@ -760,7 +778,7 @@ namespace Waveguide
 
                         UnMarkAddNewRecord(e.Record);
 
-                        ObservableCollection<BarcodeResetContainer> brcList = VM.BarcodeResetTypeList;
+                        ObservableCollection<BarcodeResetContainer> brcList = m_barcodeResetTypeList;
                         CompoundPlateItem cpiNew = new CompoundPlateItem(0, cpc.MethodID, "", PLATE_ID_RESET_BEHAVIOR.CONSTANT, ref brcList);
 
 
@@ -866,138 +884,162 @@ namespace Waveguide
 
 
 
+        public void LoadProjectList()
+        {
+            m_projectList = new ObservableCollection<ProjectContainer>();
 
+            WaveguideDB wgDB = new WaveguideDB();
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////
-        
+            ObservableCollection<ProjectContainer> projList;
+            bool success = wgDB.GetAllProjectsForUser(GlobalVars.Instance.UserID, out projList);
 
-
-
-
-
-        class MethodManagerViewModel : INotifyPropertyChanged
-        {            
-            private ObservableCollection<MethodItem> _methods;
-
-            private ObservableCollection<FilterContainer> _excitationFilters;
-            private ObservableCollection<FilterContainer> _emissionsFilters;
-            private ObservableCollection<SignalTypeContainer> _signalTypeList;
-            private ObservableCollection<BarcodeResetContainer> _barcodeResetTypeList;
-
-            private ObservableCollection<ProjectContainer> _projectList;            
-
-            public ObservableCollection<MethodItem> Methods
+            if (success)
             {
-                get { return _methods; }
-                set
+                foreach (ProjectContainer project in projList)
                 {
-                    _methods = value;
-                    NotifyPropertyChanged("Methods");
+                    m_projectList.Add(project);
                 }
             }
+        }
+
+
+
+
+
+
+
+        /// /////////////////////////////////////////////////////////////////////////////////////////////
+        /// /////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+        //class MethodManagerViewModel : INotifyPropertyChanged
+        //{            
+        //    private ObservableCollection<MethodItem> _methods;
+
+        //    private ObservableCollection<FilterContainer> _excitationFilters;
+        //    private ObservableCollection<FilterContainer> _emissionsFilters;
+        //    private ObservableCollection<SignalTypeContainer> _signalTypeList;
+        //    private ObservableCollection<BarcodeResetContainer> _barcodeResetTypeList;
+
+        //    private ObservableCollection<ProjectContainer> _projectList;            
+
+        //    public ObservableCollection<MethodItem> Methods
+        //    {
+        //        get { return _methods; }
+        //        set
+        //        {
+        //            _methods = value;
+        //            NotifyPropertyChanged("Methods");
+        //        }
+        //    }
                         
 
-            public ObservableCollection<FilterContainer> ExcitationFilters
-            {
-                get { return _excitationFilters; }
-                set
-                {
-                    _excitationFilters = value;
-                    NotifyPropertyChanged("ExcitationFilters");
-                }
-            }
+        //    public ObservableCollection<FilterContainer> ExcitationFilters
+        //    {
+        //        get { return _excitationFilters; }
+        //        set
+        //        {
+        //            _excitationFilters = value;
+        //            NotifyPropertyChanged("ExcitationFilters");
+        //        }
+        //    }
 
-            public ObservableCollection<FilterContainer> EmissionsFilters
-            {
-                get { return _emissionsFilters; }
-                set
-                {
-                    _emissionsFilters = value;
-                    NotifyPropertyChanged("EmissionsFilters");
-                }
-            }
+        //    public ObservableCollection<FilterContainer> EmissionsFilters
+        //    {
+        //        get { return _emissionsFilters; }
+        //        set
+        //        {
+        //            _emissionsFilters = value;
+        //            NotifyPropertyChanged("EmissionsFilters");
+        //        }
+        //    }
 
 
-            public ObservableCollection<SignalTypeContainer> SignalTypeList
-            {
-                get { return _signalTypeList; }
-                set
-                {
-                    _signalTypeList = value;
-                    NotifyPropertyChanged("SignalTypeList");
-                }
-            }
+        //    public ObservableCollection<SignalTypeContainer> SignalTypeList
+        //    {
+        //        get { return _signalTypeList; }
+        //        set
+        //        {
+        //            _signalTypeList = value;
+        //            NotifyPropertyChanged("SignalTypeList");
+        //        }
+        //    }
 
 
            
 
-            public ObservableCollection<ProjectContainer> ProjectList
-            {
-                get { return _projectList; }
-                set
-                {
-                    _projectList = value;
-                    NotifyPropertyChanged("ProjectList");
-                }
-            }
+        //    public ObservableCollection<ProjectContainer> ProjectList
+        //    {
+        //        get { return _projectList; }
+        //        set
+        //        {
+        //            _projectList = value;
+        //            NotifyPropertyChanged("ProjectList");
+        //        }
+        //    }
 
-            public ObservableCollection<BarcodeResetContainer> BarcodeResetTypeList
-            {
-                get { return _barcodeResetTypeList; }
-                set
-                {
-                    _barcodeResetTypeList = value;
-                    NotifyPropertyChanged("BarcodeResetTypeList");
-                }
-            }
+        //    public ObservableCollection<BarcodeResetContainer> BarcodeResetTypeList
+        //    {
+        //        get { return _barcodeResetTypeList; }
+        //        set
+        //        {
+        //            _barcodeResetTypeList = value;
+        //            NotifyPropertyChanged("BarcodeResetTypeList");
+        //        }
+        //    }
 
 
-            public void LoadProjectList()
-            {
-                ProjectList = new ObservableCollection<ProjectContainer>();
+        //    public void LoadProjectList()
+        //    {
+        //        ProjectList = new ObservableCollection<ProjectContainer>();
 
-                WaveguideDB wgDB = new WaveguideDB();
+        //        WaveguideDB wgDB = new WaveguideDB();
 
-                ObservableCollection<ProjectContainer> projList;
-                bool success = wgDB.GetAllProjectsForUser(GlobalVars.UserID, out projList);
+        //        ObservableCollection<ProjectContainer> projList;
+        //        bool success = wgDB.GetAllProjectsForUser(GlobalVars.Instance.UserID, out projList);
 
-                if (success)
-                {
-                    foreach (ProjectContainer project in projList)
-                    {
-                        ProjectList.Add(project);
-                    }
-                }
-            }
+        //        if (success)
+        //        {
+        //            foreach (ProjectContainer project in projList)
+        //            {
+        //                ProjectList.Add(project);
+        //            }
+        //        }
+        //    }
             
 
 
-            public MethodManagerViewModel()
-            {
-                _methods = new ObservableCollection<MethodItem>();
-                LoadProjectList();
+        //    public MethodManagerViewModel()
+        //    {
+        //        _methods = new ObservableCollection<MethodItem>();
+        //        LoadProjectList();
 
-                _barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
-                foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
-                {
-                    BarcodeResetContainer brc = new BarcodeResetContainer();
-                    brc.Description = st.ToString();
-                    brc.Value = st;
-                    _barcodeResetTypeList.Add(brc);
-                }
-            }
+        //        _barcodeResetTypeList = new ObservableCollection<BarcodeResetContainer>();
+        //        foreach (PLATE_ID_RESET_BEHAVIOR st in Enum.GetValues(typeof(PLATE_ID_RESET_BEHAVIOR)))
+        //        {
+        //            BarcodeResetContainer brc = new BarcodeResetContainer();
+        //            brc.Description = st.ToString();
+        //            brc.Value = st;
+        //            _barcodeResetTypeList.Add(brc);
+        //        }
+        //    }
 
 
            
 
 
-            public event PropertyChangedEventHandler PropertyChanged;
-            private void NotifyPropertyChanged(String info)
-            {
-                if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(info)); }
-            }
-        }
+        //    public event PropertyChangedEventHandler PropertyChanged;
+        //    private void NotifyPropertyChanged(String info)
+        //    {
+        //        if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(info)); }
+        //    }
+        //}
+
+
 
 
         class MethodItem : INotifyPropertyChanged

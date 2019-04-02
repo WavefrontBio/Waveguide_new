@@ -59,13 +59,13 @@ namespace Waveguide
 
             // load project list
             ObservableCollection<ProjectContainer> projectList;
-            if (GlobalVars.UserRole == GlobalVars.USER_ROLE_ENUM.ADMIN)
+            if (GlobalVars.Instance.UserRole == GlobalVars.USER_ROLE_ENUM.ADMIN)
             {
                 success = m_wgDB.GetAllProjects(VM.IncludeArchivedProjects);
                 projectList = m_wgDB.m_projectList;
             }
             else
-                success = m_wgDB.GetAllProjectsForUser(GlobalVars.UserID, out projectList);
+                success = m_wgDB.GetAllProjectsForUser(GlobalVars.Instance.UserID, out projectList);
  
             if(success && projectList!=null)
             {

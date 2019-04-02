@@ -1,32 +1,75 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Configuration;
-using System.Xml;
+using System.Windows;
+using System.IO;
+using System.ComponentModel;
 
 namespace Waveguide
 {
+
+    public delegate void StatusChangeEventHandler(object sender, StatusChangeEventArgs e);
+
     public class GlobalVars
     {
-
-        private static TaskScheduler _uiTask;
-        public static TaskScheduler UITask
+        public event StatusChangeEventHandler m_statusChangeEvent;
+        protected virtual void OnStatusChangeEvent(StatusChangeEventArgs e)
         {
-            get { return _uiTask;}
-            set { _uiTask = value; }  
+            if (m_statusChangeEvent != null)
+                m_statusChangeEvent(this, e);
         }
 
 
-        private static VWorks _vWorks;
-        public static VWorks VWorks
+
+        private static readonly GlobalVars instance = new GlobalVars();
+
+        // Explicit static constructor to tell C# compiler
+        // not to mark type as beforefieldinit
+        static GlobalVars()
+        {
+        }
+
+        private GlobalVars()
+        {
+        }
+
+        public static GlobalVars Instance
+        {
+            get
+            {
+                return instance;
+            }
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+
+
+        private WGStatus _status;
+        public WGStatus Status
+        {
+            get { return _status; }
+            set { _status = value; OnStatusChangeEvent(new StatusChangeEventArgs(_status)); }
+        }
+
+        private TaskScheduler _uiTask;
+        public TaskScheduler UITask
+        {
+            get { return _uiTask; }
+            set { _uiTask = value; }
+        }
+
+
+        private VWorks _vWorks;
+        public VWorks VWorks
         {
             get { return _vWorks; }
             set { _vWorks = value; }
         }
-     
+
         public enum USER_ROLE_ENUM
         {
             ADMIN,
@@ -34,500 +77,476 @@ namespace Waveguide
             OPERATOR
         }
 
-        private static USER_ROLE_ENUM _userRole;  // assigned role of this user
-        public static USER_ROLE_ENUM UserRole
+        private USER_ROLE_ENUM _userRole;  // assigned role of this user
+        public USER_ROLE_ENUM UserRole
         {
             get { return _userRole; }
             set { _userRole = value; }
         }
 
-        private static int _userID;  // database record ID for user
-        public static int UserID
+        private int _userID;  // database record ID for user
+        public int UserID
         {
             get { return _userID; }
             set { _userID = value; }
         }
 
-        private static string _userDisplayName;  // display name for user, taken from DB after login
-        public static string UserDisplayName
+        private string _userDisplayName;  // display name for user, taken from DB after login
+        public string UserDisplayName
         {
             get { return _userDisplayName; }
             set { _userDisplayName = value; }
         }
-               
-        private static int _maxPixelValue;  // maximum pixel value from camera
-        public static int MaxPixelValue
+
+        private int _maxPixelValue;  // maximum pixel value from camera
+        public int MaxPixelValue
         {
             get { return _maxPixelValue; }
             set { _maxPixelValue = value; }
         }
 
-        private static int _pixelWidth;  // pixel width of camera CCD
-        public static int PixelWidth
+        private int _pixelWidth;  // pixel width of camera CCD
+        public int PixelWidth
         {
             get { return _pixelWidth; }
             set { _pixelWidth = value; }
         }
 
-        private static int _pixelHeight;  // pixel height of camera CCD
-        public static int PixelHeight
+        private int _pixelHeight;  // pixel height of camera CCD
+        public int PixelHeight
         {
             get { return _pixelHeight; }
             set { _pixelHeight = value; }
         }
 
-       
 
-        private static int _cameraDefaultCycleTime;
-        public static int CameraDefaultCycleTime
+        private int _maxNumberImagesPerExperiment;  // maximum number of images that can be taken for a single experiment 
+        public int MaxNumberImagesPerExperiment     //  This is related to memory allocation on the GPU
+        {
+            get { return _maxNumberImagesPerExperiment; }
+            set { _maxNumberImagesPerExperiment = value; }
+        }
+
+
+        private int _cameraDefaultCycleTime;
+        public int CameraDefaultCycleTime
         {
             get { return _cameraDefaultCycleTime; }
             set { _cameraDefaultCycleTime = value; }
         }
 
-     
 
-        private static byte _filterChangeSpeed;
-        public static byte FilterChangeSpeed
+
+        private byte _filterChangeSpeed;
+        public byte FilterChangeSpeed
         {
             get { return _filterChangeSpeed; }
             set { _filterChangeSpeed = value; }
         }
 
 
-        private static string _imageFileSaveLocation;
-        public static string ImageFileSaveLocation
+        private string _imageFileSaveLocation;
+        public string ImageFileSaveLocation
         {
             get { return _imageFileSaveLocation; }
             set { _imageFileSaveLocation = value; }
         }
 
-        private static List<Color> _defaultTraceColorList;
-        public static List<Color> DefaultTraceColorList
+        private List<Color> _defaultTraceColorList;
+        public List<Color> DefaultTraceColorList
         {
             get { return _defaultTraceColorList; }
             set { _defaultTraceColorList = value; }
         }
 
-        private static COMPRESSION_ALGORITHM _compressionAlgorithm;
-        public static COMPRESSION_ALGORITHM CompressionAlgorithm
+        private COMPRESSION_ALGORITHM _compressionAlgorithm;
+        public COMPRESSION_ALGORITHM CompressionAlgorithm
         {
             get { return _compressionAlgorithm; }
             set { _compressionAlgorithm = value; }
         }
 
 
-        private static string _databaseConnectionString;
-        public static string DatabaseConnectionString
+        private string _databaseConnectionString;
+        public string DatabaseConnectionString
         {
             get { return _databaseConnectionString; }
             set { _databaseConnectionString = value; }
         }
 
-        private static string _vworksUsername;
-        public static string VWorksUsername
+        private string _vworksUsername;
+        public string VWorksUsername
         {
             get { return _vworksUsername; }
             set { _vworksUsername = value; }
         }
 
-        private static string _vworksPassword;
-        public static string VWorksPassword
+        private string _vworksPassword;
+        public string VWorksPassword
         {
             get { return _vworksPassword; }
             set { _vworksPassword = value; }
         }
 
-        private static string _vworksProtocolFileDirectory;  // display name for user, taken from DB after login
-        public static string VWorksProtocolFileDirectory
+        private string _vworksProtocolFileDirectory;  // display name for user, taken from DB after login
+        public string VWorksProtocolFileDirectory
         {
             get { return _vworksProtocolFileDirectory; }
             set { _vworksProtocolFileDirectory = value; }
         }
 
-        private static int _upSignalOptimizePercentCountThreshold;
-        public static int UpSignalOptimizePercentCountThreshold
+        private int _upSignalOptimizePercentCountThreshold;
+        public int UpSignalOptimizePercentCountThreshold
         {
             get { return _upSignalOptimizePercentCountThreshold; }
             set { _upSignalOptimizePercentCountThreshold = value; }
         }
 
-        private static int _downSignalOptimizePercentCountThreshold;
-        public static int DownSignalOptimizePercentCountThreshold
+        private int _downSignalOptimizePercentCountThreshold;
+        public int DownSignalOptimizePercentCountThreshold
         {
             get { return _downSignalOptimizePercentCountThreshold; }
             set { _downSignalOptimizePercentCountThreshold = value; }
         }
 
-        private static int _upDownSignalOptimizePercentCountThreshold;
-        public static int UpDownSignalOptimizePercentCountThreshold
+        private int _upDownSignalOptimizePercentCountThreshold;
+        public int UpDownSignalOptimizePercentCountThreshold
         {
             get { return _upDownSignalOptimizePercentCountThreshold; }
             set { _upDownSignalOptimizePercentCountThreshold = value; }
         }
 
-        private static int _maxCameraTemperatureThresholdDeviation;
-        public static int MaxCameraTemperatureThresholdDeviation
+        private int _maxCameraTemperatureThresholdDeviation;
+        public int MaxCameraTemperatureThresholdDeviation
         {
             get { return _maxCameraTemperatureThresholdDeviation; }
             set { _maxCameraTemperatureThresholdDeviation = value; }
         }
 
-        private static int _maxInsideTemperatureThresholdDeviation;
-        public static int MaxInsideTemperatureThresholdDeviation
+        private int _maxInsideTemperatureThresholdDeviation;
+        public int MaxInsideTemperatureThresholdDeviation
         {
             get { return _maxInsideTemperatureThresholdDeviation; }
             set { _maxInsideTemperatureThresholdDeviation = value; }
         }
 
-        private static string _enclosureCameraIPAddress;
-        public static string EnclosureCameraIPAddress
+        private string _enclosureCameraIPAddress;
+        public string EnclosureCameraIPAddress
         {
             get { return _enclosureCameraIPAddress; }
             set { _enclosureCameraIPAddress = value; }
         }
 
 
-        private static string _defaultExcelReportFileDirectory;
-        public static string DefaultExcelReportFileDirectory
+        private string _defaultExcelReportFileDirectory;
+        public string DefaultExcelReportFileDirectory
         {
             get { return _defaultExcelReportFileDirectory; }
             set { _defaultExcelReportFileDirectory = value; }
         }
 
-        private static string _defaultWaveGuideReportFileDirectory;
-        public static string DefaultWaveGuideReportFileDirectory
+        private string _defaultWaveGuideReportFileDirectory;
+        public string DefaultWaveGuideReportFileDirectory
         {
             get { return _defaultWaveGuideReportFileDirectory; }
             set { _defaultWaveGuideReportFileDirectory = value; }
         }
 
-        private static string _defaultExcelFileNameFormat;
-        public static string DefaultExcelFileNameFormat
+        private string _defaultExcelFileNameFormat;
+        public string DefaultExcelFileNameFormat
         {
             get { return _defaultExcelFileNameFormat; }
             set { _defaultExcelFileNameFormat = value; }
         }
 
-        private static string _defaultWaveGuideFileNameFormat;
-        public static string DefaultWaveGuideFileNameFormat
+        private string _defaultWaveGuideFileNameFormat;
+        public string DefaultWaveGuideFileNameFormat
         {
             get { return _defaultWaveGuideFileNameFormat; }
             set { _defaultWaveGuideFileNameFormat = value; }
         }
 
 
-        private static double _defaultPixelMaskThresholdPercent;
-        public static double DefaultPixelMaskThresholdPercent
+        private double _defaultPixelMaskThresholdPercent;
+        public double DefaultPixelMaskThresholdPercent
         {
             get { return _defaultPixelMaskThresholdPercent; }
             set { _defaultPixelMaskThresholdPercent = value; }
         }
 
 
-        private static int _eventMarkerLatency;
-        public static int EventMarkerLatency
+        private int _eventMarkerLatency;
+        public int EventMarkerLatency
         {
             get { return _eventMarkerLatency; }
             set { _eventMarkerLatency = value; }
         }
 
 
-        private static string _dbServerName;
-        public static string DBServerName
+        private string _dbServerName;
+        public string DBServerName
         {
             get { return _dbServerName; }
             set { _dbServerName = value; }
         }
 
 
-        private static string _dbName;
-        public static string DBName
+        private string _dbName;
+        public string DBName
         {
             get { return _dbName; }
             set { _dbName = value; }
         }
 
 
-        private static string _dbUsername;
-        public static string DBUsername
+        private string _dbUsername;
+        public string DBUsername
         {
             get { return _dbUsername; }
             set { _dbUsername = value; }
         }
 
-        private static string _dbPassword;
-        public static string DBPassword
+        private string _dbPassword;
+        public string DBPassword
         {
             get { return _dbPassword; }
             set { _dbPassword = value; }
         }
 
 
-        private static string _tempControllerIP;
-        public static string TempControllerIP
+        private string _tempControllerIP;
+        public string TempControllerIP
         {
             get { return _tempControllerIP; }
             set { _tempControllerIP = value; }
         }
 
-        private static string _ethernetIOModuleIP;
-        public static string EthernetIOModuleIP
+        private string _ethernetIOModuleIP;
+        public string EthernetIOModuleIP
         {
             get { return _ethernetIOModuleIP; }
             set { _ethernetIOModuleIP = value; }
         }
 
-        private static DOOR_STATUS _doorStatus;
-        public static DOOR_STATUS DoorStatus
+        private DOOR_STATUS _doorStatus;
+        public DOOR_STATUS DoorStatus
         {
             get { return _doorStatus; }
             set { _doorStatus = value; }
         }
 
 
-        private static bool _cameraCoolerON;
-        public static bool CameraCoolerON
+        private bool _cameraCoolerON;
+        public bool CameraCoolerON
         {
             get { return _cameraCoolerON; }
             set { _cameraCoolerON = value; }
         }
 
-        private static int _cameraTemp;
-        public static int CameraTemp
+        private int _cameraTemp;
+        public int CameraTemp
         {
             get { return _cameraTemp; }
             set { _cameraTemp = value; }
         }
 
-        private static int _cameraTargetTemperature;
-        public static int CameraTargetTemperature
+        private int _cameraTargetTemperature;
+        public int CameraTargetTemperature
         {
             get { return _cameraTargetTemperature; }
             set { _cameraTargetTemperature = value; }
         }
 
-        private static bool _cameraTempReady;
-        public static bool CameraTempReady
+        private bool _cameraTempReady;
+        public bool CameraTempReady
         {
             get { return _cameraTempReady; }
             set { _cameraTempReady = value; }
         }
 
 
-        private static bool _insideHeaterON;
-        public static bool InsideHeaterON
+        private bool _insideHeaterON;
+        public bool InsideHeaterON
         {
             get { return _insideHeaterON; }
             set { _insideHeaterON = value; }
         }
 
-        private static int _insideTemp;
-        public static int InsideTemp
+        private int _insideTemp;
+        public int InsideTemp
         {
             get { return _insideTemp; }
             set { _insideTemp = value; }
         }
 
-        private static int _insideTargetTemperature;
-        public static int InsideTargetTemperature
+        private int _insideTargetTemperature;
+        public int InsideTargetTemperature
         {
             get { return _insideTargetTemperature; }
             set { _insideTargetTemperature = value; }
         }
 
-        private static bool _insideTempReady;
-        public static bool InsideTempReady
+        private bool _insideTempReady;
+        public bool InsideTempReady
         {
             get { return _insideTempReady; }
             set { _insideTempReady = value; }
         }
 
 
-        private static string _lambdaComPortName;
-        public static string LambdaComPortName
+        private string _lambdaComPortName;
+        public string LambdaComPortName
         {
             get { return _lambdaComPortName; }
             set { _lambdaComPortName = value; }
         }
 
 
-        public static void LoadConfiguration()
+        private bool _enable_EthernetIOModule;
+        public bool Enable_EthernetIOModule
         {
-            try
-            {
- 
-                var appSettings = ConfigurationManager.AppSettings;
-
-                DefaultTraceColorList = new List<Color>();
-                Color color;
-
-                if (appSettings.Count == 0)
-                {
-                    // App Settings are empty
-                }
-                else
-                {
-                    foreach (var key in appSettings.AllKeys)
-                    {
-                        Console.WriteLine("Key: {0} Value: {1}", key, appSettings[key]);
-
-                        switch (key)
-                        {
-                            case "LambdaComPortName":
-                                LambdaComPortName = appSettings[key];
-                                break;
-                            case "DBServerName":
-                                DBServerName = appSettings[key];
-                                break;
-                            case "DBName":
-                                DBName = appSettings[key];
-                                break;
-                            case "DBUsername":
-                                DBUsername = appSettings[key];
-                                break;
-                            case "DBPassword":
-                                DBPassword = appSettings[key];
-                                break;
-                            case "MaxPixelValue":
-                                MaxPixelValue = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "CameraSensorPixelWidth":
-                                PixelWidth = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "CameraSensorPixelHeight":
-                                PixelHeight = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "DatabaseConnectionString":
-                                DatabaseConnectionString = appSettings[key];
-                                break;
-                            case "CompressionAlgorithm":
-                                switch(appSettings[key].ToUpper())
-                                {                                    
-                                    case "GZIP":
-                                        CompressionAlgorithm = COMPRESSION_ALGORITHM.GZIP;
-                                        break;
-                                    case "NONE":
-                                    default:
-                                        CompressionAlgorithm = COMPRESSION_ALGORITHM.NONE;
-                                        break;
-                                }
-                                break;                            
-                            case "CameraTargetTemperature":
-                                CameraTargetTemperature = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "CameraDefaultCycleTime":
-                                CameraDefaultCycleTime = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "InsideTargetTemperature":
-                                InsideTargetTemperature = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "EventMarkerLatency":
-                                EventMarkerLatency = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "FilterChangeSpeed":
-                                FilterChangeSpeed = Convert.ToByte(appSettings[key]);
-                                break;
-                            case "ImageFileSaveLocation":
-                                ImageFileSaveLocation = appSettings[key];
-                                break;
-                            case "Color1":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "Color2":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "Color3":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "Color4":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "Color5":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "Color6":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "Color7":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "Color8":
-                                color = (Color)ColorConverter.ConvertFromString(appSettings[key]);
-                                if(color!=null) DefaultTraceColorList.Add(color);
-                                break;
-                            case "VWorksUsername":
-                                VWorksUsername = appSettings[key];
-                                break;
-                            case "VWorksPassword":
-                                VWorksPassword = appSettings[key];
-                                break;
-                            case "VWorksProtocolFileDirectory":
-                                VWorksProtocolFileDirectory = appSettings[key];
-                                break;
-                            case "UpSignalOptimizePercentCountThreshold":
-                                UpSignalOptimizePercentCountThreshold = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "DownSignalOptimizePercentCountThreshold":
-                                DownSignalOptimizePercentCountThreshold = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "UpDownSignalOptimizePercentCountThreshold":
-                                UpDownSignalOptimizePercentCountThreshold = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "MaxCameraTemperatureThresholdDeviation":
-                                MaxCameraTemperatureThresholdDeviation = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "MaxInsideTemperatureThresholdDeviation":
-                                MaxInsideTemperatureThresholdDeviation = Convert.ToInt32(appSettings[key]);
-                                break;
-                            case "EnclosureCameraIPAddress":
-                                EnclosureCameraIPAddress = appSettings[key];
-                                break;
-                            case "DefaultExcelReportFileDirectory":
-                                DefaultExcelReportFileDirectory = appSettings[key];
-                                break;
-                            case "DefaultWaveGuideReportFileDirectory":
-                                DefaultWaveGuideReportFileDirectory = appSettings[key];
-                                break;
-                            case "DefaultExcelFileNameFormat":
-                                DefaultExcelFileNameFormat = appSettings[key];
-                                break;
-                            case "DefaultWaveGuideFileNameFormat":
-                                DefaultWaveGuideFileNameFormat = appSettings[key];
-                                break;
-                            case "DefaultPixelMaskThresholdPercent":
-                                DefaultPixelMaskThresholdPercent = Convert.ToDouble(appSettings[key]);
-                                break;
-                            case "TemperatureController_IP":
-                                TempControllerIP = appSettings[key];
-                                break;
-                            case "EthernetIOModule_IP":
-                                EthernetIOModuleIP = appSettings[key];
-                                break;
-                                
-                        }
-                    }
-
-
-                    DatabaseConnectionString = "Data Source=" + DBServerName +
-                                               ";Initial Catalog=" + DBName +
-                                               ";User ID=" + DBUsername +
-                                               ";Password=" + DBPassword;
-                }
-            }
-            catch (ConfigurationErrorsException)
-            {
-                // Error reading app settings
-            }           
+            get { return _enable_EthernetIOModule; }
+            set { _enable_EthernetIOModule = value; }
         }
 
 
+
+        private bool _enable_EnclosureTemperatureController;
+        public bool Enable_EnclosureTemperatureController
+        {
+            get { return _enable_EnclosureTemperatureController; }
+            set { _enable_EnclosureTemperatureController = value; }
+        }
+
+
+
+        private int _tcpCommand_Port;
+        public int TCPCommand_Port
+        {
+            get { return _tcpCommand_Port; }
+            set { _tcpCommand_Port = value; }
+        }
+
+        public void LoadConfiguration(string settingsFile)
+        {
+            if (!File.Exists(settingsFile))
+            {
+                MessageBox.Show("Settings file not found: " + settingsFile, "Settins File Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Status = WGStatus.UNKNOWN;
+
+
+            try
+            {
+
+                XmlSettings.Settings settings = new XmlSettings.Settings(settingsFile);
+
+                DefaultTraceColorList = new List<Color>();
+
+                LambdaComPortName = settings.GetValue("MAIN", "LambdaComPortName");
+                DBServerName = settings.GetValue("MAIN", "DBServerName");
+                DBName = settings.GetValue("MAIN", "DBName");
+                DBUsername = settings.GetValue("MAIN", "DBUsername");
+                DBPassword = settings.GetValue("MAIN", "DBPassword");
+                MaxPixelValue = Convert.ToInt32(settings.GetValue("MAIN", "MaxPixelValue"));
+                PixelWidth = Convert.ToInt32(settings.GetValue("MAIN", "CameraSensorPixelWidth"));
+                PixelHeight = Convert.ToInt32(settings.GetValue("MAIN", "CameraSensorPixelHeight"));
+                MaxNumberImagesPerExperiment = Convert.ToInt32(settings.GetValue("MAIN", "MaxNumberImagesPerExperiment"));
+
+
+                switch (settings.GetValue("MAIN", "CompressionAlgorithm"))
+                {
+                    case "GZIP":
+                        CompressionAlgorithm = COMPRESSION_ALGORITHM.GZIP;
+                        break;
+                    default:
+                        CompressionAlgorithm = COMPRESSION_ALGORITHM.NONE;
+                        break;
+                }
+
+
+                CameraTargetTemperature = Convert.ToInt32(settings.GetValue("MAIN", "CameraTargetTemperature"));
+                CameraDefaultCycleTime = Convert.ToInt32(settings.GetValue("MAIN", "CameraDefaultCycleTime"));
+                InsideTargetTemperature = Convert.ToInt32(settings.GetValue("MAIN", "InsideTargetTemperature"));
+                EventMarkerLatency = Convert.ToInt32(settings.GetValue("MAIN", "EventMarkerLatency"));
+                FilterChangeSpeed = Convert.ToByte(settings.GetValue("MAIN", "FilterChangeSpeed"));
+                ImageFileSaveLocation = settings.GetValue("MAIN", "ImageFileSaveLocation");
+                Color color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color1"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color2"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color3"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color4"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color5"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color6"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color7"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                color = (Color)ColorConverter.ConvertFromString(settings.GetValue("MAIN", "Color8"));
+                if (color != null) DefaultTraceColorList.Add(color);
+                VWorksUsername = settings.GetValue("MAIN", "VWorksUsername");
+                VWorksPassword = settings.GetValue("MAIN", "VWorksPassword");
+                VWorksProtocolFileDirectory = settings.GetValue("MAIN", "VWorksProtocolFileDirectory");
+                UpSignalOptimizePercentCountThreshold = Convert.ToInt32(settings.GetValue("MAIN", "UpSignalOptimizePercentCountThreshold"));
+                DownSignalOptimizePercentCountThreshold = Convert.ToInt32(settings.GetValue("MAIN", "DownSignalOptimizePercentCountThreshold"));
+                UpDownSignalOptimizePercentCountThreshold = Convert.ToInt32(settings.GetValue("MAIN", "UpDownSignalOptimizePercentCountThreshold"));
+                MaxCameraTemperatureThresholdDeviation = Convert.ToInt32(settings.GetValue("MAIN", "MaxCameraTemperatureThresholdDeviation"));
+                MaxInsideTemperatureThresholdDeviation = Convert.ToInt32(settings.GetValue("MAIN", "MaxInsideTemperatureThresholdDeviation"));
+                EnclosureCameraIPAddress = settings.GetValue("MAIN", "EnclosureCameraIPAddress");
+                DefaultExcelReportFileDirectory = settings.GetValue("MAIN", "DefaultExcelReportFileDirectory");
+                DefaultWaveGuideReportFileDirectory = settings.GetValue("MAIN", "DefaultWaveGuideReportFileDirectory");
+                DefaultExcelFileNameFormat = settings.GetValue("MAIN", "DefaultExcelFileNameFormat");
+                DefaultWaveGuideFileNameFormat = settings.GetValue("MAIN", "DefaultWaveGuideFileNameFormat");
+                DefaultPixelMaskThresholdPercent = Convert.ToDouble(settings.GetValue("MAIN", "DefaultPixelMaskThresholdPercent"));
+                TempControllerIP = settings.GetValue("MAIN", "TemperatureController_IP");
+                EthernetIOModuleIP = settings.GetValue("MAIN", "EthernetIOModule_IP");
+                Enable_EthernetIOModule = settings.GetValue("MAIN", "Enable_EthernetIOModule").ToUpper() == "TRUE" ? true : false;
+                Enable_EnclosureTemperatureController = settings.GetValue("MAIN", "Enable_EnclosureTemperatureController").ToUpper() == "TRUE" ? true : false;
+                TCPCommand_Port = Convert.ToInt32(settings.GetValue("MAIN", "TCPCommand_Port"));
+
+
+                DatabaseConnectionString = "Data Source=" + DBServerName + ";Initial Catalog=" + DBName +
+                                               ";User ID=" + DBUsername + ";Password=" + DBPassword;
+
+            }
+            catch (ConfigurationErrorsException)
+            {
+                MessageBox.Show("Error reading Settings file: " + settingsFile, "Settins File Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+
+
+
     }
+
+
+
+
+    public class StatusChangeEventArgs : EventArgs
+    {
+        // used to signal start/stop of auto-optimize
+
+        private WGStatus _status;
+        public WGStatus status
+        {
+            get { return _status; }
+            set { _status = value; }
+        }
+
+        public StatusChangeEventArgs(WGStatus Status)
+        {
+            _status = Status;
+        }
+    }
+
+    
+ 
+
 }

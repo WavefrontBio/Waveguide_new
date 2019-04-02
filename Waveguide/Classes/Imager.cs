@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-using CudaToolsNet;
+using CudaTools;
 using System.Windows.Interop;
 using WPFTools;
 using System.Diagnostics;
@@ -84,7 +84,7 @@ namespace Waveguide
         public Camera m_camera;
         public MaskContainer m_mask;
         public ColorModel m_colorModel;
-        public CudaToolBox m_cudaToolBox;
+        public CudaTools.ImageTool m_cudaImageTool;
         TaskScheduler m_uiTask;
         Stopwatch m_imagingSequenceCounter;
         public OmegaTempCtrl m_omegaTempController;
@@ -190,18 +190,19 @@ namespace Waveguide
             m_camera = new Camera();
             m_camera.CameraErrorEvent += m_camera_CameraErrorEvent;
             m_camera.m_acqParams.Updated += m_acqParams_Updated;
-                   
-            m_cudaToolBox = new CudaToolBox();
+
+            m_cudaImageTool = new ImageTool();
+            m_cudaImageTool.Init();
 
 
-            m_lambda = new Lambda(GlobalVars.LambdaComPortName);
+            m_lambda = new Lambda(GlobalVars.Instance.LambdaComPortName);
             m_lambda.SerialPortEvent += m_lambda_SerialPortEvent;
 
 
 
             m_thor = new Thor();
 
-            m_filterChangeSpeed = (byte)GlobalVars.FilterChangeSpeed;
+            m_filterChangeSpeed = (byte)GlobalVars.Instance.FilterChangeSpeed;
 
             m_insideHeatingON = false;
 
@@ -270,10 +271,6 @@ namespace Waveguide
 
         public void Shutdown()
         {
-                    
-            // clean up Cuda stuff
-            if(m_cudaToolBox != null) m_cudaToolBox.ShutdownCudaTools();
-
             // stop the temperature monitoring Task
             if(m_cameraTemperatureTokenSource != null) m_cameraTemperatureTokenSource.Cancel();       
         }
@@ -313,7 +310,7 @@ namespace Waveguide
             m_uiTask = TaskScheduler.FromCurrentSynchronizationContext();
 
             m_RangeSliderLowerSliderPosition = 0;
-            m_RangeSliderUpperSliderPosition = (UInt16)GlobalVars.MaxPixelValue;
+            m_RangeSliderUpperSliderPosition = (UInt16)GlobalVars.Instance.MaxPixelValue;
 
             m_UseMask = true;
             m_ROIAdjustToMask = false;
@@ -321,9 +318,6 @@ namespace Waveguide
             m_kineticImagingON = false;
             m_cameraTempMonitorRunning = false;
 
-
-
-            m_cudaToolBox.InitCudaTools(); // Make sure this is done before calling any cuda function
 
             // set up camera
          
@@ -337,8 +331,8 @@ namespace Waveguide
             ColorModelContainer colorModelContainer = null;
             ColorModel colorModel;
 
-            success = m_wgDB.GetDefaultColorModel(out colorModel, GlobalVars.MaxPixelValue);
-            if(success)
+            success = m_wgDB.GetDefaultColorModel(out colorModel, GlobalVars.Instance.MaxPixelValue);
+            if(success || colorModel == null)
             {
                 SetColorModel(colorModel);  // a default color model was found in database, so it is assigned
             }
@@ -347,9 +341,9 @@ namespace Waveguide
                 SetColorModel(colorModelContainer);  // since colorModelContainer = null, this creates a default Black/White color model
             }
 
-            
 
-            // start Temperature Monitoring Task
+
+            // start Temperature Monitoring Task            
             if (!m_cameraTempMonitorRunning)
             {
                 m_cameraTemperatureTokenSource = new CancellationTokenSource();
@@ -364,19 +358,26 @@ namespace Waveguide
 
                 OnCameraEvent(new CameraEventArgs("Camera Temperature Monitoring Started", false));
             }
+            
 
             // start Omega Temperature Controller Task
-            if(!m_insideTempMonitorRunning)
+            if (GlobalVars.Instance.Enable_EnclosureTemperatureController)
             {
-                m_omegaTempController = new OmegaTempCtrl(GlobalVars.TempControllerIP, 2000);
+                if (!m_insideTempMonitorRunning)
+                {
+                    m_omegaTempController = new OmegaTempCtrl(GlobalVars.Instance.TempControllerIP, 2000);
 
-                m_omegaTempController.TempEvent += m_omegaTempController_TempEvent;
-                m_omegaTempController.MessageEvent += m_omegaTempController_MessageEvent;
+                    m_omegaTempController.TempEvent += m_omegaTempController_TempEvent;
+                    m_omegaTempController.MessageEvent += m_omegaTempController_MessageEvent;
 
-                m_omegaTempController.StartTempUpdate(1.0);
+                    m_omegaTempController.StartTempUpdate(1.0);
+                }
             }
 
-            m_ethernetIO = new EthernetIO(GlobalVars.EthernetIOModuleIP);
+            if (GlobalVars.Instance.Enable_EthernetIOModule)
+            {
+                m_ethernetIO = new EthernetIO(GlobalVars.Instance.EthernetIOModuleIP);
+            }
             
 
         }
@@ -463,7 +464,7 @@ namespace Waveguide
 
         public void UpdateMask(MaskContainer mask)
         {
-            if (mask != null && m_cudaToolBox != null)
+            if (mask != null && m_cudaImageTool != null)
             {
                 m_mask = mask;
 
@@ -471,7 +472,7 @@ namespace Waveguide
                 m_mask.BuildPixelMaskImage(m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                 // load PixelMaskImage to GPU
-                m_cudaToolBox.Set_MaskImage(m_mask.PixelMaskImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                m_cudaImageTool.Set_MaskImage(m_mask.PixelMaskImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                             m_camera.m_acqParams.BinnedFullImageHeight, (UInt16)mask.Rows, (UInt16)mask.Cols);
 
                 SetROI(m_ROIAdjustToMask);
@@ -499,8 +500,8 @@ namespace Waveguide
             {             
                 m_camera.m_acqParams.RoiX = 0;
                 m_camera.m_acqParams.RoiY = 0;
-                m_camera.m_acqParams.RoiW = GlobalVars.PixelWidth;
-                m_camera.m_acqParams.RoiH = GlobalVars.PixelHeight;
+                m_camera.m_acqParams.RoiW = GlobalVars.Instance.PixelWidth;
+                m_camera.m_acqParams.RoiH = GlobalVars.Instance.PixelHeight;
             }
         }
 
@@ -514,7 +515,7 @@ namespace Waveguide
             }
             else
             {
-                colorModel = new ColorModel(colorModelContainer, GlobalVars.MaxPixelValue);
+                colorModel = new ColorModel(colorModelContainer, GlobalVars.Instance.MaxPixelValue);
             }
 
             SetColorModel(colorModel);
@@ -525,7 +526,7 @@ namespace Waveguide
         {
             m_colorModel = colorModel;
             
-            int arraySize = GlobalVars.MaxPixelValue;
+            int arraySize = GlobalVars.Instance.MaxPixelValue;
             byte[] red;
             byte[] green;
             byte[] blue;
@@ -533,8 +534,8 @@ namespace Waveguide
             colorModel.BuildColorMapForGPU(out red, out green, out blue, arraySize);
 
             // copy to GPU
-            if (m_cudaToolBox != null)
-                m_cudaToolBox.Set_ColorMap(red, green, blue, (UInt16)arraySize);
+            if (m_cudaImageTool != null)
+                m_cudaImageTool.Set_ColorMap(red, green, blue, (UInt16)arraySize);
         }
 
 
@@ -665,12 +666,12 @@ namespace Waveguide
                 dps = m_ImagingDictionary[ID];
 
                 // convert the grayscale image to color using the colormap that is already on the GPU
-                IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
+                IntPtr colorImageOnGpu = m_cudaImageTool.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
 
                 if(dps.ImageControl.m_imageBitmap != null)
                 {
                     byte[] colorImage;
-                    m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                    m_cudaImageTool.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                     // display the image
                     Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
@@ -701,33 +702,33 @@ namespace Waveguide
                 // process image
                   
                     // copy image to GPU, if it's an ROI, it is padded with 0's to make a full image
-                    m_cudaToolBox.PostRoiGrayscaleImage(grayRoiImage, 
+                    m_cudaImageTool.PostRoiGrayscaleImage(grayRoiImage, 
                                                 m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight,
                                                 m_camera.m_acqParams.BinnedRoiW, m_camera.m_acqParams.BinnedRoiH, 
                                                 m_camera.m_acqParams.BinnedRoiX, m_camera.m_acqParams.BinnedRoiY);
 
                     // flatten image
-                    m_cudaToolBox.FlattenGrayImage((int)dps.flatfieldType);
+                    m_cudaImageTool.FlattenGrayImage((int)dps.flatfieldType);
 
                     // apply mask if applyMask is true, this will zero all pixels outside of mask apertures
                     // this function also will apply a flat field correction *IF* a correction matrix has been loaded
-                    if (applyMask) m_cudaToolBox.ApplyMaskToGrayscaleImage();
+                    if (applyMask) m_cudaImageTool.ApplyMaskToGrayscaleImage();
 
-                    m_cudaToolBox.Download_GrayscaleImage(out grayFullImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                    m_cudaImageTool.Download_GrayscaleImage(out grayFullImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                     // calculate mask aperture sums
                     UInt32[] sums;
-                    m_cudaToolBox.GetMaskApertureSums(out sums, m_mask.Rows, m_mask.Cols);
+                    m_cudaImageTool.GetMaskApertureSums(out sums, m_mask.Rows, m_mask.Cols);
 
                     // convert the grayscale image to color using the colormap that is already on the GPU
-                    IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
+                    IntPtr colorImageOnGpu = m_cudaImageTool.Convert_GrayscaleToColor(lowerScaleOfColorMap, upperScaleOfColorMap);
 
                     if (dps.ImageControl.m_imageBitmap != null)
                     {
                         dps.ImageControl.m_grayImage = grayFullImage;
 
                         byte[] colorImage;
-                        m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                        m_cudaImageTool.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                         // display the image
                         Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
@@ -741,11 +742,11 @@ namespace Waveguide
                     {
                         // calculate the image histogram
                         UInt32[] histogram;
-                        m_cudaToolBox.GetHistogram_512(out histogram, 16);
+                        m_cudaImageTool.GetHistogram_512(out histogram, 16);
                                               
                         // build the histogram image and download it to the CPU
                         byte[] histImage;
-                        m_cudaToolBox.GetHistogramImage_512(out histImage, m_histogramImageWidth, m_histogramImageHeight, 0);
+                        m_cudaImageTool.GetHistogramImage_512(out histImage, m_histogramImageWidth, m_histogramImageHeight, 0);
                                              
                         // display the histogram image
                         Int32Rect histRect = new Int32Rect(0, 0, m_histogramImageWidth, m_histogramImageHeight);
@@ -866,19 +867,19 @@ namespace Waveguide
             ushort[] F;
             ushort[] D;
             FlatFieldCorrector ffc;                      
-            int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
+            int imageSize = GlobalVars.Instance.PixelWidth * GlobalVars.Instance.PixelHeight;
             bool success;
 
             // get ref images
             success = GetFFReferenceImagesByType(type, out F, out D);
-            if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+            if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.Instance.PixelWidth, GlobalVars.Instance.PixelHeight);
 
             // build flat field corrector for given correction type
-            ffc = new FlatFieldCorrector(GlobalVars.PixelWidth, GlobalVars.PixelHeight, F, D);
+            ffc = new FlatFieldCorrector(GlobalVars.Instance.PixelWidth, GlobalVars.Instance.PixelHeight, F, D);
             ffc.CorrectForBinning(binning, binning);
 
             // load fluor correction arrays to GPU
-            m_cudaToolBox.SetFlatFieldCorrection((int)type, ffc.Gc, ffc.Dc);
+            m_cudaImageTool.SetFlatFieldCorrection((int)type, ffc.Gc, ffc.Dc);
         }
 
 
@@ -899,7 +900,7 @@ namespace Waveguide
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        dps.ImageControl.SetImageSize((int)pixelWidth, (int)pixelHeight,GlobalVars.MaxPixelValue);
+                        dps.ImageControl.SetImageSize((int)pixelWidth, (int)pixelHeight,GlobalVars.Instance.MaxPixelValue);
                         dps.ImageControl.ImageBox.Source = dps.ImageControl.m_imageBitmap;
                     });
 
@@ -908,7 +909,7 @@ namespace Waveguide
 
                 m_mask.BuildPixelMaskImage(m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
-                m_cudaToolBox.Set_MaskImage(m_mask.PixelMaskImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                m_cudaImageTool.Set_MaskImage(m_mask.PixelMaskImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                             m_camera.m_acqParams.BinnedFullImageHeight, (UInt16)m_mask.Rows, (UInt16)m_mask.Cols);
 
                 m_ImagingDictionary[ID] = dps;
@@ -1614,13 +1615,13 @@ namespace Waveguide
         {
             // this function is used to change the filter positions and close shutter
 
-            byte speed =  GlobalVars.FilterChangeSpeed;
+            byte speed =  GlobalVars.Instance.FilterChangeSpeed;
             m_lambda.MoveFilterABandCloseShutterA((byte)excitationFilterPosition, (byte)emissionFilterPosition,speed,speed);
         }
 
         private void ChangeFilterPositions(int excitationFilterPosition, int emissionFilterPosition)
         {
-            byte speed = GlobalVars.FilterChangeSpeed;
+            byte speed = GlobalVars.Instance.FilterChangeSpeed;
             m_lambda.MoveFilterAB((byte)excitationFilterPosition, (byte)emissionFilterPosition, speed, speed);
         }
 
@@ -1871,9 +1872,9 @@ namespace Waveguide
                     // Initialize optimization settings
                     startingExposure = cameraSettings.StartingExposure;
                     exposureLimit = cameraSettings.ExposureLimit;
-                    highPixelValueThreshold = (UInt16)(((float)cameraSettings.HighPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue));
+                    highPixelValueThreshold = (UInt16)(((float)cameraSettings.HighPixelThresholdPercent) / 100.0f * ((float)GlobalVars.Instance.MaxPixelValue));
                     minPercentOfPixelsAboveLowLimit = cameraSettings.MinPercentPixelsAboveLowThreshold;
-                    lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue)); ;
+                    lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.Instance.MaxPixelValue)); ;
                     maxPercentOfPixelsAboveHighLimit = cameraSettings.MaxPercentPixelsAboveHighThreshold;
 
 
@@ -1910,22 +1911,22 @@ namespace Waveguide
                             m_lambda.CloseShutterA();
 
                             // Post to GPU (which will also convert ROI to full image)
-                            m_cudaToolBox.PostRoiGrayscaleImage(grayRoiImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                            m_cudaImageTool.PostRoiGrayscaleImage(grayRoiImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                                                 m_camera.m_acqParams.BinnedFullImageHeight,
                                                                 m_camera.m_acqParams.BinnedRoiW, m_camera.m_acqParams.BinnedRoiH,
                                                                 m_camera.m_acqParams.BinnedRoiX, m_camera.m_acqParams.BinnedRoiY);
 
                             // Get the full grayscale image for brightness evaluation                    
-                            m_cudaToolBox.Download_GrayscaleImage(out grayFullImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                            m_cudaImageTool.Download_GrayscaleImage(out grayFullImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                                                             m_camera.m_acqParams.BinnedFullImageHeight);
 
 
                             // process and display
                             // apply mask
-                            m_cudaToolBox.ApplyMaskToGrayscaleImage();
+                            m_cudaImageTool.ApplyMaskToGrayscaleImage();
 
                             // convert to color
-                            IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
+                            IntPtr colorImageOnGpu = m_cudaImageTool.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
 
 
                             // check brightness levels
@@ -2059,7 +2060,7 @@ namespace Waveguide
                     if(success)                    
                     {
                         byte[] colorImageOnCpu;
-                        m_cudaToolBox.Download_ColorImage(out colorImageOnCpu, (ushort)m_camera.m_acqParams.BinnedFullImageWidth, (ushort)m_camera.m_acqParams.BinnedFullImageHeight);
+                        m_cudaImageTool.Download_ColorImage(out colorImageOnCpu, (ushort)m_camera.m_acqParams.BinnedFullImageWidth, (ushort)m_camera.m_acqParams.BinnedFullImageHeight);
                         OnOptimizeEvent(new OptimizeEventArgs(indicatorID, exposure, m_camera.m_cameraParams.EMGain,
                                                                 m_camera.m_cameraParams.PreAmpGainIndex, m_camera.m_acqParams.HBin,
                                                                 m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight, colorImageOnCpu));
@@ -2179,9 +2180,9 @@ namespace Waveguide
            
             startingExposure = cameraSettings.StartingExposure;
             exposureLimit = cameraSettings.ExposureLimit;
-            highPixelValueThreshold = (UInt16)( ((float)cameraSettings.HighPixelThresholdPercent)/100.0f * ((float)GlobalVars.MaxPixelValue)  );
+            highPixelValueThreshold = (UInt16)( ((float)cameraSettings.HighPixelThresholdPercent)/100.0f * ((float)GlobalVars.Instance.MaxPixelValue)  );
             minPercentOfPixelsAboveLowLimit = cameraSettings.MinPercentPixelsAboveLowThreshold;
-            lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.MaxPixelValue)); ;
+            lowPixelValueThreshold = (UInt16)(((float)cameraSettings.LowPixelThresholdPercent) / 100.0f * ((float)GlobalVars.Instance.MaxPixelValue)); ;
             maxPercentOfPixelsAboveHighLimit = cameraSettings.MaxPercentPixelsAboveHighThreshold;                
            
 
@@ -2242,22 +2243,22 @@ namespace Waveguide
                     m_lambda.CloseShutterA();
 
                     // Post to GPU (which will also convert ROI to full image)
-                    m_cudaToolBox.PostRoiGrayscaleImage(grayRoiImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                    m_cudaImageTool.PostRoiGrayscaleImage(grayRoiImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                                         m_camera.m_acqParams.BinnedFullImageHeight,
                                                         m_camera.m_acqParams.BinnedRoiW, m_camera.m_acqParams.BinnedRoiH,
                                                         m_camera.m_acqParams.BinnedRoiX, m_camera.m_acqParams.BinnedRoiY);
 
                     // Get the full grayscale image for brightness evaluation                    
-                    m_cudaToolBox.Download_GrayscaleImage(out grayFullImage, m_camera.m_acqParams.BinnedFullImageWidth,
+                    m_cudaImageTool.Download_GrayscaleImage(out grayFullImage, m_camera.m_acqParams.BinnedFullImageWidth,
                                                                     m_camera.m_acqParams.BinnedFullImageHeight);
 
 
                     // process and display
                     // apply mask
-                    m_cudaToolBox.ApplyMaskToGrayscaleImage();
+                    m_cudaImageTool.ApplyMaskToGrayscaleImage();
 
                     // convert to color
-                    IntPtr colorImageOnGpu = m_cudaToolBox.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
+                    IntPtr colorImageOnGpu = m_cudaImageTool.Convert_GrayscaleToColor(m_RangeSliderLowerSliderPosition, m_RangeSliderUpperSliderPosition);
 
            
                     // check brightness levels
@@ -2647,9 +2648,9 @@ namespace Waveguide
             foreach (int key in m_ImagingDictionary.Keys) indicatorIDList.Add(key);
            
             ImageFileManager imageFileManager = new ImageFileManager();
-            imageFileManager.SetBasePath(GlobalVars.ImageFileSaveLocation, projectID, plateID, experimentID, indicatorIDList);
+            imageFileManager.SetBasePath(GlobalVars.Instance.ImageFileSaveLocation, projectID, plateID, experimentID, indicatorIDList);
             
-            CudaToolBox cuda = m_cudaToolBox;
+            CudaTools.ImageTool cuda = m_cudaImageTool;
 
             AcquisitionParams acqParams = m_camera.m_acqParams;
             
@@ -2669,13 +2670,13 @@ namespace Waveguide
             //var firstEntry = imagingDictionary.First();
             //ImagingParamsStruct firstIps = firstEntry.Value;
             //int binning = firstIps.binning;
-            //int imageSize = GlobalVars.PixelWidth * GlobalVars.PixelHeight;
+            //int imageSize = GlobalVars.Instance.PixelWidth * GlobalVars.Instance.PixelHeight;
             //bool success;
 
             //// FLUORESCENCE
             //// get fluor ref images
             //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_FLUOR, out F, out D);
-            //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+            //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.Instance.PixelWidth, GlobalVars.Instance.PixelHeight);
 
             //// build flat field corrector for fluor
             //ffc = new FlatFieldCorrector(imageSize, F, D);
@@ -2687,7 +2688,7 @@ namespace Waveguide
             //// LUMINESCENCE
             //// get lumi ref images
             //success = GetFFReferenceImagesByType(FLATFIELD_SELECT.USE_LUMI, out F, out D);
-            //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.PixelWidth, GlobalVars.PixelHeight);
+            //if (!success) BuildDefaultFFCRefImages(out F, out D, GlobalVars.Instance.PixelWidth, GlobalVars.Instance.PixelHeight);
 
             //// build flat field corrector for lumi
             //ffc = new FlatFieldCorrector(imageSize, F, D);
@@ -2785,7 +2786,7 @@ namespace Waveguide
                         if (dps.ImageControl.m_imageBitmap != null)
                         {
                             byte[] colorImage;
-                            m_cudaToolBox.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
+                            m_cudaImageTool.Download_ColorImage(out colorImage, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
 
                             // display the image
                             Int32Rect displayRect = new Int32Rect(0, 0, m_camera.m_acqParams.BinnedFullImageWidth, m_camera.m_acqParams.BinnedFullImageHeight);
@@ -2847,10 +2848,10 @@ namespace Waveguide
 
                         ExperimentImageContainer expImage = new ExperimentImageContainer();
 
-                        expImage.CompressionAlgorithm = GlobalVars.CompressionAlgorithm;
+                        expImage.CompressionAlgorithm = GlobalVars.Instance.CompressionAlgorithm;
                         expImage.ExperimentIndicatorID = expIndID;
                         expImage.ImageData = grayImage;
-                        expImage.MaxPixelValue = GlobalVars.MaxPixelValue;
+                        expImage.MaxPixelValue = GlobalVars.Instance.MaxPixelValue;
                         expImage.MSecs = sequenceNumber;
                         expImage.TimeStamp = DateTime.Now;
                         expImage.FilePath = filepath;
@@ -2895,9 +2896,9 @@ namespace Waveguide
             int m_plateID = plateID;
             int m_experimentID = experimentID;
             COMPRESSION_ALGORITHM m_compAlgorithm = compAlgorithm;
-            int m_maxPixelValue = GlobalVars.MaxPixelValue;
+            int m_maxPixelValue = GlobalVars.Instance.MaxPixelValue;
 
-            string m_baseFilePath = GlobalVars.ImageFileSaveLocation + "\\" + m_projectID.ToString() + "\\" + m_plateID.ToString() + "\\" +
+            string m_baseFilePath = GlobalVars.Instance.ImageFileSaveLocation + "\\" + m_projectID.ToString() + "\\" + m_plateID.ToString() + "\\" +
                                     m_experimentID.ToString() + "\\";
 
             WaveguideDB m_wgDB = new WaveguideDB();
@@ -2921,7 +2922,7 @@ namespace Waveguide
                     expImage.CompressionAlgorithm = m_compAlgorithm;
                     expImage.ExperimentIndicatorID = expIndicatorID;
                     expImage.ImageData = grayImage;
-                    expImage.MaxPixelValue = GlobalVars.MaxPixelValue;
+                    expImage.MaxPixelValue = GlobalVars.Instance.MaxPixelValue;
                     expImage.MSecs = time;
 
                     expImage.TimeStamp = DateTime.Now;
@@ -3371,15 +3372,17 @@ namespace Waveguide
                     {
                         // send the data to be displayed
 
-                        float[,] copy_F = null;
-                        float[,] copy_staticRatio = null;
-                        float[,] copy_controlSubtraction = null;
-                        float[,] copy_dynamicRatio = null;
+                        float[] copy_F = null;
+                        float[] copy_staticRatio = null;
+                        float[] copy_controlSubtraction = null;
+                        float[] copy_dynamicRatio = null;
+                        int numElements = expParams.mask.Rows * expParams.mask.Cols;
+                        int numBytes = numElements * sizeof(float);
 
-                        copy_F = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(F, copy_F, F.Length);
-                        if (staticRatio != null) { copy_staticRatio = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(staticRatio, copy_staticRatio, staticRatio.Length); }
-                        if (controlSubtraction != null) { copy_controlSubtraction = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(controlSubtraction, copy_controlSubtraction, controlSubtraction.Length); }
-                        if (dynamicRatio != null) { copy_dynamicRatio = new float[expParams.mask.Rows, expParams.mask.Cols]; Array.Copy(dynamicRatio, copy_dynamicRatio, dynamicRatio.Length); }
+                        copy_F = new float[numElements]; Buffer.BlockCopy(F, 0, copy_F, 0, numBytes); //Array.Copy(F, copy_F, F.Length);
+                        if (staticRatio != null) { copy_staticRatio = new float[numElements]; Buffer.BlockCopy(staticRatio, 0, copy_staticRatio, 0, numBytes); }
+                        if (controlSubtraction != null) { copy_controlSubtraction = new float[numElements]; Buffer.BlockCopy(controlSubtraction, 0, copy_controlSubtraction, 0, numBytes); }
+                        if (dynamicRatio != null) { copy_dynamicRatio = new float[numElements]; Buffer.BlockCopy(dynamicRatio, 0, copy_dynamicRatio, 0, numBytes); }
 
 
                         runExperimentControl.AppendNewData(copy_F, copy_staticRatio, copy_controlSubtraction,

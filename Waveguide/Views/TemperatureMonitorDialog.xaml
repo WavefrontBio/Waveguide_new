@@ -4,14 +4,13 @@
         xmlns:ig="http://schemas.infragistics.com/xaml"
         xmlns:igDP="http://infragistics.com/DataPresenter"
         xmlns:igEditors="http://infragistics.com/Editors"
-        Title="Temperature Monitor" Height="1000" Width="1000">
+        Title="Temperature Monitor" Height="400" Width="600">
     <Grid>
         
         <Grid.RowDefinitions>
             <RowDefinition Height="60"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="80"/>
-            <RowDefinition Height="60"/>           
+            <RowDefinition Height="80"/>        
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -23,7 +22,7 @@
                    x:Name="radialGauge" 
                    ScaleStartExtent="0.5" ScaleEndExtent="0.6" ScaleBrush="Gray"
                    ScaleStartAngle="135" ScaleEndAngle="45"
-                   Value = "0" 
+                   Value = "{Binding Temperature}" 
                    TickBrush="Black" MinorTickBrush="Black" 
                    LabelInterval="10" LabelExtent="0.67" Interval="10"
                    NeedleShape="Needle" Foreground="Black" FontSize="20" NeedleBrush="Red" 
@@ -33,35 +32,14 @@
         </ig:XamRadialGauge>
 
 
-        <Rectangle Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                   Margin="0,0,0,60" Width="130" Height="60" Fill="DarkGray"  RadiusX="15" RadiusY="15"
+        <Rectangle Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                   Margin="20,0,0,10" Width="130" Height="60" Fill="DarkGray"  RadiusX="15" RadiusY="15"
                    Stroke="Black" StrokeThickness="4"/>
         
-        <TextBlock Grid.Row="1" x:Name="CurrentTemperature" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                   Margin="0,0,0,60" Text="{Binding Path=TemperatureString}" FontSize="48" Foreground="White"/>
+        <TextBlock Grid.Row="2" x:Name="CurrentTemperature" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                   Margin="20,0,0,10" Text="{Binding Path=TemperatureString}" FontSize="48" Foreground="White"/>
 
-
-
-        <ig:XamLinearGauge Grid.Row="2" VerticalAlignment="Center"
-                   MinHeight="100" 
-                   MouseMove="gauge_MouseMove_1"
-                   MouseLeftButtonDown="gauge_MouseLeftButtonDown_1"
-                   MouseLeftButtonUp="gauge_MouseLeftButtonUp_1"
-                   LostMouseCapture="gauge_LostMouseCapture_1"
-          ScaleBrush="Transparent"
-                   x:Name="gauge"
-                   MinimumValue="0"
-                   MaximumValue="10" 
-                   Value="1"
-                   ShowToolTip="True">            
-        </ig:XamLinearGauge>
-
-
-
-
-
-
-        <Button Grid.Row="3" Content="Override" HorizontalAlignment="Center" VerticalAlignment="Center"
+        <Button Grid.Row="2" Content="Override" HorizontalAlignment="Center" VerticalAlignment="Center"
                 Width="100" Height="35" FontSize="20" x:Name="OverridePB" Click="OverridePB_Click"
                 />
         

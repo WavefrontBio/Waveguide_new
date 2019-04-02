@@ -1,21 +1,12 @@
-﻿using Infragistics.Windows.DataPresenter;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using SimpleTCP;
+using System.IO;
 
 namespace Waveguide
 {
@@ -47,6 +38,7 @@ namespace Waveguide
         ExperimentConfiguratorViewModel VM;
         Imager m_imager;
 
+        SimpleTcpServer m_tcpServer;
 
         public ExperimentConfigurator()
         {
@@ -55,7 +47,8 @@ namespace Waveguide
             InitializeComponent();
 
             wgDB = new WaveguideDB();
-            
+
+        
 
             m_imager = null;
       
@@ -126,7 +119,7 @@ namespace Waveguide
           
             if (VM.ExpParams.project != null)
             {
-                LoadMethods(GlobalVars.UserID, VM.ExpParams.project.ProjectID, VM.MethodFilter);
+                LoadMethods(GlobalVars.Instance.UserID, VM.ExpParams.project.ProjectID, VM.MethodFilter);
             }
 
             VM.SetExperimentStatus();
@@ -187,7 +180,7 @@ namespace Waveguide
         private void Method_RadioButton_Checked(object sender, RoutedEventArgs e)
         {      
             if(VM.ExpParams.project != null)
-                LoadMethods(GlobalVars.UserID, VM.ExpParams.project.ProjectID, VM.MethodFilter);
+                LoadMethods(GlobalVars.Instance.UserID, VM.ExpParams.project.ProjectID, VM.MethodFilter);
         }
 
 
@@ -251,7 +244,7 @@ namespace Waveguide
                             expIndicator.FlatFieldRefImageID = 0;  // defined at Indicator Verify
                             expIndicator.DarkFieldRefImageID = 0;  // defined at Indicator Verify
                             expIndicator.FlatFieldCorrection = FLATFIELD_SELECT.NONE; // default
-                            expIndicator.CycleTime = GlobalVars.CameraDefaultCycleTime;
+                            expIndicator.CycleTime = GlobalVars.Instance.CameraDefaultCycleTime;
                             expIndicator.SignalType = indicator.SignalType;
 
 
@@ -404,7 +397,7 @@ namespace Waveguide
         {
             ObservableCollection<ProjectContainer> projList;
 
-            bool success = wgDB.GetAllProjectsForUser(GlobalVars.UserID, out projList);
+            bool success = wgDB.GetAllProjectsForUser(GlobalVars.Instance.UserID, out projList);
 
             if (success)
             {
@@ -558,16 +551,147 @@ namespace Waveguide
             VM.SetExperimentStatus();
         }
 
+        private void SaveExperimentConfigurationPB_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+            saveFileDialog.Filter = "XML Settings file (*.xml)|*.xml";
+            saveFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                // get configuration
+                ExperimentConfiguration config = new ExperimentConfiguration();
+                
+                config.controlSubtWells = VM.ExpParams.controlSubtractionWellList; // ObservableCollection<Tuple<int, int>>
 
-     
+                if (DynamicRatioNumeratorComboBox.SelectedIndex == -1)
+                    config.dynamicRatioNum = null;
+                else
+                    config.dynamicRatioNum = VM.ExpParams.dynamicRatioNumerator; // ExperimentIndicatorContainer
+
+                if (DynamicRatioDenominatorComboBox.SelectedIndex == -1)
+                    config.dynamicRatioDen = null;
+                else
+                    config.dynamicRatioDen = VM.ExpParams.dynamicRatioDenominator; // ExperimentIndicatorContainer
+                
+                config.excelReportFilename = "<Determined at Runtime>";
+                config.excelReportLocation = GlobalVars.Instance.DefaultExcelReportFileDirectory;
+                config.mask = VM.ExpParams.mask; // MaskContainer
+                config.method = VM.ExpParams.method; // MethodContainer
+                config.numFoFrames = VM.ExpParams.numFoFrames;
+                config.plateType = VM.ExpParams.plateType; // PlateTypeContainer
+                config.project = VM.ExpParams.project; // ProjectContainer
+                config.waveguideReportFilename = "<Determined at Runtime>";
+                config.waveguideReportLocation = GlobalVars.Instance.DefaultWaveGuideReportFileDirectory;
+                config.writeExcelReport = VM.ExpParams.writeExcelReport;
+                config.writeWaveguideReport = VM.ExpParams.writeWaveguideReport;                
+
+                ExperimentConfiguration.WriteSettingsFile(saveFileDialog.FileName, config);
+            }
+        }
+
+
+        public bool SetConfiguration(ExperimentConfiguration config)
+        {
+            bool success = true;
+
+            // run on UI thread
+            Application.Current.Dispatcher.Invoke(new Action(() => {
+
+                RefreshProjectList();
+
+                bool projectOK = false;
+                bool methodOK = false;
+                bool plateTypeOK = false;
+                bool maskOK = false;
+           
+                // load project
+                foreach (ProjectContainer pc in VM.ProjectList)
+                {
+                    if (pc.ProjectID == config.project.ProjectID)
+                    {
+                        ProjectComboBox.SelectedItem = pc;
+                        projectOK = true;
+
+                        // load method
+                        foreach (MethodContainer m in VM.MethodList)
+                        {
+                            if (m.MethodID == config.method.MethodID)
+                            {
+                                MethodComboBox.SelectedItem = m;
+                                methodOK = true;
+
+                                // load plate type
+                                foreach(PlateTypeContainer ptc in VM.PlateTypeList)
+                                {
+                                    if(ptc.PlateTypeID == config.plateType.PlateTypeID)
+                                    {
+                                        PlateTypeComboBox.SelectedItem = ptc;
+                                        plateTypeOK = true;
+
+                                        // load mask
+                                        foreach(MaskContainer mask in VM.MaskList)
+                                        {
+                                            if(mask.MaskID == config.mask.MaskID)
+                                            {
+                                                MaskComboBox.SelectedItem = mask;
+                                                maskOK = true;
+
+                                                // set Fo Frames
+                                                VM.ExpParams.numFoFrames = config.numFoFrames;
+
+                                                // set control subtraction wells
+                                                VM.ExpParams.controlSubtractionWellList = config.controlSubtWells;
+                                                WellSelection.Init(mask.Rows, mask.Cols, config.controlSubtWells);
+
+                                                // set dynamic ratio
+                                                foreach(ExperimentIndicatorContainer eic in VM.ExpParams.indicatorList)
+                                                {
+                                                    if(eic.Description == config.dynamicRatioNum.Description)
+                                                    {
+                                                        DynamicRatioNumeratorComboBox.SelectedItem = eic;                                                        
+                                                    }
+                                                    if (eic.Description == config.dynamicRatioDen.Description)
+                                                    {
+                                                        DynamicRatioDenominatorComboBox.SelectedItem = eic;                                                        
+                                                    }
+                                                }
+
+
+                                                break;
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                                }
+                                
+                                break;
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
+                success = (projectOK && methodOK && plateTypeOK && maskOK);
+
+            }));
+
+            
+
+            return success;
+        }
+
+
+
 
     }
 
-   
+
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
-  
+
 
     public class ExperimentConfiguratorViewModel : INotifyPropertyChanged
     {

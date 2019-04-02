@@ -25,6 +25,7 @@ namespace Waveguide
         private ExperimentParams()
         {
             _numFoFrames = 5;
+            _maxNumImages = 10000;
             _experimentPlate = new PlateContainer();
             _experiment = new ExperimentContainer();
             _compoundPlateList = new System.Collections.ObjectModel.ObservableCollection<ExperimentCompoundPlateContainer>();
@@ -79,6 +80,9 @@ namespace Waveguide
 
         private int _numFoFrames;
         public int numFoFrames { get { return _numFoFrames; } set { if (value != _numFoFrames) { _numFoFrames = value; NotifyPropertyChanged("numFoFrames"); } } }
+
+        private int _maxNumImages;
+        public int maxNumImages { get { return _maxNumImages; } set { if (value != _maxNumImages) { _maxNumImages = value; NotifyPropertyChanged("maxNumImages"); } } }
 
         private ExperimentIndicatorContainer _dynamicRatioNumerator;
         public ExperimentIndicatorContainer dynamicRatioNumerator { get { return _dynamicRatioNumerator; } set { if (value != _dynamicRatioNumerator) { _dynamicRatioNumerator = value; NotifyPropertyChanged("dynamicRatioNumerator"); } } }

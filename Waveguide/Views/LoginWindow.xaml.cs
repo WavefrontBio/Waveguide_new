@@ -54,9 +54,9 @@ namespace Waveguide
                     {
                         if (user.Password == password)
                         {
-                            GlobalVars.UserID = user.UserID;
-                            GlobalVars.UserDisplayName = user.Firstname + " " + user.Lastname;
-                            GlobalVars.UserRole = user.Role;
+                            GlobalVars.Instance.UserID = user.UserID;
+                            GlobalVars.Instance.UserDisplayName = user.Firstname + " " + user.Lastname;
+                            GlobalVars.Instance.UserRole = user.Role;
 
                             ExperimentParams expParams = ExperimentParams.GetExperimentParams; 
                             expParams.user = user;

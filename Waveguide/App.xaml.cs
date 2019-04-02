@@ -14,16 +14,14 @@ namespace Waveguide
     public partial class App : Application
     {
 
-
         void App_Startup(object sender, StartupEventArgs e)
         {
-
             //Disable shutdown when the dialog closes
             Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             bool m_done = false;
 
-            GlobalVars.LoadConfiguration(); 
+            GlobalVars.Instance.LoadConfiguration("settings.xml"); 
 
             while (!m_done)
             {

@@ -41,7 +41,7 @@ namespace Waveguide
             m_initializationSuccess = false;
             m_lastErrorString = "";
             
-            m_waveguideReportDirectory = GlobalVars.DefaultWaveGuideReportFileDirectory;
+            m_waveguideReportDirectory = GlobalVars.Instance.DefaultWaveGuideReportFileDirectory;
             m_format = REPORT_FILEFORMAT.EXCEL;
 
             m_wgDB = new WaveguideDB();

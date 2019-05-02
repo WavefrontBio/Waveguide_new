@@ -2,27 +2,16 @@
 
 
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Drawing;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.ServiceProcess;
 using System.Security.Principal;
 using SimpleTCP;
-
+using System.Collections.Generic;
 
 namespace Waveguide
 {
@@ -929,12 +918,27 @@ namespace Waveguide
             VM.CheckInsideTemperature();
         }
 
+        private void RefreshDBPB_Click(object sender, RoutedEventArgs e)
+        {
+            if (m_wgDB == null) m_wgDB = new WaveguideDB();
 
+            List<DatabaseTableInfo> tableSizes;
+            bool success = m_wgDB.GetDatabaseInfo(out tableSizes);
 
+            if(success)
+                DatabaseDataGrid.ItemsSource = tableSizes;
+        }
+
+        private void CleanUpExperimentsDBPB_Click(object sender, RoutedEventArgs e)
+        {
+            ManageDatabaseDialog dlg = new ManageDatabaseDialog(m_wgDB);
+
+            dlg.ShowDialog();
+        }
     }
 
 
-   
+
 
 
     // //////////////////////////////////////////////////////////////////////

@@ -56,7 +56,7 @@ namespace Waveguide
             WaveGuideEvents.VWorksCommandEventArgs e = new WaveGuideEvents.VWorksCommandEventArgs(command,param1);
             OnPostVWorksCommand(e);
         }
-
+               
         public void PostVWorksCommand(VWORKS_COMMAND command, string name, string description)
         {
             WaveGuideEvents.VWorksCommandEventArgs e = new WaveGuideEvents.VWorksCommandEventArgs(command, 0, name, description);
@@ -375,10 +375,8 @@ namespace Waveguide
             }
 
             else if (String.Compare(caption.Trim(), "EnableBurst", true) == 0)
-            {
-               
-                    PostVWorksCommand(VWORKS_COMMAND.EnableBurstCycleTime);
-               
+            {                
+                PostVWorksCommand(VWORKS_COMMAND.EnableBurstCycleTime, "EnableBurst", message);               
             }
 
             else if (String.Compare(caption.Trim(), "DisableBurst", true) == 0)

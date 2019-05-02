@@ -317,7 +317,7 @@ namespace Waveguide
         public async void m_vworks_PostVWorksCommandEvent(object sender, WaveGuideEvents.VWorksCommandEventArgs e)
         {
             VWORKS_COMMAND command = e.Command;
-            int param1 = e.Param1;
+            int param1 = e.Param1;            
             string name = e.Name;
             string desc = e.Description;
             int sequenceNumber = (int)m_imager.GetImagingSequenceTime();
@@ -333,14 +333,24 @@ namespace Waveguide
                         m_timer.Stop();
                         VM.DelayText = "";
                         VM.DelayHeaderVisible = false;
-                        m_cancelTokenSource.Cancel();  // stops the imaging task
-                        //VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.ERROR;
 
-                        GlobalVars.Instance.Status = WGStatus.ERROR;
+                        MessageBoxResult result =  MessageBox.Show("VWorks reported an error: " + e.Description + ".  Do you want to continue?\n\n" +
+                            "YES = Continue Imaging     NO = Cancel Imaging", "VWorks Error", MessageBoxButton.YesNo, MessageBoxImage.Error);
 
-                        VWorksErrorDialog dlg = new VWorksErrorDialog(name + ", " + desc);
+                        if(result == MessageBoxResult.No)
+                        {
+                            m_cancelTokenSource.Cancel();  // stops the imaging task
+                                                           //VM.RunState = ViewModel_RunExperimentControl.RUN_STATE.ERROR;
 
-                        GlobalVars.Instance.Status = WGStatus.READY;
+                            GlobalVars.Instance.Status = WGStatus.ERROR;
+                        }
+                        else
+                        {
+                            GlobalVars.Instance.Status = WGStatus.READY;
+                            m_timer.Start();
+                        }
+
+                        //VWorksErrorDialog dlg = new VWorksErrorDialog(name + ", " + desc);                        
                     }));
                     break;
                 case VWORKS_COMMAND.Event_Marker:
@@ -617,7 +627,24 @@ namespace Waveguide
                     break;
 
                 case VWORKS_COMMAND.EnableBurstCycleTime:
-                    m_imager.EnableBurstImaging();
+                    string[] messageList = desc.Split(',');
+
+                    List<int> burstSpeeds = new List<int>();
+                    int val;
+                    success = true;
+                    foreach(string s in messageList)
+                    {
+                        success = int.TryParse(s, out val);
+                        if (success)
+                            burstSpeeds.Add(val);
+                        else
+                            break;
+                    }
+                    
+                    if(success)
+                        m_imager.EnableBurstImaging(burstSpeeds);
+                    else
+                        PostMessageRunExperimentPanel("Error parsing burst speed(s): " + name);
                     break;
 
                 case VWORKS_COMMAND.DisableBurstCycleTime:

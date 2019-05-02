@@ -48,10 +48,7 @@ namespace Waveguide
         public int              experimentIndicatorID;
         public ObservableCollection<Tuple<int, int>> optimizeWellList;
 
-        public bool burstCycleTimeEnabled;
-        public int burstCycleTime;
-        
-                                           
+    
 
         public ImagingParamsStruct(ImageDisplay imageControl, WriteableBitmap _histBitmap,
             float _exposure, int _binning, byte _excitationFilterPos, byte _emissionFilterPos, string _indicatorName, 
@@ -70,10 +67,7 @@ namespace Waveguide
             preAmpGainIndex = _preAmpGainIndex;
             flatfieldType = _flatfieldType;
             experimentIndicatorID = _expIndicatorID;
-            optimizeWellList = _optimizeWellList;
-
-            burstCycleTimeEnabled = false;
-            burstCycleTime = 0;
+            optimizeWellList = _optimizeWellList;        
         }
     }
 
@@ -115,6 +109,11 @@ namespace Waveguide
 
         CancellationTokenSource m_cameraTemperatureTokenSource;
         CancellationToken m_cameraTemperatureCancelToken;
+
+        private AutoResetEvent m_burstON_Event;
+        private AutoResetEvent m_burstOFF_Event;
+        bool m_burstEnabled;
+        private ConcurrentDictionary<int, int> m_burstSpeeds = new ConcurrentDictionary<int, int>();
 
 
         bool m_cameraTempMonitorRunning;
@@ -1103,8 +1102,7 @@ namespace Waveguide
             for(int i = 0; i<m_ImagingDictionary.Count;i++)
             {
                 var element = m_ImagingDictionary.ElementAt(i);
-                var value = element.Value;
-                value.burstCycleTimeEnabled = false;
+                var value = element.Value;                
             }
 
 
@@ -1149,10 +1147,14 @@ namespace Waveguide
 
             m_camera.SetCameraEMGain(cip.gain);
             m_camera.SetCameraPreAmpGain(cip.preAmpGainIndex);
-            
 
 
-             // start experiment timer
+            // set signal
+            m_burstON_Event = new AutoResetEvent(false);
+            m_burstOFF_Event = new AutoResetEvent(false);
+            m_burstEnabled = false;
+
+            // start experiment timer
             sw.Restart();
 
             List<Tuple<int,int,int,int,int,int>> timeList = new List<Tuple<int,int,int,int,int,int>>();
@@ -1171,19 +1173,35 @@ namespace Waveguide
                     if (indicatorIndex == indicatorIDList.Count) indicatorIndex = 0;
                     nextIndicatorID = indicatorIDList[indicatorIndex];
 
+
+                    if(m_burstON_Event.WaitOne(0))
+                    {
+                        m_burstEnabled = true;
+
+                    }
+                    if(m_burstOFF_Event.WaitOne(0))
+                    {
+                        m_burstEnabled = false;
+                    }
+
+
                     // get data for current indicator 
-                    if (m_ImagingDictionary[currentIndicatorID].burstCycleTimeEnabled)
-                        cycleTime = m_ImagingDictionary[currentIndicatorID].burstCycleTime;
+                    if (m_burstEnabled)
+                        cycleTime = m_burstSpeeds[currentIndicatorID];
                     else
                         cycleTime = m_ImagingDictionary[currentIndicatorID].cycleTime;
 
                     maxWaitDuration = cycleTime+10;  // max wait = cycleTime plus 10 msecs
-                    
-                    
+
+                    // if cycle time too short, leave shutter open
+                    closeShutter = (cycleTime < 100) ? false : true;
+
+
                     // shutter control
                     m_lambda.OpenShutterA(); // open shutter
-                    Thread.Sleep(5); // give shutter time to open
-                    closeShutter = (cycleTime < 100) ? false : true;
+                    if(closeShutter)
+                        Thread.Sleep(2); // give shutter time to open, if we're opening/closing every cycle
+                    
                     
 
                     m_camera.MyCamera.SendSoftwareTrigger();
@@ -1214,7 +1232,7 @@ namespace Waveguide
                     }
                     else
                     {
-                        m_lambda.CloseShutterA();
+                        if(closeShutter) m_lambda.CloseShutterA();
                     }
 
                     
@@ -1295,22 +1313,44 @@ namespace Waveguide
 
 
 
-        public void EnableBurstImaging()
-        { 
-            foreach(KeyValuePair<int,ImagingParamsStruct> pair in m_ImagingDictionary)
+        public void EnableBurstImaging(List<int> burstSpeeds)
+        {
+            int i = 0;
+
+            // make sure that there is a burstSpeed for each indicator
+
+            if (burstSpeeds.Count == m_ImagingDictionary.Count)
             {
-                var ips = pair.Value;
-                ips.burstCycleTimeEnabled = true;
+                m_burstSpeeds.Clear();
+               
+                foreach (KeyValuePair<int, ImagingParamsStruct> pair in m_ImagingDictionary)
+                {
+                    var ips = pair.Value;
+                    m_burstSpeeds.TryAdd(pair.Key, burstSpeeds[i]);
+                    i++;
+                }
+
+                m_burstON_Event.Set();
+
+                OnImagerEvent(new ImagerEventArgs("Enable Burst Imaging", ImagerState.Busy));
+            }
+            else
+            {
+                OnImagerEvent(new ImagerEventArgs("Enable Burst Imaging Error: number of speeds does not match number of indicators.  Burst mode not enabled.", ImagerState.Busy));
             }
         }
 
         public void DisableBurstImaging()
         {
-            foreach (KeyValuePair<int, ImagingParamsStruct> pair in m_ImagingDictionary)
-            {
-                var ips = pair.Value;
-                ips.burstCycleTimeEnabled = false;
-            }
+            m_burstOFF_Event.Set();
+
+            //foreach (KeyValuePair<int, ImagingParamsStruct> pair in m_ImagingDictionary)
+            //{
+            //    var ips = pair.Value;
+            //    ips.burstCycleTimeEnabled = false;
+            //}
+
+            OnImagerEvent(new ImagerEventArgs("Disable Burst Imaging", ImagerState.Busy));
         }
 
         

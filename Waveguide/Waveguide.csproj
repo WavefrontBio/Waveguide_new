@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Waveguide</RootNamespace>
     <AssemblyName>Waveguide</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -29,6 +29,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -178,6 +179,9 @@
     <Compile Include="Views\CameraSettingsManager.xaml.cs">
       <DependentUpon>CameraSettingsManager.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\ManageDatabaseDialog.xaml.cs">
+      <DependentUpon>ManageDatabaseDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\MultiChartArray.xaml.cs">
       <DependentUpon>MultiChartArray.xaml</DependentUpon>
     </Compile>
@@ -299,6 +303,14 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\Camera.cs" />
+    <Compile Include="WaveguideDBDataSet.cs">
+      <DependentUpon>WaveguideDBDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="WaveguideDBDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>WaveguideDBDataSet.xsd</DependentUpon>
+    </Compile>
     <Page Include="Views\AggregateChart.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -308,6 +320,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\CameraSettingsManager.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\ManageDatabaseDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -488,6 +504,17 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
+    <None Include="WaveguideDBDataSet.xsc">
+      <DependentUpon>WaveguideDBDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="WaveguideDBDataSet.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>WaveguideDBDataSet.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="WaveguideDBDataSet.xss">
+      <DependentUpon>WaveguideDBDataSet.xsd</DependentUpon>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

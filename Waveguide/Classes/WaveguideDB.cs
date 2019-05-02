@@ -11,6 +11,25 @@ using System.IO;
 
 namespace Waveguide
 {
+    public class DatabaseTableInfo
+    {
+        public string name { get; set; }
+        public int rowCount { get; set; }
+        public string comment { get; set; }
+        public DatabaseTableInfo(string Name, int RowCount)
+        {
+            name = Name;
+            rowCount = RowCount;
+            comment = "";
+        }
+        public DatabaseTableInfo(string Name, int RowCount, string Comment)
+        {
+            name = Name;
+            rowCount = RowCount;
+            comment = Comment;
+        }
+    }
+
     public class WaveguideDB
     {
 
@@ -35,6 +54,7 @@ namespace Waveguide
         public ObservableCollection<CameraSettingsContainer> m_cameraSettingsList;
 
         string m_connectionString;
+
 
         //string connectionString = "Data Source=WaveFront01;Initial Catalog=WaveguideDB;Integrated Security=True";
         //string connectionString = "Data Source=GREENWAY1\\sqlexpress;Initial Catalog=WaveguideDB;Integrated Security=True";
@@ -102,6 +122,250 @@ namespace Waveguide
         }
 
 
+
+
+        //public int GetDbSize(out List<DatabaseTableInfo> tableSizes)
+        //{
+        //    // returns size of database in KB, also returns a dictionary<tableName,tableSize> containing the name and size of each table
+
+        //    int sum = 0;
+        //    tableSizes = new List<DatabaseTableInfo>();
+                     
+        //    // SQL Command [Same command discussed in section-B of this article]
+        //    string sSqlquery = "EXEC sp_MSforeachtable @command1=\"EXEC sp_spaceused '?'\" ";
+
+        //    DataSet oDataSet = new DataSet();
+        //    List<string> tables = new List<string>();
+
+        //    // Executing SQL Command using ADO.Net
+        //    using (SqlConnection oConn = new SqlConnection(m_connectionString))
+        //    {
+        //        oConn.Open();
+        //        using (SqlCommand oCmdGetData = new SqlCommand(sSqlquery, oConn))
+        //        {
+        //            oCmdGetData.ExecuteNonQuery();
+        //            SqlDataAdapter executeAdapter = new SqlDataAdapter(oCmdGetData);
+        //            executeAdapter.Fill(oDataSet);                   
+        //        }
+
+        //        // Get table names
+        //        DataTable dt = oConn.GetSchema("Tables");
+        //        foreach (DataRow row in dt.Rows)
+        //        {
+        //            string tablename = (string)row[2];
+        //            tables.Add(tablename);
+        //        }
+
+
+        //        oConn.Close();
+        //    }
+
+
+           
+        
+
+
+
+
+        //    // Iterating each table
+        //    for (int i = 0; i < oDataSet.Tables.Count; i++)
+        //    {
+        //        // We want to add only "data" column value of each table
+        //        int tableSize = Convert.ToInt32(oDataSet.Tables[i].Rows[0]["data"].ToString().Replace("KB", "").Trim());
+
+        //        string tableName = oDataSet.Tables[i].TableName;
+        //        tableSizes.Add(new DatabaseTableInfo(tables[i],tableSize));
+
+        //        sum = sum + tableSize;
+        //    }
+
+        //    //Console.WriteLine("Total size of the database is : " + sum + " KB");
+
+        //    return sum;
+        //}
+
+
+
+        public List<string> GetTableNames()
+        {
+            using (SqlConnection con = new SqlConnection(m_connectionString))
+            {
+                con.Open();
+                if (con.State == ConnectionState.Open)
+                {
+                    return con.GetSchema("Tables").AsEnumerable().Select(s => s[2].ToString()).ToList();
+                }
+            }
+            //Add some error-handling instead !
+            return new List<string>();
+        }
+
+
+
+        public bool GetDatabaseInfo(out List<DatabaseTableInfo> infoList)
+        {
+            bool success = true;
+            infoList = new List<DatabaseTableInfo>();
+
+            List<string> tables = GetTableNames();
+
+            foreach(string tableName in tables)
+            {
+                if (tableName != "sysdiagrams")
+                {
+                    int rowCount = GetTableRowCount(tableName);
+                    infoList.Add(new DatabaseTableInfo(tableName, rowCount));
+                }
+            }
+
+            AppendDatabaseSize(infoList);
+
+            GetDatabaseFileInfo(infoList);
+
+            long dataFileSizeBytes = GetDatabaseDataFileSize();
+
+            infoList.Add(new DatabaseTableInfo("Database File Size (MB)", (int)(dataFileSizeBytes / 1024 / 1024)));
+
+            long totalImageFileBytes = GetImageFileStorageSize(GlobalVars.Instance.ImageFileSaveLocation);
+
+            infoList.Add(new DatabaseTableInfo("Total Image File Storage (MB)", (int)(totalImageFileBytes/1024/1024)));
+
+            return success;
+        }
+
+
+        public void AppendDatabaseSize(List<DatabaseTableInfo> infoList)
+        {
+            SqlConnection Conn = new SqlConnection(m_connectionString);
+            SqlCommand testCMD = new SqlCommand("sp_spaceused", Conn);
+
+            testCMD.CommandType = CommandType.StoredProcedure;
+
+            Conn.Open();
+
+            SqlDataReader reader = testCMD.ExecuteReader();
+
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    //Console.WriteLine("Name: " + reader["database_name"]);
+                    //Console.WriteLine("Size: " + reader["database_size"]);
+                    string n = reader["database_name"].ToString();
+                                        
+                    string sz = reader["database_size"].ToString();
+                                      
+                    int index = sz.IndexOf(".");
+                    if (index > 0)
+                        sz = sz.Substring(0, index);
+                    
+                    infoList.Add(new DatabaseTableInfo("Total Database Size (MB)", Convert.ToInt32(sz)));
+                }
+            }
+
+        }
+
+
+        public void GetDatabaseFileInfo(List<DatabaseTableInfo> infoList)
+        {
+            string qStr = "SELECT DB_NAME() AS DbName,name AS FileName,size/ 128.0 AS CurrentSizeMB, size/ 128.0 - CAST(FILEPROPERTY(name, 'SpaceUsed') AS INT) / 128.0 AS FreeSpaceMB FROM sys.database_files;";
+                   
+            using (SqlConnection con = new SqlConnection(m_connectionString))
+            {
+                con.Open();
+
+                using (SqlCommand command = new SqlCommand(qStr, con))
+                {                  
+                    try
+                    {
+                        SqlDataReader reader = command.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            string databaseName = reader.GetString(0);
+                            string fileName = reader.GetString(1);
+                            double currentSize = (double)reader.GetDecimal(2);
+                            double freeSize = (double)reader.GetDecimal(3);
+
+                            infoList.Add(new DatabaseTableInfo(fileName, (int)((currentSize - freeSize) / currentSize * 100.0), "percent used"));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lastErrMsg = e.Message;
+                        RecordError(e.Message);
+                    }
+                }
+            }
+        }
+
+
+        public int GetTableRowCount(string tablename)
+        {
+            string stmt = string.Format("SELECT COUNT(*) FROM {0}", tablename);
+           
+            int count = 0;
+            try
+            {
+
+                using (SqlConnection thisConnection = new SqlConnection(m_connectionString))
+                {
+                    using (SqlCommand cmdCount = new SqlCommand(stmt, thisConnection))
+                    {
+                        thisConnection.Open();
+                        count = (int)cmdCount.ExecuteScalar();
+                    }
+                }
+                return count;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+
+
+
+        public long GetImageFileStorageSize(string imageFileRootDirectory)
+        {
+            // return total in bytes
+            long total = 0;
+            foreach (string filepath in System.IO.Directory.GetFiles(imageFileRootDirectory, "*", SearchOption.AllDirectories))
+            {
+                FileInfo info = new FileInfo(filepath);
+                total += info.Length;
+            }
+
+            return total;
+        }
+
+
+
+        public long GetDatabaseDataFileSize()
+        {
+            SqlConnection DbConn = new SqlConnection(m_connectionString);
+            SqlCommand GetDataFile = new SqlCommand();
+            GetDataFile.Connection = DbConn;
+            GetDataFile.CommandText = "select physical_name from sys.database_files where type = 0";
+
+            long length = 0;
+
+            try
+            {
+                DbConn.Open();
+                string YourDataFile = (string)GetDataFile.ExecuteScalar();
+                DbConn.Close();
+
+                length = new System.IO.FileInfo(YourDataFile).Length;
+
+            }
+            catch (Exception ex)
+            {
+                DbConn.Dispose();
+            }
+
+
+            return length;
+        }
 
         #region ColorModel
         //////////////////////////////////////////////////////////////////////////
@@ -572,6 +836,8 @@ namespace Waveguide
             return success;
         }
 
+
+
         #endregion
 
 
@@ -988,7 +1254,58 @@ namespace Waveguide
         }
 
 
-        
+
+
+
+        public bool GetAllExperimentImagesForExperimentIndicator(int expIndicatorID)
+        {
+            bool success = true;
+
+            using (SqlConnection con = new SqlConnection(m_connectionString))
+            {
+                con.Open();
+
+                using (SqlCommand command = new SqlCommand("SELECT * FROM ExperimentImage  WHERE ExperimentIndicatorID=@p1", con))
+                {
+                    m_expImageList.Clear();
+
+                    command.Parameters.Add("@p1", System.Data.SqlDbType.Int).Value = expIndicatorID;
+
+                    try
+                    {
+                        SqlDataReader reader = command.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            ExperimentImageContainer cont = new ExperimentImageContainer();
+
+                            cont.ExperimentImageID = reader.GetInt32(0);
+                            cont.TimeStamp = reader.GetDateTime(1);
+                            cont.ExperimentIndicatorID = reader.GetInt32(2);
+                            cont.MSecs = reader.GetInt32(3);
+                            cont.MaxPixelValue = reader.GetInt32(4);
+                            cont.CompressionAlgorithm = (COMPRESSION_ALGORITHM)reader.GetInt32(5);
+                            cont.FilePath = reader.GetString(6);
+
+                            if (File.Exists(cont.FilePath))
+                                cont.ImageData = Zip.Decompress_File(cont.FilePath);
+                            else
+                                cont.ImageData = null;
+
+                            m_expImageList.Add(cont);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lastErrMsg = e.Message;
+                        success = false;
+                        RecordError(e.Message);
+                    }
+                }
+            }
+
+            return success;
+        }
+
 
 
         public bool GetExperimentImage(int expImageID, out ExperimentImageContainer expImage)
@@ -1113,6 +1430,52 @@ namespace Waveguide
 
             return success;
         }
+
+
+
+
+        public bool DeleteAllExperimentImagesForExperimentIndicator(int expIndicatorID)
+        {
+            bool success = true;
+
+            success = GetAllExperimentImagesForExperimentIndicator(expIndicatorID);            
+
+            if (success)
+            {
+                // delete the image files
+                foreach(ExperimentImageContainer imgFile in m_expImageList)
+                {
+                    if(File.Exists(imgFile.FilePath))
+                    {
+                        File.Delete(imgFile.FilePath);
+                    }
+                }
+
+                using (SqlConnection con = new SqlConnection(m_connectionString))
+                {
+                    con.Open();
+
+                    using (SqlCommand command = new SqlCommand("DELETE FROM ExperimentImage WHERE ExperimentIndicatorID=@p1", con))
+                    {
+                        try
+                        {
+                            command.Parameters.AddWithValue("@p1", expIndicatorID);
+
+                            command.ExecuteNonQuery();
+                        }
+                        catch (Exception e)
+                        {
+                            lastErrMsg = e.Message;
+                            success = false;
+                            RecordError(e.Message);
+                        }
+                    }
+                }
+            }
+
+            return success;
+        }
+
 
 
         #endregion
@@ -3934,6 +4297,29 @@ namespace Waveguide
             return success;
         }
 
+
+
+        public bool DeleteAllExperimentCompoundPlatesForExperiment(int experimentID)
+        {
+            bool success = true;
+
+            success = GetAllExperimentCompoundPlatesForExperiment(experimentID);
+
+            if (success)
+            {
+                foreach(ExperimentCompoundPlateContainer ecpc in m_experimentCompoundPlateList)
+                {
+                    success = DeleteExperimentCompoundPlate(ecpc.ExperimentCompoundPlateID);
+
+                    if (!success)
+                        break;
+                }
+            }
+
+            return success;
+        }
+
+
         #endregion
         
 
@@ -4392,6 +4778,61 @@ namespace Waveguide
 
 
 
+        public bool GetAllExperimentsBeforeDateTime(DateTime datetime, out ObservableCollection<ExperimentContainer> experimentList)
+        {
+            bool success = true;
+
+            experimentList = new ObservableCollection<ExperimentContainer>();
+
+            using (SqlConnection con = new SqlConnection(m_connectionString))
+            {
+                con.Open();
+
+                using (SqlCommand command = new SqlCommand("Select * FROM Experiment WHERE TimeStamp < @p1", con))
+                {
+                    try
+                    {
+                        experimentList.Clear();
+
+                        SqlParameter DateTimeParam = new SqlParameter("@p1", SqlDbType.DateTime2);
+                        DateTimeParam.Value = datetime;
+                        command.Parameters.Add(DateTimeParam);
+
+                        SqlDataReader reader = command.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            ExperimentContainer cont = new ExperimentContainer();
+
+                            cont.ExperimentID = reader.GetInt32(0);
+                            cont.PlateID = reader.GetInt32(1);
+                            cont.MethodID = reader.GetInt32(2);
+                            cont.TimeStamp = reader.GetDateTime(3);
+                            cont.Description = reader.GetString(4);
+                            cont.HorzBinning = reader.GetInt32(5);
+                            cont.VertBinning = reader.GetInt32(6);
+                            cont.ROI_Origin_X = reader.GetInt32(7);
+                            cont.ROI_Origin_Y = reader.GetInt32(8);
+                            cont.ROI_Width = reader.GetInt32(9);
+                            cont.ROI_Height = reader.GetInt32(10);
+
+                            experimentList.Add(cont);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        lastErrMsg = e.Message;
+                        success = false;
+                        RecordError(e.Message);
+                    }
+                }
+           
+            }
+
+            return success;
+        }
+
+
+
         public bool GetExperiment(int experimentID, out ExperimentContainer experiment)
         {
             bool success = true;
@@ -4562,9 +5003,69 @@ namespace Waveguide
 
 
 
+        public bool DeleteExperimentAndDependencies(int experimentID)
+        {
+            bool success = true;
+            ExperimentContainer experiment;
+            success = GetExperiment(experimentID, out experiment);
+            if(success)
+            {
+                // Delete Event Marker(s)
+                success = DeleteEventMarkersForExperiment(experimentID);
+
+                if (success)
+                {
+                    // Delete Experiment Compound Plate(s)
+                    success = DeleteAllExperimentCompoundPlatesForExperiment(experimentID);
+
+                    if (success)
+                    {
+                        // Delete Experiment Indicator(s) and dependencies
+                        success = DeleteAllExperimentIndicatorsAndDependenciesForExperiment(experimentID);
+
+                        if (success)
+                        {
+                            // Finally, Delete Experiment
+                            success = DeleteExperiment(experimentID);
+                        }
+                    }
+                }
+            }
+
+            return success;
+        }
+
+
+
+
+        public bool DeleteAllExperimentsBefore(DateTime dateTime)
+        {
+            bool success = true;
+
+            success = GetAllExperiments();
+           
+            if(success)
+            {
+                foreach(ExperimentContainer ec in m_experimentList)
+                {
+                    if (ec.TimeStamp < dateTime)
+                    {
+                        success = DeleteExperimentAndDependencies(ec.ExperimentID);
+                        if (!success)
+                            break;
+                    }
+                }
+            }                       
+
+            return success;
+        }
+
+
+
+
 
         #endregion
-        
+
 
         #region ExperimentIndicator
         //////////////////////////////////////////////////////////////////////////
@@ -4841,6 +5342,55 @@ namespace Waveguide
         }
 
 
+        public bool DeleteAllExperimentIndicatorsAndDependenciesForExperiment(int experimentID)
+        {
+            bool success = true;
+
+            ObservableCollection<ExperimentIndicatorContainer> expIndicators;
+
+            success = GetAllExperimentIndicatorsForExperiment(experimentID, out expIndicators);
+
+            if(success)
+            {
+                foreach(ExperimentIndicatorContainer eic in expIndicators)
+                {
+                    success = GetAllAnalysesForExperimentIndicator(eic.ExperimentIndicatorID);
+                    if (success)
+                    {
+                        foreach (AnalysisContainer anal in m_analysisList)
+                        {
+                            success = DeleteAllAnalysisFramesForAnalysis(anal.AnalysisID);
+
+                            if (success)
+                            {
+                                success = DeleteAnalysis(anal.AnalysisID);
+                            }
+                            else
+                                break;
+                        }
+                    }
+                    else
+                        break;
+
+                    if (success)
+                    {
+                        // Delete All Experiment Images
+                        DeleteAllExperimentImagesForExperimentIndicator(eic.ExperimentIndicatorID);
+                    }
+                    else
+                        break;
+
+                    if(success)
+                    {
+                        success = DeleteExperimentIndicator(eic.ExperimentIndicatorID);
+                        if (!success)
+                            break;
+                    }
+                }
+            }
+
+            return success;
+        }
 
 
         #endregion

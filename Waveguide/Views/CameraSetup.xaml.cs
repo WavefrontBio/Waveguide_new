@@ -445,14 +445,16 @@ namespace Waveguide
             float actualKineticCycleF = 0.0f;
             m_camera.MyCamera.GetAcquisitionTimings(ref actualExposureF, ref actualAccumulationF, ref actualKineticCycleF);
 
-            int minCycleTime = (int)(actualKineticCycleF*1000.0f) + 10; // allow 10 msecs to read data from camera and post to cuda thread
+            //int minCycleTime = (int)(actualKineticCycleF*1000.0f) + 10; // allow 10 msecs to read data from camera and post to cuda thread
+            int minCycleTime = (int)(actualKineticCycleF * 1000.0f) + 2;
             float maxRate = 1000.0f / (float)(minCycleTime);
 
             ImagingParamsStruct ips;
             if (m_imager.m_ImagingDictionary.ContainsKey(m_ID))
             {
                 ips = m_imager.m_ImagingDictionary[m_ID];
-                ips.cycleTime = minCycleTime > 100 ? minCycleTime : 100;
+                //ips.cycleTime = minCycleTime > 100 ? minCycleTime : 100;
+                ips.cycleTime = minCycleTime > 25 ? minCycleTime : 25;
                 m_imager.m_ImagingDictionary[m_ID] = ips;
             }     
 

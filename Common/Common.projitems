@@ -9,5 +9,26 @@
     <Import_RootNamespace>Common</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ChartArray.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CircularBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ColorModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Converters.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CudaUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DatabaseContainerClasses.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ExperimentConfiguration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ExperimentParams.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FlatFieldCorrector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GlobalVars.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ImageFileManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ImageTool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MVVM_Helper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ValidationRules.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VisualTreeHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VWorks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WaveguideDB.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WaveGuideEvents.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WaveguideMessage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Zip.cs" />
   </ItemGroup>
 </Project>

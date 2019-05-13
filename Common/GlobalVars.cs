@@ -10,6 +10,16 @@ using System.ComponentModel;
 namespace Waveguide
 {
 
+
+    public enum DOOR_STATUS
+    {
+        OPEN,
+        CLOSED,
+        LOCKED
+    }
+
+
+
     public delegate void StatusChangeEventHandler(object sender, StatusChangeEventArgs e);
 
     public class GlobalVars

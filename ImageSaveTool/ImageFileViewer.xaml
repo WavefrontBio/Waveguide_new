@@ -1,0 +1,175 @@
+﻿<UserControl x:Class="WPFTools.ImageFileViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WPFTools"
+             mc:Ignorable="d" 
+             d:DesignHeight="400" d:DesignWidth="600">
+    
+    <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
+        <TabItem Header="Database Browse">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="2*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="User" Background="AliceBlue"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextAlignment="Center"/>
+
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="Project" Background="AliceBlue"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextAlignment="Center"/>
+
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="Plate" Background="AliceBlue"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextAlignment="Center"/>
+
+                <TextBlock Grid.Row="0" Grid.Column="3" Text="Experiment" Background="AliceBlue"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextAlignment="Center"/>
+
+                <TextBlock Grid.Row="0" Grid.Column="4" Text="Indicator" Background="AliceBlue"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextAlignment="Center"/>
+
+                <ListBox Grid.Row="1" Grid.Column="0" x:Name="UserListBox" ItemsSource="{Binding users}" SelectedItem="{Binding user}"
+                         SelectionChanged="UserListBox_SelectionChanged" DisplayMemberPath="Username"/>
+
+                <ListBox Grid.Row="1" Grid.Column="1" x:Name="ProjectListBox" ItemsSource="{Binding projects}" SelectedItem="{Binding project}"
+                         SelectionChanged="ProjectListBox_SelectionChanged"  DisplayMemberPath="Description"/>
+
+                <ListBox Grid.Row="1" Grid.Column="2" x:Name="PlateListBox" ItemsSource="{Binding plates}" SelectedItem="{Binding plate}"
+                         SelectionChanged="PlateListBox_SelectionChanged"  DisplayMemberPath="Description"/>
+
+                <ListBox Grid.Row="1" Grid.Column="3" x:Name="ExperimentListBox" ItemsSource="{Binding experiments}" SelectedItem="{Binding experiment}"
+                         SelectionChanged="ExperimentListBox_SelectionChanged"  DisplayMemberPath="Description"/>
+
+                <ListBox Grid.Row="1" Grid.Column="4" x:Name="IndicatorListBox" ItemsSource="{Binding indicators}" SelectedItem="{Binding indicator}"
+                         SelectionChanged="IndicatorListBox_SelectionChanged"  DisplayMemberPath="Description"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Image" Background="AliceBlue"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TextAlignment="Center"/>
+
+                <ListBox Grid.Row="3" Grid.Column="0" x:Name="ImageListBox" ItemsSource="{Binding images}" SelectedItem="{Binding image}"
+                         SelectionChanged="ImageListBox_SelectionChanged"  DisplayMemberPath="MSecs"/>
+
+                <Grid Grid.Row="2" Grid.Column="1" Grid.RowSpan="2" Grid.ColumnSpan="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="24"/>
+                    </Grid.RowDefinitions>
+
+                    <local:RangeSlider Grid.Row="1" Height="14" VerticalAlignment="Center"
+                                x:Name="ColorModelRangeSlider1" RangeChanged="ColorModelRangeSlider1_RangeChanged"/>
+
+                    <Image Grid.Row="0" x:Name="ImageDisplay1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Uniform"
+                            Source="{Binding bitmap1}"/>
+
+                </Grid>
+                
+            </Grid>
+        </TabItem>
+        
+        
+        <TabItem Header="Directory Browse">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="128"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <ListBox x:Name="FileListBox" Grid.Row="0" Grid.Column="0" ItemsSource="{Binding files}" 
+                 SelectionChanged="FileListBox_SelectionChanged" DisplayMemberPath="displayName">            
+        </ListBox>
+
+        <Button Grid.Row="1" Grid.Column="0" Width="100" Height="24" Content="Browse Directory" x:Name="BrowsePB" Click="BrowsePB_Click"
+                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+        <local:RangeSlider Grid.Row="1" Grid.Column="1" Height="14" VerticalAlignment="Center"
+                x:Name="ColorModelRangeSlider" RangeChanged="ColorModelRangeSlider_RangeChanged"/>
+
+        <Image Grid.Row="0" Grid.Column="1" x:Name="ImageDisplay" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Uniform"
+               Source="{Binding bitmap}"/>
+
+    </Grid>
+        </TabItem>
+
+
+        <TabItem Header="Reference Images">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <ListBox x:Name="RefImageListBox" Grid.Row="0" Grid.Column="0" ItemsSource="{Binding refImages}" 
+                 SelectionChanged="RefImageListBox_SelectionChanged"  DisplayMemberPath="Description">
+
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True" >
+                                    <Setter Property="FontWeight" Value="Bold" />
+                                    <Setter Property="Background" Value="Green" />
+                                    <Setter Property="Foreground" Value="Black" />
+                                </Trigger>
+                            </Style.Triggers>
+                          
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+
+                </ListBox>
+
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="60"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="64"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="X = " Width="60" TextAlignment="Right"/>
+                            <TextBlock x:Name="XPos" Width="100" TextAlignment="Left"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Y = " Width="60" TextAlignment="Right"/>
+                            <TextBlock x:Name="YPos" Width="100" TextAlignment="Left"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Val = " Width="60" TextAlignment="Right"/>
+                            <TextBlock x:Name="PixelValue" Width="140" TextAlignment="Left"/>
+                        </StackPanel>
+                    </StackPanel>
+                    
+                 
+
+                    <local:RangeSlider Grid.Row="2" Height="14" VerticalAlignment="Center"
+                                x:Name="ColorModelRangeSlider2" RangeChanged="ColorModelRangeSlider2_RangeChanged"/>
+
+                    <Image Grid.Row="1" x:Name="ImageDisplay2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Uniform"
+                            Source="{Binding bitmap2}" MouseLeftButtonUp="ImageDisplay2_MouseLeftButtonUp"/>
+
+
+                    <Image Grid.Row="3" x:Name="HistImage" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stretch="Fill" Margin="4"/>
+
+                </Grid>
+
+            </Grid>
+            
+        </TabItem>
+        
+    </TabControl>
+</UserControl>

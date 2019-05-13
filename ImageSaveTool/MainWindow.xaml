@@ -1,0 +1,28 @@
+﻿<Window x:Class="ImageSaveTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ImageSaveTool"
+        xmlns:wpftools="clr-namespace:WPFTools"
+        mc:Ignorable="d" 
+        Title="Image Save Tool" Height="350" Width="525">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>            
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+
+        <wpftools:ImageFileViewer Grid.Row="0" x:Name="MyImageFileViewer"/>
+
+        <Button x:Name="QuitPB" Grid.Row="1" Width="60" Height="24" Content="Quit" Click="QuitPB_Click"
+                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+        <Button x:Name="SavePB" Grid.Row="1" Width="60" Height="24" Content="Save JPG" Click="SavePB_Click"
+                HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0"/>
+
+    </Grid>
+</Window>

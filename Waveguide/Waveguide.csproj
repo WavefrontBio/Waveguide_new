@@ -148,28 +148,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Classes\DatabaseContainerClasses.cs" />
+    <Compile Include="Classes\Camera.cs" />
     <Compile Include="Classes\EthernetIO.cs" />
     <Compile Include="Classes\EventDrivenTCPClient.cs" />
-    <Compile Include="Classes\ExperimentConfiguration.cs" />
-    <Compile Include="Classes\ExperimentParams.cs" />
-    <Compile Include="Classes\FlatFieldCorrector.cs" />
     <Compile Include="Classes\Lambda.cs" />
     <Compile Include="Classes\OmegaTempCtrl.cs" />
-    <Compile Include="Classes\ReportWriter.cs" />
     <Compile Include="Classes\Thor.cs" />
-    <Compile Include="Classes\ValidationRules.cs" />
-    <Compile Include="Classes\VisualTreeHelpers.cs" />
-    <Compile Include="Classes\WaveguideDB.cs" />
-    <Compile Include="Classes\CircularBuffer.cs" />
     <Compile Include="Classes\Imager.cs" />
-    <Compile Include="Classes\Converters.cs" />
-    <Compile Include="Classes\GlobalVars.cs" />
-    <Compile Include="Classes\ImageFileManager.cs" />
-    <Compile Include="Classes\WaveguideMessage.cs" />
-    <Compile Include="CudaInterfaceClasses\ChartArray.cs" />
-    <Compile Include="CudaInterfaceClasses\CudaUtil.cs" />
-    <Compile Include="CudaInterfaceClasses\ImageTool.cs" />
+    <Compile Include="Classes\WaveguideConverters.cs" />
     <Compile Include="Views\AggregateChart.xaml.cs">
       <DependentUpon>AggregateChart.xaml</DependentUpon>
     </Compile>
@@ -264,9 +250,6 @@
     <Compile Include="Views\CameraSetup.xaml.cs">
       <DependentUpon>CameraSetup.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Classes\VWorks.cs" />
-    <Compile Include="Classes\WaveGuideEvents.cs" />
-    <Compile Include="Classes\MVVM_Helper.cs" />
     <Compile Include="Views\ReportDialog.xaml.cs">
       <DependentUpon>ReportDialog.xaml</DependentUpon>
     </Compile>
@@ -294,7 +277,6 @@
     <Compile Include="Views\WellSelectionControl.xaml.cs">
       <DependentUpon>WellSelectionControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Classes\Zip.cs" />
     <Compile Include="Views\WellSelectionDialog.xaml.cs">
       <DependentUpon>WellSelectionDialog.xaml</DependentUpon>
     </Compile>
@@ -302,7 +284,6 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Classes\Camera.cs" />
     <Compile Include="WaveguideDBDataSet.cs">
       <DependentUpon>WaveguideDBDataSet.xsd</DependentUpon>
     </Compile>
@@ -579,6 +560,7 @@
     <Resource Include="Images\lock.png" />
     <Resource Include="Images\unlock.png" />
   </ItemGroup>
+  <Import Project="..\Common\Common.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
